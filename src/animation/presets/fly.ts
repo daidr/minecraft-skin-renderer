@@ -14,6 +14,11 @@ function createFlyAnimation(): Animation {
   const armAngle = 10; // Arms slightly back
   const legAngle = 5; // Legs slightly apart (now relative to body since attached to body)
 
+  // Elytra wing spread angles (in degrees)
+  // Note: Elytra should NOT flutter/swing - they stay in a fixed spread position
+  const wingSpread = 80; // Z rotation for spread
+  const wingTilt = 5; // X rotation tilt
+
   return {
     name: "fly",
     duration: 1.5, // Slower, gliding motion
@@ -117,23 +122,51 @@ function createFlyAnimation(): Animation {
           },
         ],
       },
-      // Cape would flutter in the wind (if rendered)
+      // Cape flows behind the player in wind
       {
         boneIndex: BoneIndex.Cape,
         keyframes: [
-          { time: 0, rotation: quatFromEuler(degToRad(-30), 0, 0) },
+          { time: 0, rotation: quatFromEuler(degToRad(70), 0, 0) },
           {
             time: 0.25,
-            rotation: quatFromEuler(degToRad(-25), degToRad(5), 0),
+            rotation: quatFromEuler(degToRad(75), degToRad(5), 0),
             easing: easeInOutSine,
           },
-          { time: 0.5, rotation: quatFromEuler(degToRad(-35), 0, 0), easing: easeInOutSine },
+          { time: 0.5, rotation: quatFromEuler(degToRad(65), 0, 0), easing: easeInOutSine },
           {
             time: 0.75,
-            rotation: quatFromEuler(degToRad(-25), degToRad(-5), 0),
+            rotation: quatFromEuler(degToRad(75), degToRad(-5), 0),
             easing: easeInOutSine,
           },
-          { time: 1, rotation: quatFromEuler(degToRad(-30), 0, 0), easing: easeInOutSine },
+          { time: 1, rotation: quatFromEuler(degToRad(70), 0, 0), easing: easeInOutSine },
+        ],
+      },
+      // Left elytra wing - spread out (static, no flutter)
+      {
+        boneIndex: BoneIndex.LeftWing,
+        keyframes: [
+          {
+            time: 0,
+            rotation: quatFromEuler(degToRad(wingTilt), 0, degToRad(wingSpread)),
+          },
+          {
+            time: 1,
+            rotation: quatFromEuler(degToRad(wingTilt), 0, degToRad(wingSpread)),
+          },
+        ],
+      },
+      // Right elytra wing - mirrored spread (static, no flutter)
+      {
+        boneIndex: BoneIndex.RightWing,
+        keyframes: [
+          {
+            time: 0,
+            rotation: quatFromEuler(degToRad(wingTilt), 0, degToRad(-wingSpread)),
+          },
+          {
+            time: 1,
+            rotation: quatFromEuler(degToRad(wingTilt), 0, degToRad(-wingSpread)),
+          },
         ],
       },
     ],

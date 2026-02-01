@@ -3,10 +3,11 @@
  */
 
 import { createSkinViewer } from "../src";
-import type { SkinViewer } from "../src";
+import type { BackEquipment, SkinViewer } from "../src";
 
-// Default Steve skin (base64 encoded minimal placeholder)
+// Default texture paths
 const DEFAULT_SKIN_URL = "./skin.png";
+const DEFAULT_CAPE_URL = "./cape.png";
 
 let viewer: SkinViewer | null = null;
 let lastFrameTime = performance.now();
@@ -34,6 +35,13 @@ const playBtn = document.getElementById("playBtn") as HTMLButtonElement;
 const pauseBtn = document.getElementById("pauseBtn") as HTMLButtonElement;
 const stopBtn = document.getElementById("stopBtn") as HTMLButtonElement;
 
+// Cape controls
+const capeUrlInput = document.getElementById("capeUrl") as HTMLInputElement;
+const loadCapeBtn = document.getElementById("loadCapeBtn") as HTMLButtonElement;
+const capeFileInput = document.getElementById("capeFile") as HTMLInputElement;
+const backEquipmentSelect = document.getElementById("backEquipment") as HTMLSelectElement;
+const removeCapeBtn = document.getElementById("removeCapeBtn") as HTMLButtonElement;
+
 // Camera controls
 const zoomSlider = document.getElementById("zoomSlider") as HTMLInputElement;
 const zoomValue = document.getElementById("zoomValue") as HTMLElement;
@@ -56,6 +64,7 @@ async function init() {
     viewer = await createSkinViewer({
       canvas,
       skin: DEFAULT_SKIN_URL,
+      cape: DEFAULT_CAPE_URL,
       antialias: true,
       enableRotate: true,
       enableZoom: true,
@@ -63,6 +72,9 @@ async function init() {
 
     // Update backend badge
     backendBadge.textContent = viewer.backend.toUpperCase();
+
+    // Sync back equipment select with viewer state
+    backEquipmentSelect.value = viewer.backEquipment;
 
     // Start render loop
     viewer.startRenderLoop();
@@ -172,6 +184,47 @@ function setupEventListeners() {
   slimModelCheckbox.addEventListener("change", () => {
     if (!viewer) return;
     viewer.setSlim(slimModelCheckbox.checked);
+  });
+
+  // Load cape from URL
+  loadCapeBtn.addEventListener("click", async () => {
+    const url = capeUrlInput.value.trim();
+    if (!url || !viewer) return;
+
+    try {
+      await viewer.setCape(url);
+      backEquipmentSelect.value = viewer.backEquipment;
+    } catch (error) {
+      console.error("Failed to load cape:", error);
+      alert("Failed to load cape from URL");
+    }
+  });
+
+  // Load cape from file
+  capeFileInput.addEventListener("change", async () => {
+    const file = capeFileInput.files?.[0];
+    if (!file || !viewer) return;
+
+    try {
+      await viewer.setCape(file);
+      backEquipmentSelect.value = viewer.backEquipment;
+    } catch (error) {
+      console.error("Failed to load cape:", error);
+      alert("Failed to load cape from file");
+    }
+  });
+
+  // Back equipment select
+  backEquipmentSelect.addEventListener("change", () => {
+    if (!viewer) return;
+    viewer.setBackEquipment(backEquipmentSelect.value as BackEquipment);
+  });
+
+  // Remove cape
+  removeCapeBtn.addEventListener("click", async () => {
+    if (!viewer) return;
+    await viewer.setCape(null);
+    backEquipmentSelect.value = "none";
   });
 
   // Animation select

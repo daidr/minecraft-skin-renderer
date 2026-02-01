@@ -18,7 +18,12 @@
  */
 
 // Main API
-export { createSkinViewer, type SkinViewer, type SkinViewerOptions } from "./viewer";
+export {
+  createSkinViewer,
+  type SkinViewer,
+  type SkinViewerOptions,
+  type BackEquipment,
+} from "./viewer";
 
 // Types
 export type { BackendType, RendererOptions } from "./core/renderer/types";

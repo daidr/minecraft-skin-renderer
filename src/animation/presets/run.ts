@@ -13,6 +13,11 @@ function createRunAnimation(): Animation {
   const armSwing = 70; // degrees (larger than walk)
   const legSwing = 60; // degrees (larger than walk)
 
+  // Elytra closed position
+  const wingClosedX = 15;
+  const wingClosedY = 0.5;
+  const wingClosedZ = 15;
+
   return {
     name: "run",
     duration: 0.6, // 0.6 second cycle (running pace, faster than walk)
@@ -63,6 +68,44 @@ function createRunAnimation(): Animation {
           { time: 0, rotation: quatFromEuler(degToRad(legSwing), 0, 0) },
           { time: 0.5, rotation: quatFromEuler(degToRad(-legSwing), 0, 0), easing: easeInOutSine },
           { time: 1, rotation: quatFromEuler(degToRad(legSwing), 0, 0), easing: easeInOutSine },
+        ],
+      },
+      // Cape flows back more while running
+      {
+        boneIndex: BoneIndex.Cape,
+        keyframes: [
+          { time: 0, rotation: quatFromEuler(degToRad(25), degToRad(8), 0) },
+          { time: 0.25, rotation: quatFromEuler(degToRad(18), 0, 0), easing: easeInOutSine },
+          { time: 0.5, rotation: quatFromEuler(degToRad(25), degToRad(-8), 0), easing: easeInOutSine },
+          { time: 0.75, rotation: quatFromEuler(degToRad(18), 0, 0), easing: easeInOutSine },
+          { time: 1, rotation: quatFromEuler(degToRad(25), degToRad(8), 0), easing: easeInOutSine },
+        ],
+      },
+      // Elytra wings closed - static position
+      {
+        boneIndex: BoneIndex.LeftWing,
+        keyframes: [
+          {
+            time: 0,
+            rotation: quatFromEuler(degToRad(wingClosedX), degToRad(wingClosedY), degToRad(wingClosedZ)),
+          },
+          {
+            time: 1,
+            rotation: quatFromEuler(degToRad(wingClosedX), degToRad(wingClosedY), degToRad(wingClosedZ)),
+          },
+        ],
+      },
+      {
+        boneIndex: BoneIndex.RightWing,
+        keyframes: [
+          {
+            time: 0,
+            rotation: quatFromEuler(degToRad(wingClosedX), degToRad(-wingClosedY), degToRad(-wingClosedZ)),
+          },
+          {
+            time: 1,
+            rotation: quatFromEuler(degToRad(wingClosedX), degToRad(-wingClosedY), degToRad(-wingClosedZ)),
+          },
         ],
       },
     ],

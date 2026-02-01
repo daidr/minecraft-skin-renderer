@@ -207,28 +207,34 @@ export function createPlayerSkeleton(variant: ModelVariant = "classic"): PlayerS
   );
 
   // Cape (attached to body back)
+  // Cape hangs from the neck, pivot at the top attachment point
+  // Body back face is at z = -2 (body is 4 deep, centered at z=0)
+  // Cape should be flush against body back
   bones.set(
     BoneIndex.Cape,
     createBone(
       BoneIndex.Cape,
       "cape",
       BoneIndex.Body,
-      [0, 8, -2], // Behind body
-      [0, 8, -2], // Pivot at top of cape
-      [10, 16, 1], // Cape size
+      [0, 0, -2], // At body back surface (z = -2)
+      [0, 0, 0], // Pivot at bone origin (top of cape attachment)
+      [10, 16, 1], // Cape size: 10 wide, 16 tall, 1 deep
     ),
   );
 
-  // Elytra wings
+  // Elytra wings (attached to body back at the spine)
+  // Based on skinview3d: wings pivot from attachment point at spine
+  // Left wing pivot is 5 units to the left of center, extends outward
+  // Wing rotates around this pivot point for open/close animations
   bones.set(
     BoneIndex.LeftWing,
     createBone(
       BoneIndex.LeftWing,
       "leftWing",
       BoneIndex.Body,
-      [5, 8, -2], // Left side
-      [0, 8, -2], // Pivot at center top
-      [10, 20, 2], // Wing size
+      [5, 0, -2], // Pivot point: 5 units left of spine, at body back
+      [0, 0, 0], // Pivot at bone origin
+      [10, 20, 2], // Wing size for UV mapping
     ),
   );
 
@@ -238,9 +244,9 @@ export function createPlayerSkeleton(variant: ModelVariant = "classic"): PlayerS
       BoneIndex.RightWing,
       "rightWing",
       BoneIndex.Body,
-      [-5, 8, -2], // Right side
-      [0, 8, -2], // Pivot at center top
-      [10, 20, 2], // Wing size
+      [-5, 0, -2], // Pivot point: 5 units right of spine, at body back
+      [0, 0, 0], // Pivot at bone origin (mirrored)
+      [10, 20, 2], // Wing size for UV mapping
     ),
   );
 

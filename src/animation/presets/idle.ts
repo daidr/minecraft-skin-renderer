@@ -11,6 +11,11 @@ import type { Animation } from "../types";
 
 /** Create idle animation */
 function createIdleAnimation(): Animation {
+  // Elytra closed position (based on skinview3d)
+  const wingClosedX = 15;
+  const wingClosedY = 0.5;
+  const wingClosedZ = 15;
+
   return {
     name: "idle",
     duration: 3.0, // 3 second cycle
@@ -40,6 +45,42 @@ function createIdleAnimation(): Animation {
           { time: 0, rotation: quatFromEuler(degToRad(-2), 0, 0) },
           { time: 0.5, rotation: quatFromEuler(degToRad(2), 0, 0), easing: easeInOutSine },
           { time: 1, rotation: quatFromEuler(degToRad(-2), 0, 0), easing: easeInOutSine },
+        ],
+      },
+      // Cape subtle sway
+      {
+        boneIndex: BoneIndex.Cape,
+        keyframes: [
+          { time: 0, rotation: quatFromEuler(degToRad(10), 0, 0) },
+          { time: 0.5, rotation: quatFromEuler(degToRad(12), degToRad(2), 0), easing: easeInOutSine },
+          { time: 1, rotation: quatFromEuler(degToRad(10), 0, 0), easing: easeInOutSine },
+        ],
+      },
+      // Elytra wings closed - static position
+      {
+        boneIndex: BoneIndex.LeftWing,
+        keyframes: [
+          {
+            time: 0,
+            rotation: quatFromEuler(degToRad(wingClosedX), degToRad(wingClosedY), degToRad(wingClosedZ)),
+          },
+          {
+            time: 1,
+            rotation: quatFromEuler(degToRad(wingClosedX), degToRad(wingClosedY), degToRad(wingClosedZ)),
+          },
+        ],
+      },
+      {
+        boneIndex: BoneIndex.RightWing,
+        keyframes: [
+          {
+            time: 0,
+            rotation: quatFromEuler(degToRad(wingClosedX), degToRad(-wingClosedY), degToRad(-wingClosedZ)),
+          },
+          {
+            time: 1,
+            rotation: quatFromEuler(degToRad(wingClosedX), degToRad(-wingClosedY), degToRad(-wingClosedZ)),
+          },
         ],
       },
     ],

@@ -29,9 +29,14 @@ import { SKIN_FRAGMENT_SHADER, SKIN_VERTEX_SHADER } from "../core/renderer/webgl
 import { BoneIndex, VERTEX_STRIDE } from "../model/types";
 import type { BoxGeometry, ModelVariant, PlayerSkeleton } from "../model/types";
 import { createPlayerSkeleton, resetSkeleton } from "../model/PlayerModel";
-import { createBoxGeometry, mergeGeometries } from "../model/geometry/BoxGeometry";
+import {
+  createBoxGeometry,
+  createCapeBoxGeometry,
+  mergeGeometries,
+} from "../model/geometry/BoxGeometry";
 import { getSkinUV } from "../model/uv/SkinUV";
-import { loadSkinTexture, createPlaceholderTexture } from "../texture";
+import { getCapeUV, getElytraUV } from "../model/uv/CapeUV";
+import { loadSkinTexture, loadCapeTexture, createPlaceholderTexture } from "../texture";
 import type { TextureSource } from "../texture";
 import { createRenderLoop, startRenderLoop, stopRenderLoop } from "./RenderLoop";
 import type { RenderLoop } from "./RenderLoop";
@@ -41,6 +46,9 @@ import {
   updateAnimationController,
 } from "../animation/AnimationController";
 
+/** Back equipment type (cape, elytra, or none) */
+export type BackEquipment = "cape" | "elytra" | "none";
+
 /** SkinViewer options */
 export interface SkinViewerOptions {
   canvas: HTMLCanvasElement;
@@ -48,8 +56,10 @@ export interface SkinViewerOptions {
   antialias?: boolean;
   pixelRatio?: number;
   skin?: TextureSource;
+  /** Cape texture (64x32 format). Used for both cape and elytra if elytra texture is not provided. */
   cape?: TextureSource;
-  elytra?: TextureSource;
+  /** Back equipment to display: 'cape', 'elytra', or 'none'. Default: 'none' unless cape is provided. */
+  backEquipment?: BackEquipment;
   slim?: boolean;
   fov?: number;
   zoom?: number;
@@ -62,9 +72,20 @@ export interface SkinViewerOptions {
 /** SkinViewer interface */
 export interface SkinViewer {
   setSkin(source: TextureSource | null): Promise<void>;
+  /**
+   * Set the cape texture (64x32 format).
+   * This texture is used for both cape and elytra display.
+   */
   setCape(source: TextureSource | null): Promise<void>;
-  setElytra(source: TextureSource | null): Promise<void>;
   setSlim(slim: boolean): void;
+
+  /**
+   * Set which back equipment to display.
+   * @param equipment - 'cape' for cape, 'elytra' for elytra wings, 'none' to hide
+   */
+  setBackEquipment(equipment: BackEquipment): void;
+  /** Get the current back equipment setting */
+  readonly backEquipment: BackEquipment;
 
   playAnimation(name: string, config?: AnimationConfig): void;
   pauseAnimation(): void;
@@ -119,12 +140,26 @@ interface SkinViewerState {
   overlayVertexBuffer: IBuffer;
   overlayIndexBuffer: IBuffer;
 
+  // GPU resources - cape (double-sided)
+  capePipeline: IPipeline;
+  capeVertexBuffer: IBuffer;
+  capeIndexBuffer: IBuffer;
+  capeGeometry: BoxGeometry;
+
+  // GPU resources - elytra (double-sided)
+  elytraVertexBuffer: IBuffer;
+  elytraIndexBuffer: IBuffer;
+  elytraGeometry: BoxGeometry;
+
   skinTexture: ITexture | null;
+  /** Cape texture used for both cape and elytra */
   capeTexture: ITexture | null;
-  elytraTexture: ITexture | null;
 
   // Geometry data
   skinGeometry: SeparatedGeometry;
+
+  // Back equipment state
+  backEquipment: BackEquipment;
 
   // State flags
   disposed: boolean;
@@ -221,6 +256,61 @@ function createSkinGeometry(variant: ModelVariant): SeparatedGeometry {
 }
 
 /**
+ * Create cape geometry
+ * Cape: 10 wide, 16 tall, 1 deep, attached to Cape bone
+ * Cape hangs down from attachment point at neck
+ */
+function createCapeGeometry(): BoxGeometry {
+  const capeUV = getCapeUV();
+  // Cape hangs down from the top
+  // Offset: y=-8 so top of cape (y=+8 from center) is at bone origin (y=0)
+  // z=-0.5 to position cape slightly behind the attachment point
+  return createCapeBoxGeometry([10, 16, 1], capeUV, BoneIndex.Cape, [0, -8, -0.5]);
+}
+
+/**
+ * Create elytra geometry (both wings merged)
+ * Based on skinview3d: each wing pivots from attachment point
+ * Geometry: 12 wide, 22 tall, 4 deep (actual mesh size)
+ * UV mapping: 10 wide, 20 tall, 2 deep (texture layout)
+ *
+ * In skinview3d:
+ * - Left wing: pivot at x=5, mesh offset (-5, -10, -1), no scale
+ * - Right wing: pivot at x=-5, mesh offset (-5, -10, -1) with scale.x=-1
+ *
+ * Note: In our coordinate system when viewed from behind:
+ * - Positive X = screen right = player's left
+ * - Negative X = screen left = player's right
+ */
+function createElytraGeometry(): BoxGeometry {
+  const elytraUV = getElytraUV();
+
+  // Left wing (player's left = screen right when viewed from behind)
+  // Bone at x=+5, wing extends towards center
+  // No mirror - uses original geometry orientation (like skinview3d)
+  const leftWing = createCapeBoxGeometry(
+    [12, 22, 4], // Geometry size
+    elytraUV,
+    BoneIndex.LeftWing,
+    [-5, -10, -1], // Wing offset from pivot
+    false, // No mirror (skinview3d has no scale on left wing)
+  );
+
+  // Right wing (player's right = screen left when viewed from behind)
+  // Bone at x=-5, wing extends towards center
+  // Mirror to match skinview3d's scale.x=-1
+  const rightWing = createCapeBoxGeometry(
+    [12, 22, 4], // Same geometry size
+    elytraUV,
+    BoneIndex.RightWing,
+    [-5, -10, -1], // Same offset
+    true, // Mirror X (simulates skinview3d's scale.x=-1)
+  );
+
+  return mergeGeometries([leftWing, rightWing]);
+}
+
+/**
  * Compute bone matrices for the skeleton
  */
 function computeBoneMatrices(skeleton: PlayerSkeleton): Float32Array {
@@ -254,6 +344,10 @@ function computeBoneMatrices(skeleton: PlayerSkeleton): Float32Array {
     BoneIndex.LeftArmOverlay,
     BoneIndex.RightLegOverlay,
     BoneIndex.LeftLegOverlay,
+    // Cape and elytra bones (attached to body)
+    BoneIndex.Cape,
+    BoneIndex.LeftWing,
+    BoneIndex.RightWing,
   ];
 
   for (const boneIndex of boneOrder) {
@@ -385,6 +479,27 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
   );
   const overlayIndexBuffer = renderer.createBuffer(BufferUsage.Index, skinGeometry.overlay.indices);
 
+  // Create cape geometry and buffers
+  const capeGeometry = createCapeGeometry();
+  const capeVertexBuffer = renderer.createBuffer(BufferUsage.Vertex, capeGeometry.vertices);
+  const capeIndexBuffer = renderer.createBuffer(BufferUsage.Index, capeGeometry.indices);
+
+  // Create elytra geometry and buffers
+  const elytraGeometry = createElytraGeometry();
+  const elytraVertexBuffer = renderer.createBuffer(BufferUsage.Vertex, elytraGeometry.vertices);
+  const elytraIndexBuffer = renderer.createBuffer(BufferUsage.Index, elytraGeometry.indices);
+
+  // Create pipeline for cape/elytra (double-sided, no culling)
+  const capePipeline = renderer.createPipeline({
+    vertexShader: SKIN_VERTEX_SHADER,
+    fragmentShader: SKIN_FRAGMENT_SHADER,
+    vertexLayout,
+    cullMode: CullMode.None,
+    blendMode: BlendMode.Alpha,
+    depthWrite: true,
+    depthCompare: DepthCompare.Less,
+  });
+
   // Load initial skin texture
   let skinTexture: ITexture | null = null;
   if (options.skin) {
@@ -405,6 +520,23 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
   // Create animation controller
   const animationController = createAnimationController(skeleton);
 
+  // Load initial cape texture if provided
+  let capeTexture: ITexture | null = null;
+  if (options.cape) {
+    try {
+      const bitmap = await loadCapeTexture(options.cape);
+      capeTexture = await renderer.createTexture(bitmap);
+    } catch {
+      // Cape texture failed to load, continue without it
+    }
+  }
+
+  // Determine initial back equipment
+  let initialBackEquipment: BackEquipment = options.backEquipment ?? "none";
+  if (initialBackEquipment === "none" && capeTexture) {
+    initialBackEquipment = "cape"; // Default to cape if texture is provided but no explicit setting
+  }
+
   // Create state object
   const state: SkinViewerState = {
     renderer,
@@ -420,10 +552,17 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     overlayPipeline,
     overlayVertexBuffer,
     overlayIndexBuffer,
+    capePipeline,
+    capeVertexBuffer,
+    capeIndexBuffer,
+    capeGeometry,
+    elytraVertexBuffer,
+    elytraIndexBuffer,
+    elytraGeometry,
     skinTexture,
-    capeTexture: null,
-    elytraTexture: null,
+    capeTexture,
     skinGeometry,
+    backEquipment: initialBackEquipment,
     disposed: false,
   };
 
@@ -440,7 +579,14 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       overlayPipeline,
       overlayVertexBuffer,
       overlayIndexBuffer,
+      capePipeline,
+      capeVertexBuffer,
+      capeIndexBuffer,
+      elytraVertexBuffer,
+      elytraIndexBuffer,
       skinTexture,
+      capeTexture,
+      backEquipment,
     } = state;
 
     renderer.beginFrame();
@@ -483,6 +629,33 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
         indexCount: state.skinGeometry.overlay.indexCount,
         bindGroup: { uniforms, textures },
       });
+
+      // Draw cape or elytra if texture is available and equipment is enabled
+      if (capeTexture && backEquipment !== "none") {
+        const capeTextures = {
+          u_skinTexture: capeTexture,
+        };
+
+        if (backEquipment === "cape") {
+          // Draw cape
+          renderer.draw({
+            pipeline: capePipeline,
+            vertexBuffers: [capeVertexBuffer],
+            indexBuffer: capeIndexBuffer,
+            indexCount: state.capeGeometry.indexCount,
+            bindGroup: { uniforms, textures: capeTextures },
+          });
+        } else if (backEquipment === "elytra") {
+          // Draw elytra wings
+          renderer.draw({
+            pipeline: capePipeline,
+            vertexBuffers: [elytraVertexBuffer],
+            indexBuffer: elytraIndexBuffer,
+            indexCount: state.elytraGeometry.indexCount,
+            bindGroup: { uniforms, textures: capeTextures },
+          });
+        }
+      }
     }
 
     renderer.endFrame();
@@ -536,23 +709,24 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       }
 
       if (source) {
-        const bitmap = await loadSkinTexture(source);
+        const bitmap = await loadCapeTexture(source);
         state.capeTexture = await state.renderer.createTexture(bitmap);
+        // Auto-enable cape display if not already showing something
+        if (state.backEquipment === "none") {
+          state.backEquipment = "cape";
+        }
+      } else {
+        // Hide back equipment if cape texture is removed
+        state.backEquipment = "none";
       }
     },
 
-    async setElytra(source: TextureSource | null) {
-      if (state.disposed) return;
+    setBackEquipment(equipment: BackEquipment) {
+      state.backEquipment = equipment;
+    },
 
-      if (state.elytraTexture) {
-        state.elytraTexture.dispose();
-        state.elytraTexture = null;
-      }
-
-      if (source) {
-        const bitmap = await loadSkinTexture(source);
-        state.elytraTexture = await state.renderer.createTexture(bitmap);
-      }
+    get backEquipment() {
+      return state.backEquipment;
     },
 
     setSlim(slim: boolean) {
@@ -697,7 +871,13 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
       if (state.skinTexture) state.skinTexture.dispose();
       if (state.capeTexture) state.capeTexture.dispose();
-      if (state.elytraTexture) state.elytraTexture.dispose();
+
+      // Dispose cape/elytra resources
+      state.capeVertexBuffer.dispose();
+      state.capeIndexBuffer.dispose();
+      state.elytraVertexBuffer.dispose();
+      state.elytraIndexBuffer.dispose();
+      state.capePipeline.dispose();
 
       state.renderer.dispose();
     },

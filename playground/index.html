@@ -40,6 +40,28 @@
           </section>
 
           <section class="control-section">
+            <h2>Cape / Elytra</h2>
+            <div class="control-group">
+              <label for="capeUrl">Cape URL</label>
+              <input type="text" id="capeUrl" placeholder="https://example.com/cape.png" />
+              <button id="loadCapeBtn">Load</button>
+            </div>
+            <div class="control-group">
+              <label for="capeFile">Or upload file</label>
+              <input type="file" id="capeFile" accept="image/png" />
+            </div>
+            <div class="control-group">
+              <label for="backEquipment">Display</label>
+              <select id="backEquipment">
+                <option value="none">None</option>
+                <option value="cape">Cape</option>
+                <option value="elytra">Elytra</option>
+              </select>
+            </div>
+            <button id="removeCapeBtn">Remove Cape</button>
+          </section>
+
+          <section class="control-section">
             <h2>Animation</h2>
             <div class="control-group">
               <label for="animationSelect">Animation</label>

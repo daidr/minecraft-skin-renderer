@@ -13,6 +13,11 @@ function createWalkAnimation(): Animation {
   const armSwing = 45; // degrees
   const legSwing = 40; // degrees
 
+  // Elytra closed position
+  const wingClosedX = 15;
+  const wingClosedY = 0.5;
+  const wingClosedZ = 15;
+
   return {
     name: "walk",
     duration: 1.2, // 1.2 second cycle (slow walking pace)
@@ -63,6 +68,44 @@ function createWalkAnimation(): Animation {
           { time: 0, rotation: quatFromEuler(degToRad(legSwing), 0, 0) },
           { time: 0.5, rotation: quatFromEuler(degToRad(-legSwing), 0, 0), easing: easeInOutSine },
           { time: 1, rotation: quatFromEuler(degToRad(legSwing), 0, 0), easing: easeInOutSine },
+        ],
+      },
+      // Cape sway while walking
+      {
+        boneIndex: BoneIndex.Cape,
+        keyframes: [
+          { time: 0, rotation: quatFromEuler(degToRad(15), degToRad(5), 0) },
+          { time: 0.25, rotation: quatFromEuler(degToRad(10), 0, 0), easing: easeInOutSine },
+          { time: 0.5, rotation: quatFromEuler(degToRad(15), degToRad(-5), 0), easing: easeInOutSine },
+          { time: 0.75, rotation: quatFromEuler(degToRad(10), 0, 0), easing: easeInOutSine },
+          { time: 1, rotation: quatFromEuler(degToRad(15), degToRad(5), 0), easing: easeInOutSine },
+        ],
+      },
+      // Elytra wings closed - static position
+      {
+        boneIndex: BoneIndex.LeftWing,
+        keyframes: [
+          {
+            time: 0,
+            rotation: quatFromEuler(degToRad(wingClosedX), degToRad(wingClosedY), degToRad(wingClosedZ)),
+          },
+          {
+            time: 1,
+            rotation: quatFromEuler(degToRad(wingClosedX), degToRad(wingClosedY), degToRad(wingClosedZ)),
+          },
+        ],
+      },
+      {
+        boneIndex: BoneIndex.RightWing,
+        keyframes: [
+          {
+            time: 0,
+            rotation: quatFromEuler(degToRad(wingClosedX), degToRad(-wingClosedY), degToRad(-wingClosedZ)),
+          },
+          {
+            time: 1,
+            rotation: quatFromEuler(degToRad(wingClosedX), degToRad(-wingClosedY), degToRad(-wingClosedZ)),
+          },
         ],
       },
     ],
