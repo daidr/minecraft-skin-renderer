@@ -1,0 +1,282 @@
+/**
+ * Player model skeleton definition
+ * Based on Minecraft's player model structure
+ */
+
+import { quatIdentity } from "../core/math";
+import type { Quat, Vec3 } from "../core/math";
+import { BoneIndex } from "./types";
+import type { Bone, ModelVariant, PlayerSkeleton } from "./types";
+
+/**
+ * Minecraft player dimensions (in pixels, 1 pixel = 1 unit)
+ * Head: 8x8x8
+ * Body: 8x12x4
+ * Arms: 4x12x4 (classic) or 3x12x4 (slim)
+ * Legs: 4x12x4
+ */
+
+/** Create a bone definition */
+function createBone(
+  index: BoneIndex,
+  name: string,
+  parentIndex: BoneIndex | null,
+  position: Vec3,
+  pivot: Vec3,
+  size: Vec3,
+): Bone {
+  return {
+    index,
+    name,
+    parentIndex,
+    position,
+    pivot,
+    rotation: quatIdentity(),
+    size,
+  };
+}
+
+/** Create the player skeleton */
+export function createPlayerSkeleton(variant: ModelVariant = "classic"): PlayerSkeleton {
+  const armWidth = variant === "slim" ? 3 : 4;
+  const bones = new Map<BoneIndex, Bone>();
+
+  // Minecraft player model coordinates (Y up, origin at feet):
+  // - Legs: y = 0 to 12
+  // - Body: y = 12 to 24
+  // - Head: y = 24 to 32
+  // - Arms: y = 12 to 24 (attached at shoulders, y = 22)
+
+  // Root bone (at feet level, center)
+  bones.set(
+    BoneIndex.Root,
+    createBone(BoneIndex.Root, "root", null, [0, 0, 0], [0, 0, 0], [0, 0, 0]),
+  );
+
+  // Body (pivot at bottom of body, y=12)
+  bones.set(
+    BoneIndex.Body,
+    createBone(
+      BoneIndex.Body,
+      "body",
+      BoneIndex.Root,
+      [0, 24, 0], // Position body top at y=24
+      [0, 0, 0], // Pivot at body top (for head attachment)
+      [8, 12, 4], // Body size
+    ),
+  );
+
+  // Head (attached to body top, y=24)
+  bones.set(
+    BoneIndex.Head,
+    createBone(
+      BoneIndex.Head,
+      "head",
+      BoneIndex.Body,
+      [0, 0, 0], // At body top
+      [0, 0, 0], // Pivot at neck (head bottom)
+      [8, 8, 8], // Head size
+    ),
+  );
+
+  // Right Arm (attached at shoulder, x = -5 or -5.5 for slim)
+  bones.set(
+    BoneIndex.RightArm,
+    createBone(
+      BoneIndex.RightArm,
+      "rightArm",
+      BoneIndex.Body,
+      [-(4 + armWidth / 2), 0, 0], // Shoulder position (at body top)
+      [0, 0, 0], // Pivot at shoulder (arm top)
+      [armWidth, 12, 4], // Arm size
+    ),
+  );
+
+  // Left Arm (attached at shoulder)
+  bones.set(
+    BoneIndex.LeftArm,
+    createBone(
+      BoneIndex.LeftArm,
+      "leftArm",
+      BoneIndex.Body,
+      [4 + armWidth / 2, 0, 0], // Shoulder position (at body top)
+      [0, 0, 0], // Pivot at shoulder
+      [armWidth, 12, 4], // Arm size
+    ),
+  );
+
+  // Right Leg (attached to body at hip level)
+  bones.set(
+    BoneIndex.RightLeg,
+    createBone(
+      BoneIndex.RightLeg,
+      "rightLeg",
+      BoneIndex.Body,
+      [-2, -12, 0], // Hip position (relative to body top at y=24, so y=24-12=12)
+      [0, 0, 0], // Pivot at hip (leg top)
+      [4, 12, 4], // Leg size
+    ),
+  );
+
+  // Left Leg (attached to body at hip level)
+  bones.set(
+    BoneIndex.LeftLeg,
+    createBone(
+      BoneIndex.LeftLeg,
+      "leftLeg",
+      BoneIndex.Body,
+      [2, -12, 0], // Hip position (relative to body top)
+      [0, 0, 0], // Pivot at hip
+      [4, 12, 4], // Leg size
+    ),
+  );
+
+  // Overlay layers (slightly larger, same pivot)
+  const overlayScale = 0.5; // Extra size for overlay
+
+  bones.set(
+    BoneIndex.HeadOverlay,
+    createBone(
+      BoneIndex.HeadOverlay,
+      "headOverlay",
+      BoneIndex.Head,
+      [0, 0, 0],
+      [0, 0, 0],
+      [8 + overlayScale * 2, 8 + overlayScale * 2, 8 + overlayScale * 2],
+    ),
+  );
+
+  bones.set(
+    BoneIndex.BodyOverlay,
+    createBone(
+      BoneIndex.BodyOverlay,
+      "bodyOverlay",
+      BoneIndex.Body,
+      [0, 0, 0],
+      [0, 0, 0],
+      [8 + overlayScale * 2, 12 + overlayScale * 2, 4 + overlayScale * 2],
+    ),
+  );
+
+  bones.set(
+    BoneIndex.RightArmOverlay,
+    createBone(
+      BoneIndex.RightArmOverlay,
+      "rightArmOverlay",
+      BoneIndex.RightArm,
+      [0, 0, 0],
+      [0, 0, 0],
+      [armWidth + overlayScale * 2, 12 + overlayScale * 2, 4 + overlayScale * 2],
+    ),
+  );
+
+  bones.set(
+    BoneIndex.LeftArmOverlay,
+    createBone(
+      BoneIndex.LeftArmOverlay,
+      "leftArmOverlay",
+      BoneIndex.LeftArm,
+      [0, 0, 0],
+      [0, 0, 0],
+      [armWidth + overlayScale * 2, 12 + overlayScale * 2, 4 + overlayScale * 2],
+    ),
+  );
+
+  bones.set(
+    BoneIndex.RightLegOverlay,
+    createBone(
+      BoneIndex.RightLegOverlay,
+      "rightLegOverlay",
+      BoneIndex.RightLeg,
+      [0, 0, 0],
+      [0, 0, 0],
+      [4 + overlayScale * 2, 12 + overlayScale * 2, 4 + overlayScale * 2],
+    ),
+  );
+
+  bones.set(
+    BoneIndex.LeftLegOverlay,
+    createBone(
+      BoneIndex.LeftLegOverlay,
+      "leftLegOverlay",
+      BoneIndex.LeftLeg,
+      [0, 0, 0],
+      [0, 0, 0],
+      [4 + overlayScale * 2, 12 + overlayScale * 2, 4 + overlayScale * 2],
+    ),
+  );
+
+  // Cape (attached to body back)
+  bones.set(
+    BoneIndex.Cape,
+    createBone(
+      BoneIndex.Cape,
+      "cape",
+      BoneIndex.Body,
+      [0, 8, -2], // Behind body
+      [0, 8, -2], // Pivot at top of cape
+      [10, 16, 1], // Cape size
+    ),
+  );
+
+  // Elytra wings
+  bones.set(
+    BoneIndex.LeftWing,
+    createBone(
+      BoneIndex.LeftWing,
+      "leftWing",
+      BoneIndex.Body,
+      [5, 8, -2], // Left side
+      [0, 8, -2], // Pivot at center top
+      [10, 20, 2], // Wing size
+    ),
+  );
+
+  bones.set(
+    BoneIndex.RightWing,
+    createBone(
+      BoneIndex.RightWing,
+      "rightWing",
+      BoneIndex.Body,
+      [-5, 8, -2], // Right side
+      [0, 8, -2], // Pivot at center top
+      [10, 20, 2], // Wing size
+    ),
+  );
+
+  return { variant, bones };
+}
+
+/** Set bone rotation */
+export function setBoneRotation(
+  skeleton: PlayerSkeleton,
+  boneIndex: BoneIndex,
+  rotation: Quat,
+): void {
+  const bone = skeleton.bones.get(boneIndex);
+  if (bone) {
+    bone.rotation = rotation;
+  }
+}
+
+/** Reset all bone rotations to identity */
+export function resetSkeleton(skeleton: PlayerSkeleton): void {
+  for (const bone of skeleton.bones.values()) {
+    bone.rotation = quatIdentity();
+  }
+}
+
+/** Clone a skeleton */
+export function cloneSkeleton(skeleton: PlayerSkeleton): PlayerSkeleton {
+  const bones = new Map<BoneIndex, Bone>();
+  for (const [index, bone] of skeleton.bones) {
+    bones.set(index, {
+      ...bone,
+      position: [...bone.position] as Vec3,
+      pivot: [...bone.pivot] as Vec3,
+      rotation: [...bone.rotation] as Quat,
+      size: [...bone.size] as Vec3,
+    });
+  }
+  return { variant: skeleton.variant, bones };
+}

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Minecraft Skin Renderer - Playground</title>
+    <link rel="stylesheet" href="./styles/main.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <h1>Minecraft Skin Renderer</h1>
+        <span class="backend-badge" id="backendBadge">WebGL</span>
+      </header>
+
+      <main class="main">
+        <div class="canvas-container">
+          <canvas id="skinCanvas"></canvas>
+          <div class="fps-counter" id="fpsCounter">FPS: --</div>
+        </div>
+
+        <aside class="controls">
+          <section class="control-section">
+            <h2>Skin</h2>
+            <div class="control-group">
+              <label for="skinUrl">Skin URL</label>
+              <input type="text" id="skinUrl" placeholder="https://example.com/skin.png" />
+              <button id="loadSkinBtn">Load</button>
+            </div>
+            <div class="control-group">
+              <label for="skinFile">Or upload file</label>
+              <input type="file" id="skinFile" accept="image/png" />
+            </div>
+            <div class="control-group">
+              <label>
+                <input type="checkbox" id="slimModel" />
+                Slim arms (Alex model)
+              </label>
+            </div>
+          </section>
+
+          <section class="control-section">
+            <h2>Animation</h2>
+            <div class="control-group">
+              <label for="animationSelect">Animation</label>
+              <select id="animationSelect">
+                <option value="">None</option>
+                <option value="idle">Idle</option>
+                <option value="walk" selected>Walk</option>
+                <option value="run">Run</option>
+                <option value="fly">Fly</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label for="speedSlider">Speed: <span id="speedValue">1.0</span>x</label>
+              <input type="range" id="speedSlider" min="0.1" max="3" step="0.1" value="1" />
+            </div>
+            <div class="control-group">
+              <label for="amplitudeSlider">Amplitude: <span id="amplitudeValue">1.0</span>x</label>
+              <input type="range" id="amplitudeSlider" min="0.1" max="2" step="0.1" value="1" />
+            </div>
+            <div class="button-group">
+              <button id="playBtn">Play</button>
+              <button id="pauseBtn">Pause</button>
+              <button id="stopBtn">Stop</button>
+            </div>
+          </section>
+
+          <section class="control-section">
+            <h2>Camera</h2>
+            <div class="control-group">
+              <label for="zoomSlider">Distance: <span id="zoomValue">50</span></label>
+              <input type="range" id="zoomSlider" min="20" max="150" step="1" value="50" />
+            </div>
+            <div class="control-group">
+              <label>
+                <input type="checkbox" id="autoRotate" />
+                Auto rotate
+              </label>
+            </div>
+            <button id="resetCameraBtn">Reset Camera</button>
+          </section>
+
+          <section class="control-section">
+            <h2>Export</h2>
+            <button id="screenshotBtn">Take Screenshot</button>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
