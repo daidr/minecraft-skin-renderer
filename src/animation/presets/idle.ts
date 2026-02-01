@@ -12,6 +12,7 @@ import type { Animation } from "../types";
 /** Create idle animation */
 function createIdleAnimation(): Animation {
   // Elytra closed position (based on skinview3d)
+  // X rotation tilts wings forward/backward, larger value = more tilted back
   const wingClosedX = 15;
   const wingClosedY = 0.5;
   const wingClosedZ = 15;

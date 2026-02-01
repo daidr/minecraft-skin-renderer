@@ -10,11 +10,11 @@ import type { Animation } from "../types";
 
 /** Create walk animation */
 function createWalkAnimation(): Animation {
-  const armSwing = 45; // degrees
+  const armSwing = 30; // degrees
   const legSwing = 40; // degrees
 
   // Elytra closed position
-  const wingClosedX = 15;
+  const wingClosedX = 20;
   const wingClosedY = 0.5;
   const wingClosedZ = 15;
 

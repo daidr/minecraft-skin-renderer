@@ -14,13 +14,13 @@ function createRunAnimation(): Animation {
   const legSwing = 60; // degrees (larger than walk)
 
   // Elytra closed position
-  const wingClosedX = 15;
+  const wingClosedX = 25;
   const wingClosedY = 0.5;
   const wingClosedZ = 15;
 
   return {
     name: "run",
-    duration: 0.6, // 0.6 second cycle (running pace, faster than walk)
+    duration: 0.5, // 0.5 second cycle (running pace, faster than walk)
     loop: true,
     tracks: [
       // Head slight bob (same as walk, just faster)

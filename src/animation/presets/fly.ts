@@ -17,7 +17,7 @@ function createFlyAnimation(): Animation {
   // Elytra wing spread angles (in degrees)
   // Note: Elytra should NOT flutter/swing - they stay in a fixed spread position
   const wingSpread = 80; // Z rotation for spread
-  const wingTilt = 5; // X rotation tilt
+  const wingTilt = 20; // X rotation tilt
 
   return {
     name: "fly",
@@ -122,23 +122,23 @@ function createFlyAnimation(): Animation {
           },
         ],
       },
-      // Cape flows behind the player in wind
+      // Cape flows behind the player in wind (small angle for flying)
       {
         boneIndex: BoneIndex.Cape,
         keyframes: [
-          { time: 0, rotation: quatFromEuler(degToRad(70), 0, 0) },
+          { time: 0, rotation: quatFromEuler(degToRad(10), 0, 0) },
           {
             time: 0.25,
-            rotation: quatFromEuler(degToRad(75), degToRad(5), 0),
+            rotation: quatFromEuler(degToRad(15), degToRad(2), 0),
             easing: easeInOutSine,
           },
-          { time: 0.5, rotation: quatFromEuler(degToRad(65), 0, 0), easing: easeInOutSine },
+          { time: 0.5, rotation: quatFromEuler(degToRad(5), 0, 0), easing: easeInOutSine },
           {
             time: 0.75,
-            rotation: quatFromEuler(degToRad(75), degToRad(-5), 0),
+            rotation: quatFromEuler(degToRad(15), degToRad(-2), 0),
             easing: easeInOutSine,
           },
-          { time: 1, rotation: quatFromEuler(degToRad(70), 0, 0), easing: easeInOutSine },
+          { time: 1, rotation: quatFromEuler(degToRad(10), 0, 0), easing: easeInOutSine },
         ],
       },
       // Left elytra wing - spread out (static, no flutter)

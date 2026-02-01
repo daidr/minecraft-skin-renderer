@@ -226,13 +226,14 @@ export function createPlayerSkeleton(variant: ModelVariant = "classic"): PlayerS
   // Based on skinview3d: wings pivot from attachment point at spine
   // Left wing pivot is 5 units to the left of center, extends outward
   // Wing rotates around this pivot point for open/close animations
+  // Y=-2 to position wings slightly below shoulders (body top is at y=0)
   bones.set(
     BoneIndex.LeftWing,
     createBone(
       BoneIndex.LeftWing,
       "leftWing",
       BoneIndex.Body,
-      [5, 0, -2], // Pivot point: 5 units left of spine, at body back
+      [5, -1, -2], // Pivot point: below shoulders, at body back
       [0, 0, 0], // Pivot at bone origin
       [10, 20, 2], // Wing size for UV mapping
     ),
@@ -244,7 +245,7 @@ export function createPlayerSkeleton(variant: ModelVariant = "classic"): PlayerS
       BoneIndex.RightWing,
       "rightWing",
       BoneIndex.Body,
-      [-5, 0, -2], // Pivot point: 5 units right of spine, at body back
+      [-5, -1, -2], // Pivot point: below shoulders, at body back (mirrored)
       [0, 0, 0], // Pivot at bone origin (mirrored)
       [10, 20, 2], // Wing size for UV mapping
     ),
