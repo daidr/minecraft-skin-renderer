@@ -7,173 +7,90 @@ import { BoneIndex } from "../../model/types";
 import { easeInOutSine } from "../easing";
 import { registerAnimation } from "../types";
 import type { Animation } from "../types";
+import { createSpreadWingTracks, rot } from "./utils";
 
 /** Create fly animation */
 function createFlyAnimation(): Animation {
-  const bodyPitch = 80; // Body almost horizontal
-  const armAngle = 10; // Arms slightly back
-  const legAngle = 5; // Legs slightly apart (now relative to body since attached to body)
+  const bodyPitch = 80;
+  const armAngle = 10;
+  const legAngle = 5;
 
-  // Elytra wing spread angles (in degrees)
-  // Note: Elytra should NOT flutter/swing - they stay in a fixed spread position
-  const wingSpread = 80; // Z rotation for spread
-  const wingTilt = 20; // X rotation tilt
+  const [leftWing, rightWing] = createSpreadWingTracks(20, 80);
 
   return {
     name: "fly",
-    duration: 1.5, // Slower, gliding motion
+    duration: 1.5,
     loop: true,
     tracks: [
-      // Body pitched forward (flying horizontal)
+      // Body pitched forward
       {
         boneIndex: BoneIndex.Body,
         keyframes: [
-          { time: 0, rotation: quatFromEuler(degToRad(bodyPitch), 0, 0) },
-          {
-            time: 0.5,
-            rotation: quatFromEuler(degToRad(bodyPitch + 3), 0, 0),
-            easing: easeInOutSine,
-          },
-          { time: 1, rotation: quatFromEuler(degToRad(bodyPitch), 0, 0), easing: easeInOutSine },
+          { time: 0, rotation: rot(bodyPitch) },
+          { time: 0.5, rotation: rot(bodyPitch + 3), easing: easeInOutSine },
+          { time: 1, rotation: rot(bodyPitch), easing: easeInOutSine },
         ],
       },
-      // Head looks forward (compensates for body pitch)
+      // Head compensates for body pitch
       {
         boneIndex: BoneIndex.Head,
         keyframes: [
-          { time: 0, rotation: quatFromEuler(degToRad(-bodyPitch + 10), 0, 0) },
-          {
-            time: 0.5,
-            rotation: quatFromEuler(degToRad(-bodyPitch + 5), 0, 0),
-            easing: easeInOutSine,
-          },
-          {
-            time: 1,
-            rotation: quatFromEuler(degToRad(-bodyPitch + 10), 0, 0),
-            easing: easeInOutSine,
-          },
+          { time: 0, rotation: rot(-bodyPitch + 10) },
+          { time: 0.5, rotation: rot(-bodyPitch + 5), easing: easeInOutSine },
+          { time: 1, rotation: rot(-bodyPitch + 10), easing: easeInOutSine },
         ],
       },
-      // Right arm - slightly back and out
+      // Arms slightly back and out
       {
         boneIndex: BoneIndex.RightArm,
         keyframes: [
-          { time: 0, rotation: quatFromEuler(degToRad(armAngle), 0, degToRad(-15)) },
-          {
-            time: 0.5,
-            rotation: quatFromEuler(degToRad(armAngle + 5), 0, degToRad(-20)),
-            easing: easeInOutSine,
-          },
-          {
-            time: 1,
-            rotation: quatFromEuler(degToRad(armAngle), 0, degToRad(-15)),
-            easing: easeInOutSine,
-          },
+          { time: 0, rotation: rot(armAngle, 0, -15) },
+          { time: 0.5, rotation: rot(armAngle + 5, 0, -20), easing: easeInOutSine },
+          { time: 1, rotation: rot(armAngle, 0, -15), easing: easeInOutSine },
         ],
       },
-      // Left arm
       {
         boneIndex: BoneIndex.LeftArm,
         keyframes: [
-          { time: 0, rotation: quatFromEuler(degToRad(armAngle), 0, degToRad(15)) },
-          {
-            time: 0.5,
-            rotation: quatFromEuler(degToRad(armAngle + 5), 0, degToRad(20)),
-            easing: easeInOutSine,
-          },
-          {
-            time: 1,
-            rotation: quatFromEuler(degToRad(armAngle), 0, degToRad(15)),
-            easing: easeInOutSine,
-          },
+          { time: 0, rotation: rot(armAngle, 0, 15) },
+          { time: 0.5, rotation: rot(armAngle + 5, 0, 20), easing: easeInOutSine },
+          { time: 1, rotation: rot(armAngle, 0, 15), easing: easeInOutSine },
         ],
       },
-      // Right leg - stretched back (positive X rotation = backward)
+      // Legs stretched back
       {
         boneIndex: BoneIndex.RightLeg,
         keyframes: [
-          { time: 0, rotation: quatFromEuler(degToRad(legAngle), 0, degToRad(-3)) },
-          {
-            time: 0.5,
-            rotation: quatFromEuler(degToRad(legAngle + 5), 0, degToRad(-5)),
-            easing: easeInOutSine,
-          },
-          {
-            time: 1,
-            rotation: quatFromEuler(degToRad(legAngle), 0, degToRad(-3)),
-            easing: easeInOutSine,
-          },
+          { time: 0, rotation: rot(legAngle, 0, -3) },
+          { time: 0.5, rotation: rot(legAngle + 5, 0, -5), easing: easeInOutSine },
+          { time: 1, rotation: rot(legAngle, 0, -3), easing: easeInOutSine },
         ],
       },
-      // Left leg
       {
         boneIndex: BoneIndex.LeftLeg,
         keyframes: [
-          { time: 0, rotation: quatFromEuler(degToRad(legAngle), 0, degToRad(3)) },
-          {
-            time: 0.5,
-            rotation: quatFromEuler(degToRad(legAngle + 5), 0, degToRad(5)),
-            easing: easeInOutSine,
-          },
-          {
-            time: 1,
-            rotation: quatFromEuler(degToRad(legAngle), 0, degToRad(3)),
-            easing: easeInOutSine,
-          },
+          { time: 0, rotation: rot(legAngle, 0, 3) },
+          { time: 0.5, rotation: rot(legAngle + 5, 0, 5), easing: easeInOutSine },
+          { time: 1, rotation: rot(legAngle, 0, 3), easing: easeInOutSine },
         ],
       },
-      // Cape flows behind the player in wind (small angle for flying)
+      // Cape flows behind
       {
         boneIndex: BoneIndex.Cape,
         keyframes: [
-          { time: 0, rotation: quatFromEuler(degToRad(10), 0, 0) },
-          {
-            time: 0.25,
-            rotation: quatFromEuler(degToRad(15), degToRad(2), 0),
-            easing: easeInOutSine,
-          },
-          { time: 0.5, rotation: quatFromEuler(degToRad(5), 0, 0), easing: easeInOutSine },
-          {
-            time: 0.75,
-            rotation: quatFromEuler(degToRad(15), degToRad(-2), 0),
-            easing: easeInOutSine,
-          },
-          { time: 1, rotation: quatFromEuler(degToRad(10), 0, 0), easing: easeInOutSine },
+          { time: 0, rotation: rot(10) },
+          { time: 0.25, rotation: quatFromEuler(degToRad(15), degToRad(2), 0), easing: easeInOutSine },
+          { time: 0.5, rotation: rot(5), easing: easeInOutSine },
+          { time: 0.75, rotation: quatFromEuler(degToRad(15), degToRad(-2), 0), easing: easeInOutSine },
+          { time: 1, rotation: rot(10), easing: easeInOutSine },
         ],
       },
-      // Left elytra wing - spread out (static, no flutter)
-      {
-        boneIndex: BoneIndex.LeftWing,
-        keyframes: [
-          {
-            time: 0,
-            rotation: quatFromEuler(degToRad(wingTilt), 0, degToRad(wingSpread)),
-          },
-          {
-            time: 1,
-            rotation: quatFromEuler(degToRad(wingTilt), 0, degToRad(wingSpread)),
-          },
-        ],
-      },
-      // Right elytra wing - mirrored spread (static, no flutter)
-      {
-        boneIndex: BoneIndex.RightWing,
-        keyframes: [
-          {
-            time: 0,
-            rotation: quatFromEuler(degToRad(wingTilt), 0, degToRad(-wingSpread)),
-          },
-          {
-            time: 1,
-            rotation: quatFromEuler(degToRad(wingTilt), 0, degToRad(-wingSpread)),
-          },
-        ],
-      },
+      leftWing,
+      rightWing,
     ],
   };
 }
 
-// Register the animation
 registerAnimation(createFlyAnimation());
 
 export { createFlyAnimation };

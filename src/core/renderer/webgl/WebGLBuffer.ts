@@ -4,8 +4,7 @@
 
 import { BufferUsage } from "../types";
 import type { IBuffer } from "../types";
-
-let nextBufferId = 0;
+import { bufferId } from "../utils";
 
 export class WebGLBuffer implements IBuffer {
   readonly id: number;
@@ -18,7 +17,7 @@ export class WebGLBuffer implements IBuffer {
   private disposed = false;
 
   constructor(gl: WebGL2RenderingContext, usage: BufferUsage, data: ArrayBufferView) {
-    this.id = nextBufferId++;
+    this.id = bufferId();
     this.gl = gl;
     this.usage = usage;
     this.size = data.byteLength;

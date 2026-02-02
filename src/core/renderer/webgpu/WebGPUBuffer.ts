@@ -4,8 +4,7 @@
 
 import { BufferUsage } from "../types";
 import type { IBuffer } from "../types";
-
-let nextBufferId = 0;
+import { bufferId } from "../utils";
 
 export class WebGPUBuffer implements IBuffer {
   readonly id: number;
@@ -17,7 +16,7 @@ export class WebGPUBuffer implements IBuffer {
   private disposed = false;
 
   constructor(device: GPUDevice, usage: BufferUsage, data: ArrayBufferView) {
-    this.id = nextBufferId++;
+    this.id = bufferId();
     this.device = device;
     this.usage = usage;
     this.size = data.byteLength;

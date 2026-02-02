@@ -5,7 +5,13 @@
 import type { Vec3 } from "../../core/math";
 import { BoneIndex, VERTEX_STRIDE } from "../types";
 import type { BoxGeometry, BoxUV } from "../types";
-import { CAPE_TEXTURE_WIDTH, CAPE_TEXTURE_HEIGHT } from "../uv/CapeUV";
+import {
+  SKIN_TEXTURE_WIDTH,
+  SKIN_TEXTURE_HEIGHT,
+  CAPE_TEXTURE_WIDTH,
+  CAPE_TEXTURE_HEIGHT,
+  UV_EDGE_INSET,
+} from "../constants";
 
 /** Face indices for a cube */
 enum Face {
@@ -27,8 +33,8 @@ const FACE_NORMALS: Vec3[] = [
   [0, -1, 0], // Bottom
 ];
 
-/** UV inset to prevent edge bleeding */
-const UV_INSET = 0.001;
+/** UV inset constant (imported from constants) */
+const UV_INSET = UV_EDGE_INSET;
 
 /** Options for box geometry creation */
 interface BoxGeometryOptions {
@@ -323,8 +329,8 @@ export function createBoxGeometry(
 ): BoxGeometry {
   return createBoxGeometryCore(size, uv, boneIndex, offset, {
     inflate,
-    textureWidth: 64,
-    textureHeight: 64,
+    textureWidth: SKIN_TEXTURE_WIDTH,
+    textureHeight: SKIN_TEXTURE_HEIGHT,
     capeUVMode: false,
   });
 }

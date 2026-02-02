@@ -7,6 +7,7 @@ import { quatIdentity, quatFromEuler, degToRad } from "../core/math";
 import type { Quat, Vec3 } from "../core/math";
 import { BoneIndex } from "./types";
 import type { Bone, ModelVariant, PlayerSkeleton } from "./types";
+import { BONE_OVERLAY_SCALE } from "./constants";
 
 /**
  * Minecraft player dimensions (in pixels, 1 pixel = 1 unit)
@@ -35,6 +36,21 @@ function createBone(
     positionOffset: [0, 0, 0],
     size,
   };
+}
+
+/** Create an overlay bone that follows a parent bone with inflated size */
+function createOverlayBone(
+  index: BoneIndex,
+  name: string,
+  parentIndex: BoneIndex,
+  parentSize: Vec3,
+  scale = BONE_OVERLAY_SCALE,
+): Bone {
+  return createBone(index, name, parentIndex, [0, 0, 0], [0, 0, 0], [
+    parentSize[0] + scale * 2,
+    parentSize[1] + scale * 2,
+    parentSize[2] + scale * 2,
+  ]);
 }
 
 /** Create the player skeleton */
@@ -133,78 +149,37 @@ export function createPlayerSkeleton(variant: ModelVariant = "classic"): PlayerS
   );
 
   // Overlay layers (slightly larger, same pivot)
-  const overlayScale = 0.5; // Extra size for overlay
-
   bones.set(
     BoneIndex.HeadOverlay,
-    createBone(
-      BoneIndex.HeadOverlay,
-      "headOverlay",
-      BoneIndex.Head,
-      [0, 0, 0],
-      [0, 0, 0],
-      [8 + overlayScale * 2, 8 + overlayScale * 2, 8 + overlayScale * 2],
-    ),
+    createOverlayBone(BoneIndex.HeadOverlay, "headOverlay", BoneIndex.Head, [8, 8, 8]),
   );
-
   bones.set(
     BoneIndex.BodyOverlay,
-    createBone(
-      BoneIndex.BodyOverlay,
-      "bodyOverlay",
-      BoneIndex.Body,
-      [0, 0, 0],
-      [0, 0, 0],
-      [8 + overlayScale * 2, 12 + overlayScale * 2, 4 + overlayScale * 2],
-    ),
+    createOverlayBone(BoneIndex.BodyOverlay, "bodyOverlay", BoneIndex.Body, [8, 12, 4]),
   );
-
   bones.set(
     BoneIndex.RightArmOverlay,
-    createBone(
-      BoneIndex.RightArmOverlay,
-      "rightArmOverlay",
-      BoneIndex.RightArm,
-      [0, 0, 0],
-      [0, 0, 0],
-      [armWidth + overlayScale * 2, 12 + overlayScale * 2, 4 + overlayScale * 2],
-    ),
+    createOverlayBone(BoneIndex.RightArmOverlay, "rightArmOverlay", BoneIndex.RightArm, [
+      armWidth,
+      12,
+      4,
+    ]),
   );
-
   bones.set(
     BoneIndex.LeftArmOverlay,
-    createBone(
-      BoneIndex.LeftArmOverlay,
-      "leftArmOverlay",
-      BoneIndex.LeftArm,
-      [0, 0, 0],
-      [0, 0, 0],
-      [armWidth + overlayScale * 2, 12 + overlayScale * 2, 4 + overlayScale * 2],
-    ),
+    createOverlayBone(BoneIndex.LeftArmOverlay, "leftArmOverlay", BoneIndex.LeftArm, [
+      armWidth,
+      12,
+      4,
+    ]),
   );
-
   bones.set(
     BoneIndex.RightLegOverlay,
-    createBone(
-      BoneIndex.RightLegOverlay,
-      "rightLegOverlay",
-      BoneIndex.RightLeg,
-      [0, 0, 0],
-      [0, 0, 0],
-      [4 + overlayScale * 2, 12 + overlayScale * 2, 4 + overlayScale * 2],
-    ),
+    createOverlayBone(BoneIndex.RightLegOverlay, "rightLegOverlay", BoneIndex.RightLeg, [4, 12, 4]),
   );
-
   bones.set(
     BoneIndex.LeftLegOverlay,
-    createBone(
-      BoneIndex.LeftLegOverlay,
-      "leftLegOverlay",
-      BoneIndex.LeftLeg,
-      [0, 0, 0],
-      [0, 0, 0],
-      [4 + overlayScale * 2, 12 + overlayScale * 2, 4 + overlayScale * 2],
-    ),
+    createOverlayBone(BoneIndex.LeftLegOverlay, "leftLegOverlay", BoneIndex.LeftLeg, [4, 12, 4]),
   );
 
   // Cape (attached to body back)

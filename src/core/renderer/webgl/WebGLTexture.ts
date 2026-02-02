@@ -4,8 +4,7 @@
 
 import { TextureFilter, TextureWrap } from "../types";
 import type { ITexture, TextureOptions } from "../types";
-
-let nextTextureId = 0;
+import { textureId } from "../utils";
 
 export class WebGLTextureImpl implements ITexture {
   readonly id: number;
@@ -17,7 +16,7 @@ export class WebGLTextureImpl implements ITexture {
   private disposed = false;
 
   constructor(gl: WebGL2RenderingContext, source: TexImageSource, options: TextureOptions = {}) {
-    this.id = nextTextureId++;
+    this.id = textureId();
     this.gl = gl;
 
     // Get dimensions from source

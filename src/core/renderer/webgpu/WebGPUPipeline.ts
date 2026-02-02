@@ -4,8 +4,7 @@
 
 import { BlendMode, CullMode, DepthCompare, PrimitiveTopology, VertexFormat } from "../types";
 import type { IPipeline, PipelineConfig, VertexBufferLayout } from "../types";
-
-let nextPipelineId = 0;
+import { pipelineId } from "../utils";
 
 /** Convert VertexFormat to GPUVertexFormat */
 function convertVertexFormat(format: VertexFormat): GPUVertexFormat {
@@ -146,7 +145,7 @@ export class WebGPUPipeline implements IPipeline {
     format: GPUTextureFormat,
     uniformBindGroupLayout: GPUBindGroupLayout,
   ) {
-    this.id = nextPipelineId++;
+    this.id = pipelineId();
     this.vertexLayout = config.vertexLayout;
 
     // Create shader module from WGSL

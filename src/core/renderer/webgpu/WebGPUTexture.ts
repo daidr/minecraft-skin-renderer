@@ -4,8 +4,7 @@
 
 import { TextureFilter, TextureWrap } from "../types";
 import type { ITexture, TextureOptions } from "../types";
-
-let nextTextureId = 0;
+import { textureId } from "../utils";
 
 export class WebGPUTextureImpl implements ITexture {
   readonly id: number;
@@ -25,7 +24,7 @@ export class WebGPUTextureImpl implements ITexture {
     width: number,
     height: number,
   ) {
-    this.id = nextTextureId++;
+    this.id = textureId();
     this.device = device;
     this.texture = texture;
     this.textureView = texture.createView();

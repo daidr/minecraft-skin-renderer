@@ -6,59 +6,8 @@
  * has designated regions for both the inner layer and outer (overlay) layer.
  */
 
-import type { BoxUV, ModelVariant, SkinUVMap } from "../types";
-
-/**
- * Create BoxUV from top-left corner and dimensions
- * Minecraft UV layout follows: right, front, left, back (horizontal)
- * and top, bottom (vertical) arrangement
- */
-function createBoxUV(x: number, y: number, width: number, height: number, depth: number): BoxUV {
-  return {
-    // Right face (side): starts at x, spans depth wide
-    right: {
-      u1: x,
-      v1: y + depth,
-      u2: x + depth,
-      v2: y + depth + height,
-    },
-    // Front face: starts after right, spans width wide
-    front: {
-      u1: x + depth,
-      v1: y + depth,
-      u2: x + depth + width,
-      v2: y + depth + height,
-    },
-    // Left face: starts after front, spans depth wide
-    left: {
-      u1: x + depth + width,
-      v1: y + depth,
-      u2: x + depth + width + depth,
-      v2: y + depth + height,
-    },
-    // Back face: starts after left, spans width wide
-    back: {
-      u1: x + depth + width + depth,
-      v1: y + depth,
-      u2: x + depth + width + depth + width,
-      v2: y + depth + height,
-    },
-    // Top face: above front face
-    top: {
-      u1: x + depth,
-      v1: y,
-      u2: x + depth + width,
-      v2: y + depth,
-    },
-    // Bottom face: above back face area
-    bottom: {
-      u1: x + depth + width,
-      v1: y,
-      u2: x + depth + width + width,
-      v2: y + depth,
-    },
-  };
-}
+import type { ModelVariant, SkinUVMap } from "../types";
+import { createBoxUV } from "./common";
 
 /**
  * Get UV mapping for classic (4-pixel wide arms) model

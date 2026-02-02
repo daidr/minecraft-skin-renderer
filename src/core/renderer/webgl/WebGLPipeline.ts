@@ -4,8 +4,7 @@
 
 import { BlendMode, CullMode, DepthCompare, PrimitiveTopology, VertexFormat } from "../types";
 import type { IPipeline, PipelineConfig, UniformValue, VertexBufferLayout } from "../types";
-
-let nextPipelineId = 0;
+import { pipelineId } from "../utils";
 
 /** Format information for vertex attributes */
 interface FormatInfo {
@@ -49,7 +48,7 @@ export class WebGLPipeline implements IPipeline {
   readonly vertexLayout: VertexBufferLayout;
 
   constructor(gl: WebGL2RenderingContext, config: PipelineConfig) {
-    this.id = nextPipelineId++;
+    this.id = pipelineId();
     this.gl = gl;
 
     // Store pipeline state
