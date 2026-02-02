@@ -3,3 +3,5 @@
  */
 
 export * from "./types";
+export * from "./webgl";
+export * from "./webgpu";

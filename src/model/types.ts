@@ -130,7 +130,14 @@ export interface PartsVisibility {
 }
 
 /** All part names */
-export const PART_NAMES: PartName[] = ["head", "body", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+export const PART_NAMES: PartName[] = [
+  "head",
+  "body",
+  "leftArm",
+  "rightArm",
+  "leftLeg",
+  "rightLeg",
+];
 
 /** Create default visibility (all visible) */
 export function createDefaultVisibility(): PartsVisibility {

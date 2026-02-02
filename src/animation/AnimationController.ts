@@ -78,10 +78,12 @@ function interpolateKeyframes(
     const result: InterpolationResult = {};
 
     if (kf.rotation) {
-      result.rotation = amplitude !== 1.0 ? quatSlerp(quatIdentity(), kf.rotation, amplitude) : kf.rotation;
+      result.rotation =
+        amplitude !== 1.0 ? quatSlerp(quatIdentity(), kf.rotation, amplitude) : kf.rotation;
     }
     if (kf.position) {
-      result.position = amplitude !== 1.0 ? vec3Lerp(vec3Zero(), kf.position, amplitude) : kf.position;
+      result.position =
+        amplitude !== 1.0 ? vec3Lerp(vec3Zero(), kf.position, amplitude) : kf.position;
     }
 
     return result;
@@ -96,10 +98,16 @@ function interpolateKeyframes(
     const result: InterpolationResult = {};
 
     if (prevKeyframe.rotation) {
-      result.rotation = amplitude !== 1.0 ? quatSlerp(quatIdentity(), prevKeyframe.rotation, amplitude) : prevKeyframe.rotation;
+      result.rotation =
+        amplitude !== 1.0
+          ? quatSlerp(quatIdentity(), prevKeyframe.rotation, amplitude)
+          : prevKeyframe.rotation;
     }
     if (prevKeyframe.position) {
-      result.position = amplitude !== 1.0 ? vec3Lerp(vec3Zero(), prevKeyframe.position, amplitude) : prevKeyframe.position;
+      result.position =
+        amplitude !== 1.0
+          ? vec3Lerp(vec3Zero(), prevKeyframe.position, amplitude)
+          : prevKeyframe.position;
     }
 
     return result;
@@ -109,9 +117,7 @@ function interpolateKeyframes(
 
   // Calculate local interpolation factor
   const segmentDuration = nextKeyframe.time - prevKeyframe.time;
-  const localT = segmentDuration > 0
-    ? (normalizedTime - prevKeyframe.time) / segmentDuration
-    : 0;
+  const localT = segmentDuration > 0 ? (normalizedTime - prevKeyframe.time) / segmentDuration : 0;
 
   // Apply easing
   const easing = nextKeyframe.easing ?? linear;

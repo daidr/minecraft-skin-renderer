@@ -76,7 +76,11 @@ function createWalkAnimation(): Animation {
         keyframes: [
           { time: 0, rotation: quatFromEuler(degToRad(22), degToRad(2), 0) },
           { time: 0.25, rotation: quatFromEuler(degToRad(18), 0, 0), easing: easeInOutSine },
-          { time: 0.5, rotation: quatFromEuler(degToRad(22), degToRad(-2), 0), easing: easeInOutSine },
+          {
+            time: 0.5,
+            rotation: quatFromEuler(degToRad(22), degToRad(-2), 0),
+            easing: easeInOutSine,
+          },
           { time: 0.75, rotation: quatFromEuler(degToRad(18), 0, 0), easing: easeInOutSine },
           { time: 1, rotation: quatFromEuler(degToRad(22), degToRad(2), 0), easing: easeInOutSine },
         ],
@@ -87,16 +91,28 @@ function createWalkAnimation(): Animation {
         keyframes: [
           {
             time: 0,
-            rotation: quatFromEuler(degToRad(wingClosedX), degToRad(wingClosedY), degToRad(wingClosedZ)),
+            rotation: quatFromEuler(
+              degToRad(wingClosedX),
+              degToRad(wingClosedY),
+              degToRad(wingClosedZ),
+            ),
           },
           {
             time: 0.5,
-            rotation: quatFromEuler(degToRad(wingClosedX + 3), degToRad(wingClosedY + 1), degToRad(wingClosedZ + 2)),
+            rotation: quatFromEuler(
+              degToRad(wingClosedX + 3),
+              degToRad(wingClosedY + 1),
+              degToRad(wingClosedZ + 2),
+            ),
             easing: easeInOutSine,
           },
           {
             time: 1,
-            rotation: quatFromEuler(degToRad(wingClosedX), degToRad(wingClosedY), degToRad(wingClosedZ)),
+            rotation: quatFromEuler(
+              degToRad(wingClosedX),
+              degToRad(wingClosedY),
+              degToRad(wingClosedZ),
+            ),
             easing: easeInOutSine,
           },
         ],
@@ -106,16 +122,28 @@ function createWalkAnimation(): Animation {
         keyframes: [
           {
             time: 0,
-            rotation: quatFromEuler(degToRad(wingClosedX), degToRad(-wingClosedY), degToRad(-wingClosedZ)),
+            rotation: quatFromEuler(
+              degToRad(wingClosedX),
+              degToRad(-wingClosedY),
+              degToRad(-wingClosedZ),
+            ),
           },
           {
             time: 0.5,
-            rotation: quatFromEuler(degToRad(wingClosedX + 3), degToRad(-wingClosedY - 1), degToRad(-wingClosedZ - 2)),
+            rotation: quatFromEuler(
+              degToRad(wingClosedX + 3),
+              degToRad(-wingClosedY - 1),
+              degToRad(-wingClosedZ - 2),
+            ),
             easing: easeInOutSine,
           },
           {
             time: 1,
-            rotation: quatFromEuler(degToRad(wingClosedX), degToRad(-wingClosedY), degToRad(-wingClosedZ)),
+            rotation: quatFromEuler(
+              degToRad(wingClosedX),
+              degToRad(-wingClosedY),
+              degToRad(-wingClosedZ),
+            ),
             easing: easeInOutSine,
           },
         ],

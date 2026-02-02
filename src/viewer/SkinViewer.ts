@@ -22,12 +22,23 @@ import {
   CullMode,
   DepthCompare,
   VertexFormat,
+  isWebGPUSupported,
 } from "../core/renderer/types";
 import type { BackendType, IBuffer, IPipeline, IRenderer, ITexture } from "../core/renderer/types";
-import { createWebGLRenderer } from "../core/renderer/webgl";
-import { SKIN_FRAGMENT_SHADER, SKIN_VERTEX_SHADER } from "../core/renderer/webgl/shaders";
+import {
+  createWebGLRenderer,
+  SKIN_FRAGMENT_SHADER,
+  SKIN_VERTEX_SHADER,
+} from "../core/renderer/webgl";
+import { createWebGPURenderer, SKIN_SHADER_WGSL } from "../core/renderer/webgpu";
 import { BoneIndex, PART_NAMES, VERTEX_STRIDE, createDefaultVisibility } from "../model/types";
-import type { BoxGeometry, ModelVariant, PlayerSkeleton, PartName, PartsVisibility } from "../model/types";
+import type {
+  BoxGeometry,
+  ModelVariant,
+  PlayerSkeleton,
+  PartName,
+  PartsVisibility,
+} from "../model/types";
 import { createPlayerSkeleton, resetSkeleton } from "../model/PlayerModel";
 import {
   createBoxGeometry,
@@ -137,7 +148,6 @@ interface PartGeometry {
   outer: BoxGeometry;
 }
 
-
 /** GPU buffers for a single part */
 interface PartBuffers {
   innerVertexBuffer: IBuffer;
@@ -147,7 +157,6 @@ interface PartBuffers {
   innerIndexCount: number;
   outerIndexCount: number;
 }
-
 
 /** Internal SkinViewer state */
 interface SkinViewerState {
@@ -213,23 +222,63 @@ function createAllPartGeometries(variant: ModelVariant): Record<PartName, PartGe
     },
     body: {
       inner: createBoxGeometry([8, 12, 4], uvMap.body.inner, BoneIndex.Body, [0, -6, 0]),
-      outer: createBoxGeometry([8, 12, 4], uvMap.body.outer, BoneIndex.BodyOverlay, [0, -6, 0], 0.25),
+      outer: createBoxGeometry(
+        [8, 12, 4],
+        uvMap.body.outer,
+        BoneIndex.BodyOverlay,
+        [0, -6, 0],
+        0.25,
+      ),
     },
     rightArm: {
-      inner: createBoxGeometry([armWidth, 12, 4], uvMap.rightArm.inner, BoneIndex.RightArm, [0, -6, 0]),
-      outer: createBoxGeometry([armWidth, 12, 4], uvMap.rightArm.outer, BoneIndex.RightArmOverlay, [0, -6, 0], 0.25),
+      inner: createBoxGeometry(
+        [armWidth, 12, 4],
+        uvMap.rightArm.inner,
+        BoneIndex.RightArm,
+        [0, -6, 0],
+      ),
+      outer: createBoxGeometry(
+        [armWidth, 12, 4],
+        uvMap.rightArm.outer,
+        BoneIndex.RightArmOverlay,
+        [0, -6, 0],
+        0.25,
+      ),
     },
     leftArm: {
-      inner: createBoxGeometry([armWidth, 12, 4], uvMap.leftArm.inner, BoneIndex.LeftArm, [0, -6, 0]),
-      outer: createBoxGeometry([armWidth, 12, 4], uvMap.leftArm.outer, BoneIndex.LeftArmOverlay, [0, -6, 0], 0.25),
+      inner: createBoxGeometry(
+        [armWidth, 12, 4],
+        uvMap.leftArm.inner,
+        BoneIndex.LeftArm,
+        [0, -6, 0],
+      ),
+      outer: createBoxGeometry(
+        [armWidth, 12, 4],
+        uvMap.leftArm.outer,
+        BoneIndex.LeftArmOverlay,
+        [0, -6, 0],
+        0.25,
+      ),
     },
     rightLeg: {
       inner: createBoxGeometry([4, 12, 4], uvMap.rightLeg.inner, BoneIndex.RightLeg, [0, -6, 0]),
-      outer: createBoxGeometry([4, 12, 4], uvMap.rightLeg.outer, BoneIndex.RightLegOverlay, [0, -6, 0], 0.25),
+      outer: createBoxGeometry(
+        [4, 12, 4],
+        uvMap.rightLeg.outer,
+        BoneIndex.RightLegOverlay,
+        [0, -6, 0],
+        0.25,
+      ),
     },
     leftLeg: {
       inner: createBoxGeometry([4, 12, 4], uvMap.leftLeg.inner, BoneIndex.LeftLeg, [0, -6, 0]),
-      outer: createBoxGeometry([4, 12, 4], uvMap.leftLeg.outer, BoneIndex.LeftLegOverlay, [0, -6, 0], 0.25),
+      outer: createBoxGeometry(
+        [4, 12, 4],
+        uvMap.leftLeg.outer,
+        BoneIndex.LeftLegOverlay,
+        [0, -6, 0],
+        0.25,
+      ),
     },
   };
 }
@@ -251,7 +300,10 @@ function createPartBuffers(renderer: IRenderer, geometry: PartGeometry): PartBuf
 /**
  * Create GPU buffers for all parts
  */
-function createAllPartBuffers(renderer: IRenderer, geometries: Record<PartName, PartGeometry>): Record<PartName, PartBuffers> {
+function createAllPartBuffers(
+  renderer: IRenderer,
+  geometries: Record<PartName, PartGeometry>,
+): Record<PartName, PartBuffers> {
   const result = {} as Record<PartName, PartBuffers>;
   for (const part of PART_NAMES) {
     result[part] = createPartBuffers(renderer, geometries[part]);
@@ -419,13 +471,35 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
   const height = canvas.clientHeight || canvas.height;
   const variant: ModelVariant = options.slim ? "slim" : "classic";
 
-  // Create renderer
-  const renderer = createWebGLRenderer({
-    canvas,
-    antialias: options.antialias ?? true,
-    pixelRatio: options.pixelRatio,
-    preserveDrawingBuffer: true,
-  });
+  // Determine and create renderer based on preferred backend
+  const preferredBackend = options.preferredBackend ?? "auto";
+  let renderer: IRenderer;
+
+  if (preferredBackend === "webgpu" || (preferredBackend === "auto" && isWebGPUSupported())) {
+    try {
+      renderer = await createWebGPURenderer({
+        canvas,
+        antialias: options.antialias ?? true,
+        pixelRatio: options.pixelRatio,
+        preserveDrawingBuffer: true,
+      });
+    } catch (e) {
+      console.warn("WebGPU initialization failed, falling back to WebGL:", e);
+      renderer = createWebGLRenderer({
+        canvas,
+        antialias: options.antialias ?? true,
+        pixelRatio: options.pixelRatio,
+        preserveDrawingBuffer: true,
+      });
+    }
+  } else {
+    renderer = createWebGLRenderer({
+      canvas,
+      antialias: options.antialias ?? true,
+      pixelRatio: options.pixelRatio,
+      preserveDrawingBuffer: true,
+    });
+  }
 
   renderer.resize(width, height);
 
@@ -468,10 +542,15 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     ],
   };
 
+  // Select shaders based on backend
+  const isWebGPU = renderer.backend === "webgpu";
+  const vertexShader = isWebGPU ? SKIN_SHADER_WGSL : SKIN_VERTEX_SHADER;
+  const fragmentShader = isWebGPU ? SKIN_SHADER_WGSL : SKIN_FRAGMENT_SHADER;
+
   // Create pipeline for inner parts (with backface culling)
   const skinPipeline = renderer.createPipeline({
-    vertexShader: SKIN_VERTEX_SHADER,
-    fragmentShader: SKIN_FRAGMENT_SHADER,
+    vertexShader,
+    fragmentShader,
     vertexLayout,
     cullMode: CullMode.Back,
     blendMode: BlendMode.Alpha,
@@ -481,8 +560,8 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
   // Create pipeline for overlay parts (double-sided, no culling)
   const overlayPipeline = renderer.createPipeline({
-    vertexShader: SKIN_VERTEX_SHADER,
-    fragmentShader: SKIN_FRAGMENT_SHADER,
+    vertexShader,
+    fragmentShader,
     vertexLayout,
     cullMode: CullMode.None,
     blendMode: BlendMode.Alpha,
@@ -505,8 +584,8 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
   // Create pipeline for cape/elytra (double-sided, no culling)
   const capePipeline = renderer.createPipeline({
-    vertexShader: SKIN_VERTEX_SHADER,
-    fragmentShader: SKIN_FRAGMENT_SHADER,
+    vertexShader,
+    fragmentShader,
     vertexLayout,
     cullMode: CullMode.None,
     blendMode: BlendMode.Alpha,

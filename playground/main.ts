@@ -3,7 +3,7 @@
  */
 
 import { createSkinViewer, PART_NAMES } from "../src";
-import type { BackEquipment, SkinViewer, PartName } from "../src";
+import type { BackendType, BackEquipment, SkinViewer, PartName } from "../src";
 
 // Default texture paths
 const DEFAULT_SKIN_URL = "./default.png";
@@ -15,7 +15,8 @@ let frameCount = 0;
 let fps = 0;
 
 // DOM Elements
-const canvas = document.getElementById("skinCanvas") as HTMLCanvasElement;
+let canvas = document.getElementById("skinCanvas") as HTMLCanvasElement;
+const backendSelect = document.getElementById("backendSelect") as HTMLSelectElement;
 const backendBadge = document.getElementById("backendBadge") as HTMLElement;
 const fpsCounter = document.getElementById("fpsCounter") as HTMLElement;
 
@@ -63,12 +64,39 @@ async function init() {
   resizeCanvas();
   window.addEventListener("resize", resizeCanvas);
 
-  // Create viewer
+  // Create viewer with selected backend
+  await createViewerWithBackend();
+
+  // Setup event listeners
+  setupEventListeners();
+}
+
+/**
+ * Create viewer with specified backend
+ */
+async function createViewerWithBackend() {
+  // Dispose existing viewer if any
+  if (viewer) {
+    viewer.dispose();
+    viewer = null;
+  }
+
+  const preferredBackend = backendSelect.value as BackendType | "auto";
+
+  // Canvas can only have one context type, so we need to create a new canvas when switching backends
+  const oldCanvas = canvas;
+  const newCanvas = document.createElement("canvas");
+  newCanvas.id = "skinCanvas";
+  oldCanvas.replaceWith(newCanvas);
+  canvas = newCanvas;
+  resizeCanvas();
+
   try {
     viewer = await createSkinViewer({
       canvas,
       skin: DEFAULT_SKIN_URL,
       cape: DEFAULT_CAPE_URL,
+      preferredBackend,
       antialias: true,
       enableRotate: true,
       enableZoom: true,
@@ -76,6 +104,7 @@ async function init() {
 
     // Update backend badge
     backendBadge.textContent = viewer.backend.toUpperCase();
+    backendBadge.className = `backend-badge ${viewer.backend}`;
 
     // Sync back equipment select with viewer state
     backEquipmentSelect.value = viewer.backEquipment;
@@ -83,20 +112,21 @@ async function init() {
     // Start render loop
     viewer.startRenderLoop();
 
-    // Start FPS counter
-    startFPSCounter();
+    // Start FPS counter (only once)
+    if (fps === 0) {
+      startFPSCounter();
+    }
 
     // Play default animation
     playAnimation();
 
-    console.log("Minecraft Skin Renderer initialized");
+    console.log(`Minecraft Skin Renderer initialized with ${viewer.backend.toUpperCase()} backend`);
   } catch (error) {
     console.error("Failed to initialize viewer:", error);
-    alert("Failed to initialize the skin viewer. Please make sure your browser supports WebGL.");
+    alert(
+      "Failed to initialize the skin viewer. Please make sure your browser supports WebGL or WebGPU.",
+    );
   }
-
-  // Setup event listeners
-  setupEventListeners();
 }
 
 /**
@@ -158,6 +188,11 @@ function playAnimation() {
  * Setup event listeners
  */
 function setupEventListeners() {
+  // Backend select - recreate viewer with new backend
+  backendSelect.addEventListener("change", async () => {
+    await createViewerWithBackend();
+  });
+
   // Load skin from URL
   loadSkinBtn.addEventListener("click", async () => {
     const url = skinUrlInput.value.trim();

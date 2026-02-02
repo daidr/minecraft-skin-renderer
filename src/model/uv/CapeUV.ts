@@ -24,7 +24,13 @@ export const CAPE_TEXTURE_HEIGHT = 32;
  * Since cape geometry's -Z face should show the outer side (facing away from player),
  * we swap front/back so the geometry's back face uses the texture's "front" UV.
  */
-function createCapeBoxUV(x: number, y: number, width: number, height: number, depth: number): BoxUV {
+function createCapeBoxUV(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  depth: number,
+): BoxUV {
   return {
     // Right face (side): starts at x, spans depth wide
     right: {
