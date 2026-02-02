@@ -2,6 +2,7 @@
  * Playground main entry point
  */
 
+import Stats from "stats.js";
 import { use, createSkinViewer, PART_NAMES } from "../src";
 import type { BackendType, BackEquipment, SkinViewer, PartName } from "../src";
 import { WebGLRendererPlugin } from "../src/webgl";
@@ -32,9 +33,13 @@ interface PlaygroundSettings {
 }
 
 let viewer: SkinViewer | null = null;
-let lastFrameTime = performance.now();
-let frameCount = 0;
-let fps = 0;
+
+// Stats.js for FPS monitoring
+const stats = new Stats();
+stats.showPanel(0); // 0: fps, 1: ms, 2: mb
+stats.dom.style.position = "absolute";
+stats.dom.style.top = "8px";
+stats.dom.style.left = "8px";
 
 // Current texture sources (for preserving across backend switches)
 // Can be URL string, File, or Blob
@@ -46,7 +51,6 @@ let currentCapeSource: TextureSource = DEFAULT_CAPE_URL;
 let canvas = document.getElementById("skinCanvas") as HTMLCanvasElement;
 const backendSelect = document.getElementById("backendSelect") as HTMLSelectElement;
 const backendBadge = document.getElementById("backendBadge") as HTMLElement;
-const fpsCounter = document.getElementById("fpsCounter") as HTMLElement;
 
 // Skin controls
 const skinUrlInput = document.getElementById("skinUrl") as HTMLInputElement;
@@ -230,6 +234,9 @@ async function init() {
 
   // Setup event listeners
   setupEventListeners();
+
+  // Start stats monitoring
+  startStatsMonitoring();
 }
 
 /**
@@ -276,11 +283,6 @@ async function createViewerWithBackend() {
     // Start render loop
     viewer.startRenderLoop();
 
-    // Start FPS counter (only once)
-    if (fps === 0) {
-      startFPSCounter();
-    }
-
     // Play animation from settings
     playAnimation();
 
@@ -310,24 +312,23 @@ function resizeCanvas() {
 }
 
 /**
- * Start FPS counter
+ * Start stats.js monitoring
  */
-function startFPSCounter() {
-  const updateFPS = () => {
-    const now = performance.now();
-    frameCount++;
+function startStatsMonitoring() {
+  // Add stats to canvas container
+  const canvasContainer = canvas.parentElement;
+  if (canvasContainer) {
+    canvasContainer.style.position = "relative";
+    canvasContainer.appendChild(stats.dom);
+  }
 
-    if (now - lastFrameTime >= 1000) {
-      fps = frameCount;
-      frameCount = 0;
-      lastFrameTime = now;
-      fpsCounter.textContent = `FPS: ${fps}`;
-    }
-
-    requestAnimationFrame(updateFPS);
+  const animate = () => {
+    stats.begin();
+    stats.end();
+    requestAnimationFrame(animate);
   };
 
-  updateFPS();
+  animate();
 }
 
 /**
