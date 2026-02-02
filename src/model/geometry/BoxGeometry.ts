@@ -127,16 +127,37 @@ function createBoxGeometryCore(
   };
 
   // Convert UV from pixel coordinates to 0-1 range
+  // Applies UV_INSET towards the center to prevent edge bleeding
   const normalizeUV = (faceUV: {
     u1: number;
     v1: number;
     u2: number;
     v2: number;
   }): [number, number, number, number] => {
-    const u1 = faceUV.u1 / textureWidth + UV_INSET;
-    const v1 = faceUV.v1 / textureHeight + UV_INSET;
-    const u2 = faceUV.u2 / textureWidth - UV_INSET;
-    const v2 = faceUV.v2 / textureHeight - UV_INSET;
+    let u1 = faceUV.u1 / textureWidth;
+    let u2 = faceUV.u2 / textureWidth;
+    let v1 = faceUV.v1 / textureHeight;
+    let v2 = faceUV.v2 / textureHeight;
+
+    // Inset towards the center of the UV region
+    // When u1 < u2 (normal), shrink inward: u1 increases, u2 decreases
+    // When u1 > u2 (flipped), shrink inward: u1 decreases, u2 increases
+    if (u1 < u2) {
+      u1 += UV_INSET;
+      u2 -= UV_INSET;
+    } else {
+      u1 -= UV_INSET;
+      u2 += UV_INSET;
+    }
+
+    if (v1 < v2) {
+      v1 += UV_INSET;
+      v2 -= UV_INSET;
+    } else {
+      v1 -= UV_INSET;
+      v2 += UV_INSET;
+    }
+
     return [u1, v1, u2, v2];
   };
 
