@@ -98,60 +98,71 @@ export function createBoxGeometry(
   };
 
   // Convert UV from pixel coordinates to 0-1 range
+  // Add small inset to avoid sampling neighboring pixels at edges
+  const UV_INSET = 0.001; // Small inset to prevent edge bleeding
   const normalizeUV = (faceUV: {
     u1: number;
     v1: number;
     u2: number;
     v2: number;
   }): [number, number, number, number] => {
-    return [faceUV.u1 / 64, faceUV.v1 / 64, faceUV.u2 / 64, faceUV.v2 / 64];
+    const u1 = faceUV.u1 / 64 + UV_INSET;
+    const v1 = faceUV.v1 / 64 + UV_INSET;
+    const u2 = faceUV.u2 / 64 - UV_INSET;
+    const v2 = faceUV.v2 / 64 - UV_INSET;
+    return [u1, v1, u2, v2];
   };
 
-  // Front face (+Z)
+  // Front face (+Z) - viewed from outside (+Z looking at -Z)
+  // Left of viewer = -X = u1, Right of viewer = +X = u2
   {
     const [u1, v1, u2, v2] = normalizeUV(uv.front);
     const [nx, ny, nz] = FACE_NORMALS[Face.Front];
-    addVertex(ox - hw, oy - hh, oz + hd, u2, v2, nx, ny, nz); // bottom-left
-    addVertex(ox + hw, oy - hh, oz + hd, u1, v2, nx, ny, nz); // bottom-right
-    addVertex(ox + hw, oy + hh, oz + hd, u1, v1, nx, ny, nz); // top-right
-    addVertex(ox - hw, oy + hh, oz + hd, u2, v1, nx, ny, nz); // top-left
+    addVertex(ox - hw, oy - hh, oz + hd, u1, v2, nx, ny, nz); // bottom-left
+    addVertex(ox + hw, oy - hh, oz + hd, u2, v2, nx, ny, nz); // bottom-right
+    addVertex(ox + hw, oy + hh, oz + hd, u2, v1, nx, ny, nz); // top-right
+    addVertex(ox - hw, oy + hh, oz + hd, u1, v1, nx, ny, nz); // top-left
     addFaceIndices();
   }
 
-  // Back face (-Z)
+  // Back face (-Z) - viewed from outside (-Z looking at +Z)
+  // Left of viewer = +X = u1, Right of viewer = -X = u2
   {
     const [u1, v1, u2, v2] = normalizeUV(uv.back);
     const [nx, ny, nz] = FACE_NORMALS[Face.Back];
-    addVertex(ox + hw, oy - hh, oz - hd, u2, v2, nx, ny, nz); // bottom-left
-    addVertex(ox - hw, oy - hh, oz - hd, u1, v2, nx, ny, nz); // bottom-right
-    addVertex(ox - hw, oy + hh, oz - hd, u1, v1, nx, ny, nz); // top-right
-    addVertex(ox + hw, oy + hh, oz - hd, u2, v1, nx, ny, nz); // top-left
+    addVertex(ox + hw, oy - hh, oz - hd, u1, v2, nx, ny, nz); // bottom-left
+    addVertex(ox - hw, oy - hh, oz - hd, u2, v2, nx, ny, nz); // bottom-right
+    addVertex(ox - hw, oy + hh, oz - hd, u2, v1, nx, ny, nz); // top-right
+    addVertex(ox + hw, oy + hh, oz - hd, u1, v1, nx, ny, nz); // top-left
     addFaceIndices();
   }
 
-  // Left face (-X)
-  {
-    const [u1, v1, u2, v2] = normalizeUV(uv.left);
-    const [nx, ny, nz] = FACE_NORMALS[Face.Left];
-    addVertex(ox - hw, oy - hh, oz - hd, u2, v2, nx, ny, nz); // bottom-left
-    addVertex(ox - hw, oy - hh, oz + hd, u1, v2, nx, ny, nz); // bottom-right
-    addVertex(ox - hw, oy + hh, oz + hd, u1, v1, nx, ny, nz); // top-right
-    addVertex(ox - hw, oy + hh, oz - hd, u2, v1, nx, ny, nz); // top-left
-    addFaceIndices();
-  }
-
-  // Right face (+X)
+  // Left face (-X) - this is the CHARACTER's RIGHT side (character faces -Z)
+  // Use uv.right for character's right side
   {
     const [u1, v1, u2, v2] = normalizeUV(uv.right);
-    const [nx, ny, nz] = FACE_NORMALS[Face.Right];
-    addVertex(ox + hw, oy - hh, oz + hd, u2, v2, nx, ny, nz); // bottom-left
-    addVertex(ox + hw, oy - hh, oz - hd, u1, v2, nx, ny, nz); // bottom-right
-    addVertex(ox + hw, oy + hh, oz - hd, u1, v1, nx, ny, nz); // top-right
-    addVertex(ox + hw, oy + hh, oz + hd, u2, v1, nx, ny, nz); // top-left
+    const [nx, ny, nz] = FACE_NORMALS[Face.Left];
+    addVertex(ox - hw, oy - hh, oz - hd, u1, v2, nx, ny, nz); // bottom-left
+    addVertex(ox - hw, oy - hh, oz + hd, u2, v2, nx, ny, nz); // bottom-right
+    addVertex(ox - hw, oy + hh, oz + hd, u2, v1, nx, ny, nz); // top-right
+    addVertex(ox - hw, oy + hh, oz - hd, u1, v1, nx, ny, nz); // top-left
     addFaceIndices();
   }
 
-  // Top face (+Y)
+  // Right face (+X) - this is the CHARACTER's LEFT side (character faces -Z)
+  // Use uv.left for character's left side
+  {
+    const [u1, v1, u2, v2] = normalizeUV(uv.left);
+    const [nx, ny, nz] = FACE_NORMALS[Face.Right];
+    addVertex(ox + hw, oy - hh, oz + hd, u1, v2, nx, ny, nz); // bottom-left
+    addVertex(ox + hw, oy - hh, oz - hd, u2, v2, nx, ny, nz); // bottom-right
+    addVertex(ox + hw, oy + hh, oz - hd, u2, v1, nx, ny, nz); // top-right
+    addVertex(ox + hw, oy + hh, oz + hd, u1, v1, nx, ny, nz); // top-left
+    addFaceIndices();
+  }
+
+  // Top face (+Y) - viewed from above (+Y looking at -Y)
+  // In Minecraft, top face: u increases to right (+X), v increases to back (-Z)
   {
     const [u1, v1, u2, v2] = normalizeUV(uv.top);
     const [nx, ny, nz] = FACE_NORMALS[Face.Top];
@@ -162,7 +173,8 @@ export function createBoxGeometry(
     addFaceIndices();
   }
 
-  // Bottom face (-Y)
+  // Bottom face (-Y) - viewed from below (-Y looking at +Y)
+  // In Minecraft, bottom face: u increases to right (+X), v increases to front (+Z)
   {
     const [u1, v1, u2, v2] = normalizeUV(uv.bottom);
     const [nx, ny, nz] = FACE_NORMALS[Face.Bottom];
@@ -302,21 +314,22 @@ export function createCapeBoxGeometry(
   };
 
   // Convert UV from pixel coordinates to 0-1 range (64x32 texture)
+  // Add small inset to avoid sampling neighboring pixels at edges
+  const UV_INSET = 0.001;
   const normalizeUV = (faceUV: {
     u1: number;
     v1: number;
     u2: number;
     v2: number;
   }): [number, number, number, number] => {
-    return [
-      faceUV.u1 / CAPE_TEXTURE_WIDTH,
-      faceUV.v1 / CAPE_TEXTURE_HEIGHT,
-      faceUV.u2 / CAPE_TEXTURE_WIDTH,
-      faceUV.v2 / CAPE_TEXTURE_HEIGHT,
-    ];
+    const u1 = faceUV.u1 / CAPE_TEXTURE_WIDTH + UV_INSET;
+    const v1 = faceUV.v1 / CAPE_TEXTURE_HEIGHT + UV_INSET;
+    const u2 = faceUV.u2 / CAPE_TEXTURE_WIDTH - UV_INSET;
+    const v2 = faceUV.v2 / CAPE_TEXTURE_HEIGHT - UV_INSET;
+    return [u1, v1, u2, v2];
   };
 
-  // Front face (+Z)
+  // Front face (+Z) - original UV mapping for cape/elytra
   {
     const [u1, v1, u2, v2] = normalizeUV(uv.front);
     const [nx, ny, nz] = FACE_NORMALS[Face.Front];
@@ -327,7 +340,7 @@ export function createCapeBoxGeometry(
     addFaceIndices();
   }
 
-  // Back face (-Z)
+  // Back face (-Z) - original UV mapping for cape/elytra
   {
     const [u1, v1, u2, v2] = normalizeUV(uv.back);
     const [nx, ny, nz] = FACE_NORMALS[Face.Back];
@@ -338,7 +351,7 @@ export function createCapeBoxGeometry(
     addFaceIndices();
   }
 
-  // Left face (-X)
+  // Left face (-X) - original UV mapping for cape/elytra
   {
     const [u1, v1, u2, v2] = normalizeUV(uv.left);
     const [nx, ny, nz] = FACE_NORMALS[Face.Left];
@@ -349,7 +362,7 @@ export function createCapeBoxGeometry(
     addFaceIndices();
   }
 
-  // Right face (+X)
+  // Right face (+X) - original UV mapping for cape/elytra
   {
     const [u1, v1, u2, v2] = normalizeUV(uv.right);
     const [nx, ny, nz] = FACE_NORMALS[Face.Right];

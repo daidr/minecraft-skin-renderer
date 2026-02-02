@@ -37,7 +37,7 @@ export class WebGLRenderer implements IRenderer {
       alpha: true,
       depth: true,
       stencil: false,
-      premultipliedAlpha: true,
+      premultipliedAlpha: false,
       preserveDrawingBuffer: options.preserveDrawingBuffer ?? false,
       powerPreference: "high-performance",
     };

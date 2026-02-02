@@ -2,11 +2,11 @@
  * Playground main entry point
  */
 
-import { createSkinViewer } from "../src";
-import type { BackEquipment, SkinViewer } from "../src";
+import { createSkinViewer, PART_NAMES } from "../src";
+import type { BackEquipment, SkinViewer, PartName } from "../src";
 
 // Default texture paths
-const DEFAULT_SKIN_URL = "./skin.png";
+const DEFAULT_SKIN_URL = "./default.png";
 const DEFAULT_CAPE_URL = "./cape.png";
 
 let viewer: SkinViewer | null = null;
@@ -50,6 +50,10 @@ const resetCameraBtn = document.getElementById("resetCameraBtn") as HTMLButtonEl
 
 // Export controls
 const screenshotBtn = document.getElementById("screenshotBtn") as HTMLButtonElement;
+
+// Parts visibility controls
+const showAllPartsBtn = document.getElementById("showAllParts") as HTMLButtonElement;
+const hideAllOuterBtn = document.getElementById("hideAllOuter") as HTMLButtonElement;
 
 /**
  * Initialize the viewer
@@ -300,6 +304,44 @@ function setupEventListeners() {
     const zoom = viewer.getZoom();
     zoomSlider.value = String(Math.round(zoom));
     zoomValue.textContent = String(Math.round(zoom));
+  });
+
+  // Parts visibility controls
+  for (const part of PART_NAMES) {
+    const innerCheckbox = document.getElementById(`${part}-inner`) as HTMLInputElement;
+    const outerCheckbox = document.getElementById(`${part}-outer`) as HTMLInputElement;
+
+    innerCheckbox?.addEventListener("change", () => {
+      if (!viewer) return;
+      viewer.setPartVisibility(part as PartName, "inner", innerCheckbox.checked);
+    });
+
+    outerCheckbox?.addEventListener("change", () => {
+      if (!viewer) return;
+      viewer.setPartVisibility(part as PartName, "outer", outerCheckbox.checked);
+    });
+  }
+
+  // Show all parts button
+  showAllPartsBtn.addEventListener("click", () => {
+    if (!viewer) return;
+    for (const part of PART_NAMES) {
+      viewer.setPartVisibility(part as PartName, "both", true);
+      const innerCheckbox = document.getElementById(`${part}-inner`) as HTMLInputElement;
+      const outerCheckbox = document.getElementById(`${part}-outer`) as HTMLInputElement;
+      if (innerCheckbox) innerCheckbox.checked = true;
+      if (outerCheckbox) outerCheckbox.checked = true;
+    }
+  });
+
+  // Hide all outer layers button
+  hideAllOuterBtn.addEventListener("click", () => {
+    if (!viewer) return;
+    for (const part of PART_NAMES) {
+      viewer.setPartVisibility(part as PartName, "outer", false);
+      const outerCheckbox = document.getElementById(`${part}-outer`) as HTMLInputElement;
+      if (outerCheckbox) outerCheckbox.checked = false;
+    }
   });
 }
 

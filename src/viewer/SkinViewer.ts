@@ -26,8 +26,8 @@ import {
 import type { BackendType, IBuffer, IPipeline, IRenderer, ITexture } from "../core/renderer/types";
 import { createWebGLRenderer } from "../core/renderer/webgl";
 import { SKIN_FRAGMENT_SHADER, SKIN_VERTEX_SHADER } from "../core/renderer/webgl/shaders";
-import { BoneIndex, VERTEX_STRIDE } from "../model/types";
-import type { BoxGeometry, ModelVariant, PlayerSkeleton } from "../model/types";
+import { BoneIndex, PART_NAMES, VERTEX_STRIDE, createDefaultVisibility } from "../model/types";
+import type { BoxGeometry, ModelVariant, PlayerSkeleton, PartName, PartsVisibility } from "../model/types";
 import { createPlayerSkeleton, resetSkeleton } from "../model/PlayerModel";
 import {
   createBoxGeometry,
@@ -87,6 +87,24 @@ export interface SkinViewer {
   /** Get the current back equipment setting */
   readonly backEquipment: BackEquipment;
 
+  /**
+   * Get the current parts visibility settings
+   */
+  getPartsVisibility(): PartsVisibility;
+
+  /**
+   * Set visibility for all parts at once
+   */
+  setPartsVisibility(visibility: PartsVisibility): void;
+
+  /**
+   * Set visibility for a specific part
+   * @param part - The part name (head, body, leftArm, rightArm, leftLeg, rightLeg)
+   * @param layer - The layer to modify ('inner', 'outer', or 'both')
+   * @param visible - Whether the layer should be visible
+   */
+  setPartVisibility(part: PartName, layer: "inner" | "outer" | "both", visible: boolean): void;
+
   playAnimation(name: string, config?: AnimationConfig): void;
   pauseAnimation(): void;
   resumeAnimation(): void;
@@ -113,11 +131,23 @@ export interface SkinViewer {
   dispose(): void;
 }
 
-/** Separated geometry for inner and overlay parts */
-interface SeparatedGeometry {
+/** Geometry for a single part with inner and outer layers */
+interface PartGeometry {
   inner: BoxGeometry;
-  overlay: BoxGeometry;
+  outer: BoxGeometry;
 }
+
+
+/** GPU buffers for a single part */
+interface PartBuffers {
+  innerVertexBuffer: IBuffer;
+  innerIndexBuffer: IBuffer;
+  outerVertexBuffer: IBuffer;
+  outerIndexBuffer: IBuffer;
+  innerIndexCount: number;
+  outerIndexCount: number;
+}
+
 
 /** Internal SkinViewer state */
 interface SkinViewerState {
@@ -130,23 +160,20 @@ interface SkinViewerState {
   skeleton: PlayerSkeleton;
   variant: ModelVariant;
 
-  // GPU resources - inner parts (with backface culling)
-  skinPipeline: IPipeline;
-  skinVertexBuffer: IBuffer;
-  skinIndexBuffer: IBuffer;
+  // GPU resources - pipelines
+  skinPipeline: IPipeline; // inner parts (with backface culling)
+  overlayPipeline: IPipeline; // overlay parts (double-sided, no culling)
+  capePipeline: IPipeline; // cape/elytra (double-sided)
 
-  // GPU resources - overlay parts (double-sided, no culling)
-  overlayPipeline: IPipeline;
-  overlayVertexBuffer: IBuffer;
-  overlayIndexBuffer: IBuffer;
+  // GPU resources - part buffers (each part has inner and outer)
+  partBuffers: Record<PartName, PartBuffers>;
 
-  // GPU resources - cape (double-sided)
-  capePipeline: IPipeline;
+  // GPU resources - cape
   capeVertexBuffer: IBuffer;
   capeIndexBuffer: IBuffer;
   capeGeometry: BoxGeometry;
 
-  // GPU resources - elytra (double-sided)
+  // GPU resources - elytra
   elytraVertexBuffer: IBuffer;
   elytraIndexBuffer: IBuffer;
   elytraGeometry: BoxGeometry;
@@ -156,7 +183,10 @@ interface SkinViewerState {
   capeTexture: ITexture | null;
 
   // Geometry data
-  skinGeometry: SeparatedGeometry;
+  partGeometries: Record<PartName, PartGeometry>;
+
+  // Parts visibility
+  partsVisibility: PartsVisibility;
 
   // Back equipment state
   backEquipment: BackEquipment;
@@ -166,93 +196,76 @@ interface SkinViewerState {
 }
 
 /**
- * Create the player skin geometry (separated into inner and overlay parts)
- * Inner parts use backface culling, overlay parts are double-sided
+ * Create geometry for all parts (separated by part and layer)
  */
-function createSkinGeometry(variant: ModelVariant): SeparatedGeometry {
+function createAllPartGeometries(variant: ModelVariant): Record<PartName, PartGeometry> {
   const uvMap = getSkinUV(variant);
   const armWidth = variant === "slim" ? 3 : 4;
-  const innerGeometries: BoxGeometry[] = [];
-  const overlayGeometries: BoxGeometry[] = [];
-
-  // Head (inner)
-  innerGeometries.push(createBoxGeometry([8, 8, 8], uvMap.head.inner, BoneIndex.Head, [0, 4, 0]));
-
-  // Head overlay (double-sided)
-  overlayGeometries.push(
-    createBoxGeometry([8, 8, 8], uvMap.head.outer, BoneIndex.HeadOverlay, [0, 4, 0], 0.5),
-  );
-
-  // Body (inner)
-  innerGeometries.push(createBoxGeometry([8, 12, 4], uvMap.body.inner, BoneIndex.Body, [0, -6, 0]));
-
-  // Body overlay (double-sided)
-  overlayGeometries.push(
-    createBoxGeometry([8, 12, 4], uvMap.body.outer, BoneIndex.BodyOverlay, [0, -6, 0], 0.25),
-  );
-
-  // Right Arm (inner)
-  innerGeometries.push(
-    createBoxGeometry([armWidth, 12, 4], uvMap.rightArm.inner, BoneIndex.RightArm, [0, -6, 0]),
-  );
-
-  // Right Arm overlay (double-sided)
-  overlayGeometries.push(
-    createBoxGeometry(
-      [armWidth, 12, 4],
-      uvMap.rightArm.outer,
-      BoneIndex.RightArmOverlay,
-      [0, -6, 0],
-      0.25,
-    ),
-  );
-
-  // Left Arm (inner)
-  innerGeometries.push(
-    createBoxGeometry([armWidth, 12, 4], uvMap.leftArm.inner, BoneIndex.LeftArm, [0, -6, 0]),
-  );
-
-  // Left Arm overlay (double-sided)
-  overlayGeometries.push(
-    createBoxGeometry(
-      [armWidth, 12, 4],
-      uvMap.leftArm.outer,
-      BoneIndex.LeftArmOverlay,
-      [0, -6, 0],
-      0.25,
-    ),
-  );
-
-  // Right Leg (inner)
-  innerGeometries.push(
-    createBoxGeometry([4, 12, 4], uvMap.rightLeg.inner, BoneIndex.RightLeg, [0, -6, 0]),
-  );
-
-  // Right Leg overlay (double-sided)
-  overlayGeometries.push(
-    createBoxGeometry(
-      [4, 12, 4],
-      uvMap.rightLeg.outer,
-      BoneIndex.RightLegOverlay,
-      [0, -6, 0],
-      0.25,
-    ),
-  );
-
-  // Left Leg (inner)
-  innerGeometries.push(
-    createBoxGeometry([4, 12, 4], uvMap.leftLeg.inner, BoneIndex.LeftLeg, [0, -6, 0]),
-  );
-
-  // Left Leg overlay (double-sided)
-  overlayGeometries.push(
-    createBoxGeometry([4, 12, 4], uvMap.leftLeg.outer, BoneIndex.LeftLegOverlay, [0, -6, 0], 0.25),
-  );
 
   return {
-    inner: mergeGeometries(innerGeometries),
-    overlay: mergeGeometries(overlayGeometries),
+    head: {
+      inner: createBoxGeometry([8, 8, 8], uvMap.head.inner, BoneIndex.Head, [0, 4, 0]),
+      outer: createBoxGeometry([8, 8, 8], uvMap.head.outer, BoneIndex.HeadOverlay, [0, 4, 0], 0.5),
+    },
+    body: {
+      inner: createBoxGeometry([8, 12, 4], uvMap.body.inner, BoneIndex.Body, [0, -6, 0]),
+      outer: createBoxGeometry([8, 12, 4], uvMap.body.outer, BoneIndex.BodyOverlay, [0, -6, 0], 0.25),
+    },
+    rightArm: {
+      inner: createBoxGeometry([armWidth, 12, 4], uvMap.rightArm.inner, BoneIndex.RightArm, [0, -6, 0]),
+      outer: createBoxGeometry([armWidth, 12, 4], uvMap.rightArm.outer, BoneIndex.RightArmOverlay, [0, -6, 0], 0.25),
+    },
+    leftArm: {
+      inner: createBoxGeometry([armWidth, 12, 4], uvMap.leftArm.inner, BoneIndex.LeftArm, [0, -6, 0]),
+      outer: createBoxGeometry([armWidth, 12, 4], uvMap.leftArm.outer, BoneIndex.LeftArmOverlay, [0, -6, 0], 0.25),
+    },
+    rightLeg: {
+      inner: createBoxGeometry([4, 12, 4], uvMap.rightLeg.inner, BoneIndex.RightLeg, [0, -6, 0]),
+      outer: createBoxGeometry([4, 12, 4], uvMap.rightLeg.outer, BoneIndex.RightLegOverlay, [0, -6, 0], 0.25),
+    },
+    leftLeg: {
+      inner: createBoxGeometry([4, 12, 4], uvMap.leftLeg.inner, BoneIndex.LeftLeg, [0, -6, 0]),
+      outer: createBoxGeometry([4, 12, 4], uvMap.leftLeg.outer, BoneIndex.LeftLegOverlay, [0, -6, 0], 0.25),
+    },
   };
+}
+
+/**
+ * Create GPU buffers for a part geometry
+ */
+function createPartBuffers(renderer: IRenderer, geometry: PartGeometry): PartBuffers {
+  return {
+    innerVertexBuffer: renderer.createBuffer(BufferUsage.Vertex, geometry.inner.vertices),
+    innerIndexBuffer: renderer.createBuffer(BufferUsage.Index, geometry.inner.indices),
+    outerVertexBuffer: renderer.createBuffer(BufferUsage.Vertex, geometry.outer.vertices),
+    outerIndexBuffer: renderer.createBuffer(BufferUsage.Index, geometry.outer.indices),
+    innerIndexCount: geometry.inner.indexCount,
+    outerIndexCount: geometry.outer.indexCount,
+  };
+}
+
+/**
+ * Create GPU buffers for all parts
+ */
+function createAllPartBuffers(renderer: IRenderer, geometries: Record<PartName, PartGeometry>): Record<PartName, PartBuffers> {
+  const result = {} as Record<PartName, PartBuffers>;
+  for (const part of PART_NAMES) {
+    result[part] = createPartBuffers(renderer, geometries[part]);
+  }
+  return result;
+}
+
+/**
+ * Dispose all part buffers
+ */
+function disposeAllPartBuffers(buffers: Record<PartName, PartBuffers>): void {
+  for (const part of PART_NAMES) {
+    const b = buffers[part];
+    b.innerVertexBuffer.dispose();
+    b.innerIndexBuffer.dispose();
+    b.outerVertexBuffer.dispose();
+    b.outerIndexBuffer.dispose();
+  }
 }
 
 /**
@@ -437,10 +450,10 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
   // Create skeleton
   const skeleton = createPlayerSkeleton(variant);
 
-  // Create geometry
-  const skinGeometry = createSkinGeometry(variant);
+  // Create geometry for all parts
+  const partGeometries = createAllPartGeometries(variant);
 
-  // Vertex layout shared by both pipelines
+  // Vertex layout shared by all pipelines
   const vertexLayout = {
     stride: VERTEX_STRIDE * 4, // bytes
     attributes: [
@@ -473,16 +486,8 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     depthCompare: DepthCompare.Less,
   });
 
-  // Create buffers for inner parts
-  const skinVertexBuffer = renderer.createBuffer(BufferUsage.Vertex, skinGeometry.inner.vertices);
-  const skinIndexBuffer = renderer.createBuffer(BufferUsage.Index, skinGeometry.inner.indices);
-
-  // Create buffers for overlay parts
-  const overlayVertexBuffer = renderer.createBuffer(
-    BufferUsage.Vertex,
-    skinGeometry.overlay.vertices,
-  );
-  const overlayIndexBuffer = renderer.createBuffer(BufferUsage.Index, skinGeometry.overlay.indices);
+  // Create buffers for all parts
+  const partBuffers = createAllPartBuffers(renderer, partGeometries);
 
   // Create cape geometry and buffers
   const capeGeometry = createCapeGeometry();
@@ -552,12 +557,9 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     skeleton,
     variant,
     skinPipeline,
-    skinVertexBuffer,
-    skinIndexBuffer,
     overlayPipeline,
-    overlayVertexBuffer,
-    overlayIndexBuffer,
     capePipeline,
+    partBuffers,
     capeVertexBuffer,
     capeIndexBuffer,
     capeGeometry,
@@ -566,7 +568,8 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     elytraGeometry,
     skinTexture,
     capeTexture,
-    skinGeometry,
+    partGeometries,
+    partsVisibility: createDefaultVisibility(),
     backEquipment: initialBackEquipment,
     disposed: false,
   };
@@ -579,18 +582,16 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       renderer,
       camera,
       skinPipeline,
-      skinVertexBuffer,
-      skinIndexBuffer,
       overlayPipeline,
-      overlayVertexBuffer,
-      overlayIndexBuffer,
       capePipeline,
+      partBuffers,
       capeVertexBuffer,
       capeIndexBuffer,
       elytraVertexBuffer,
       elytraIndexBuffer,
       skinTexture,
       capeTexture,
+      partsVisibility,
       backEquipment,
     } = state;
 
@@ -617,23 +618,33 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
         u_skinTexture: skinTexture,
       };
 
-      // Draw inner parts first (with backface culling)
-      renderer.draw({
-        pipeline: skinPipeline,
-        vertexBuffers: [skinVertexBuffer],
-        indexBuffer: skinIndexBuffer,
-        indexCount: state.skinGeometry.inner.indexCount,
-        bindGroup: { uniforms, textures },
-      });
+      // Draw each part based on visibility settings
+      for (const partName of PART_NAMES) {
+        const visibility = partsVisibility[partName];
+        const buffers = partBuffers[partName];
 
-      // Draw overlay parts (double-sided, no culling)
-      renderer.draw({
-        pipeline: overlayPipeline,
-        vertexBuffers: [overlayVertexBuffer],
-        indexBuffer: overlayIndexBuffer,
-        indexCount: state.skinGeometry.overlay.indexCount,
-        bindGroup: { uniforms, textures },
-      });
+        // Draw inner layer if visible
+        if (visibility.inner) {
+          renderer.draw({
+            pipeline: skinPipeline,
+            vertexBuffers: [buffers.innerVertexBuffer],
+            indexBuffer: buffers.innerIndexBuffer,
+            indexCount: buffers.innerIndexCount,
+            bindGroup: { uniforms, textures },
+          });
+        }
+
+        // Draw outer layer if visible
+        if (visibility.outer) {
+          renderer.draw({
+            pipeline: overlayPipeline,
+            vertexBuffers: [buffers.outerVertexBuffer],
+            indexBuffer: buffers.outerIndexBuffer,
+            indexCount: buffers.outerIndexCount,
+            bindGroup: { uniforms, textures },
+          });
+        }
+      }
 
       // Draw cape or elytra if texture is available and equipment is enabled
       if (capeTexture && backEquipment !== "none") {
@@ -734,6 +745,30 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       return state.backEquipment;
     },
 
+    getPartsVisibility(): PartsVisibility {
+      // Return a deep copy to prevent external mutation
+      const result = {} as PartsVisibility;
+      for (const part of PART_NAMES) {
+        result[part] = { ...state.partsVisibility[part] };
+      }
+      return result;
+    },
+
+    setPartsVisibility(visibility: PartsVisibility) {
+      for (const part of PART_NAMES) {
+        state.partsVisibility[part] = { ...visibility[part] };
+      }
+    },
+
+    setPartVisibility(part: PartName, layer: "inner" | "outer" | "both", visible: boolean) {
+      if (layer === "both") {
+        state.partsVisibility[part].inner = visible;
+        state.partsVisibility[part].outer = visible;
+      } else {
+        state.partsVisibility[part][layer] = visible;
+      }
+    },
+
     setSlim(slim: boolean) {
       if (state.disposed) return;
 
@@ -761,35 +796,12 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
         }
       }
 
-      // Recreate geometry
-      const newGeometry = createSkinGeometry(newVariant);
-      state.skinGeometry = newGeometry;
+      // Dispose old buffers
+      disposeAllPartBuffers(state.partBuffers);
 
-      // Update inner part buffers
-      state.skinVertexBuffer.dispose();
-      state.skinIndexBuffer.dispose();
-
-      state.skinVertexBuffer = state.renderer.createBuffer(
-        BufferUsage.Vertex,
-        newGeometry.inner.vertices,
-      );
-      state.skinIndexBuffer = state.renderer.createBuffer(
-        BufferUsage.Index,
-        newGeometry.inner.indices,
-      );
-
-      // Update overlay part buffers
-      state.overlayVertexBuffer.dispose();
-      state.overlayIndexBuffer.dispose();
-
-      state.overlayVertexBuffer = state.renderer.createBuffer(
-        BufferUsage.Vertex,
-        newGeometry.overlay.vertices,
-      );
-      state.overlayIndexBuffer = state.renderer.createBuffer(
-        BufferUsage.Index,
-        newGeometry.overlay.indices,
-      );
+      // Recreate geometry and buffers
+      state.partGeometries = createAllPartGeometries(newVariant);
+      state.partBuffers = createAllPartBuffers(state.renderer, state.partGeometries);
     },
 
     playAnimation(name: string, config?: AnimationConfig) {
@@ -864,14 +876,9 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       stopRenderLoop(state.renderLoop);
       state.controls.dispose();
 
-      // Dispose inner part resources
-      state.skinVertexBuffer.dispose();
-      state.skinIndexBuffer.dispose();
+      // Dispose all part buffers
+      disposeAllPartBuffers(state.partBuffers);
       state.skinPipeline.dispose();
-
-      // Dispose overlay part resources
-      state.overlayVertexBuffer.dispose();
-      state.overlayIndexBuffer.dispose();
       state.overlayPipeline.dispose();
 
       if (state.skinTexture) state.skinTexture.dispose();

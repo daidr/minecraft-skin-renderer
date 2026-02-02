@@ -40,6 +40,10 @@ export class WebGLTextureImpl implements ITexture {
 
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
 
+    // Flip Y axis: WebGL stores image data with Y=0 at bottom by default,
+    // but image files have Y=0 at top. This makes UV coords match image coords.
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
     // Set texture parameters
     const minFilter = this.getGLFilter(options.minFilter ?? TextureFilter.Nearest);
     const magFilter = this.getGLFilter(options.magFilter ?? TextureFilter.Nearest);
@@ -53,6 +57,9 @@ export class WebGLTextureImpl implements ITexture {
 
     // Upload texture data
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+
+    // Reset to default
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 
     // Generate mipmaps if requested
     if (options.generateMipmaps) {

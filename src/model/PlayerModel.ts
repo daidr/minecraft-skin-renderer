@@ -3,7 +3,7 @@
  * Based on Minecraft's player model structure
  */
 
-import { quatIdentity } from "../core/math";
+import { quatIdentity, quatFromEuler, degToRad } from "../core/math";
 import type { Quat, Vec3 } from "../core/math";
 import { BoneIndex } from "./types";
 import type { Bone, ModelVariant, PlayerSkeleton } from "./types";
@@ -252,6 +252,12 @@ export function createPlayerSkeleton(variant: ModelVariant = "classic"): PlayerS
     ),
   );
 
+  // Set default elytra rotation to match idle animation's closed position
+  const leftWing = bones.get(BoneIndex.LeftWing)!;
+  const rightWing = bones.get(BoneIndex.RightWing)!;
+  leftWing.rotation = quatFromEuler(degToRad(15), degToRad(0.5), degToRad(15));
+  rightWing.rotation = quatFromEuler(degToRad(15), degToRad(-0.5), degToRad(-15));
+
   return { variant, bones };
 }
 
@@ -284,6 +290,16 @@ export function resetSkeleton(skeleton: PlayerSkeleton): void {
   for (const bone of skeleton.bones.values()) {
     bone.rotation = quatIdentity();
     bone.positionOffset = [0, 0, 0];
+  }
+
+  // Restore default elytra rotation (idle closed position)
+  const leftWing = skeleton.bones.get(BoneIndex.LeftWing);
+  const rightWing = skeleton.bones.get(BoneIndex.RightWing);
+  if (leftWing) {
+    leftWing.rotation = quatFromEuler(degToRad(15), degToRad(0.5), degToRad(15));
+  }
+  if (rightWing) {
+    rightWing.rotation = quatFromEuler(degToRad(15), degToRad(-0.5), degToRad(-15));
   }
 }
 

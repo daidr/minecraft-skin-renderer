@@ -89,6 +89,40 @@ export interface SkinUVMap {
   rightLeg: PartUV;
 }
 
+/** Part name type */
+export type PartName = "head" | "body" | "leftArm" | "rightArm" | "leftLeg" | "rightLeg";
+
+/** Layer visibility for a single part */
+export interface LayerVisibility {
+  inner: boolean;
+  outer: boolean;
+}
+
+/** Visibility settings for all skin parts */
+export interface PartsVisibility {
+  head: LayerVisibility;
+  body: LayerVisibility;
+  leftArm: LayerVisibility;
+  rightArm: LayerVisibility;
+  leftLeg: LayerVisibility;
+  rightLeg: LayerVisibility;
+}
+
+/** All part names */
+export const PART_NAMES: PartName[] = ["head", "body", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+
+/** Create default visibility (all visible) */
+export function createDefaultVisibility(): PartsVisibility {
+  return {
+    head: { inner: true, outer: true },
+    body: { inner: true, outer: true },
+    leftArm: { inner: true, outer: true },
+    rightArm: { inner: true, outer: true },
+    leftLeg: { inner: true, outer: true },
+    rightLeg: { inner: true, outer: true },
+  };
+}
+
 /** Vertex data stride (floats per vertex) */
 export const VERTEX_STRIDE = 10; // 3 pos + 2 uv + 3 normal + 1 boneIndex + 1 padding
 

@@ -28,7 +28,8 @@ export {
 // Types
 export type { BackendType, RendererOptions } from "./core/renderer/types";
 export type { Animation, AnimationConfig, AnimationController } from "./animation/types";
-export type { ModelVariant } from "./model/types";
+export type { ModelVariant, PartName, LayerVisibility, PartsVisibility } from "./model/types";
+export { PART_NAMES, createDefaultVisibility } from "./model/types";
 export type { TextureSource } from "./texture";
 
 // Utilities
