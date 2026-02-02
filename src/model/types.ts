@@ -98,6 +98,27 @@ export interface LayerVisibility {
   outer: boolean;
 }
 
+/** Layer mask for quick visibility checks (internal use) */
+export enum LayerMask {
+  None = 0,
+  Inner = 1 << 0,
+  Outer = 1 << 1,
+  Both = Inner | Outer,
+}
+
+/** Convert LayerVisibility to LayerMask */
+export function visibilityToMask(visibility: LayerVisibility): LayerMask {
+  return (visibility.inner ? LayerMask.Inner : 0) | (visibility.outer ? LayerMask.Outer : 0);
+}
+
+/** Convert LayerMask to LayerVisibility */
+export function maskToVisibility(mask: LayerMask): LayerVisibility {
+  return {
+    inner: (mask & LayerMask.Inner) !== 0,
+    outer: (mask & LayerMask.Outer) !== 0,
+  };
+}
+
 /** Visibility settings for all skin parts */
 export interface PartsVisibility {
   head: LayerVisibility;

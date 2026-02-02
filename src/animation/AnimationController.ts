@@ -7,7 +7,7 @@ import type { Quat, Vec3 } from "../core/math";
 import type { PlayerSkeleton } from "../model/types";
 import { setBoneRotation, setBonePositionOffset, resetSkeleton } from "../model/PlayerModel";
 import { linear } from "./easing";
-import { getAnimation } from "./types";
+import { getAnimation, AnimationPlayState } from "./types";
 import type { Animation, AnimationConfig, AnimationController, Keyframe } from "./types";
 
 // Import presets to register them
@@ -18,8 +18,7 @@ interface AnimationState {
   animation: Animation;
   config: AnimationConfig;
   time: number; // Current time in seconds
-  isPlaying: boolean;
-  isPaused: boolean;
+  playState: AnimationPlayState;
 }
 
 /** Animation controller internal state */
@@ -38,7 +37,31 @@ interface InterpolationResult {
 }
 
 /**
- * Interpolate between keyframes
+ * Binary search for keyframe index
+ * Returns the index of the last keyframe with time <= target time
+ */
+function binarySearchKeyframe(keyframes: Keyframe[], time: number): number {
+  let low = 0;
+  let high = keyframes.length - 1;
+
+  // Edge cases
+  if (time <= keyframes[0]!.time) return 0;
+  if (time >= keyframes[high]!.time) return high;
+
+  while (low < high) {
+    const mid = (low + high + 1) >> 1;
+    if (keyframes[mid]!.time <= time) {
+      low = mid;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  return low;
+}
+
+/**
+ * Interpolate between keyframes using binary search
  */
 function interpolateKeyframes(
   keyframes: Keyframe[],
@@ -49,28 +72,46 @@ function interpolateKeyframes(
     return {};
   }
 
-  // Find the two keyframes to interpolate between
-  let prevKeyframe = keyframes[0]!;
-  let nextKeyframe = keyframes[keyframes.length - 1]!;
-  let localT = normalizedTime;
+  // Single keyframe fast path
+  if (keyframes.length === 1) {
+    const kf = keyframes[0]!;
+    const result: InterpolationResult = {};
 
-  for (let i = 0; i < keyframes.length - 1; i++) {
-    const current = keyframes[i]!;
-    const next = keyframes[i + 1]!;
-    if (normalizedTime >= current.time && normalizedTime <= next.time) {
-      prevKeyframe = current;
-      nextKeyframe = next;
-
-      // Calculate local interpolation factor
-      const segmentDuration = nextKeyframe.time - prevKeyframe.time;
-      if (segmentDuration > 0) {
-        localT = (normalizedTime - prevKeyframe.time) / segmentDuration;
-      } else {
-        localT = 0;
-      }
-      break;
+    if (kf.rotation) {
+      result.rotation = amplitude !== 1.0 ? quatSlerp(quatIdentity(), kf.rotation, amplitude) : kf.rotation;
     }
+    if (kf.position) {
+      result.position = amplitude !== 1.0 ? vec3Lerp(vec3Zero(), kf.position, amplitude) : kf.position;
+    }
+
+    return result;
   }
+
+  // Use binary search to find keyframe pair
+  const prevIndex = binarySearchKeyframe(keyframes, normalizedTime);
+  const prevKeyframe = keyframes[prevIndex]!;
+
+  // If at the last keyframe, return its values
+  if (prevIndex >= keyframes.length - 1) {
+    const result: InterpolationResult = {};
+
+    if (prevKeyframe.rotation) {
+      result.rotation = amplitude !== 1.0 ? quatSlerp(quatIdentity(), prevKeyframe.rotation, amplitude) : prevKeyframe.rotation;
+    }
+    if (prevKeyframe.position) {
+      result.position = amplitude !== 1.0 ? vec3Lerp(vec3Zero(), prevKeyframe.position, amplitude) : prevKeyframe.position;
+    }
+
+    return result;
+  }
+
+  const nextKeyframe = keyframes[prevIndex + 1]!;
+
+  // Calculate local interpolation factor
+  const segmentDuration = nextKeyframe.time - prevKeyframe.time;
+  const localT = segmentDuration > 0
+    ? (normalizedTime - prevKeyframe.time) / segmentDuration
+    : 0;
 
   // Apply easing
   const easing = nextKeyframe.easing ?? linear;
@@ -113,11 +154,11 @@ export function createAnimationController(skeleton: PlayerSkeleton): AnimationCo
 
   const controller: AnimationController = {
     get isPlaying() {
-      return state.current?.isPlaying ?? false;
+      return state.current?.playState === AnimationPlayState.Playing;
     },
 
     get isPaused() {
-      return state.current?.isPaused ?? false;
+      return state.current?.playState === AnimationPlayState.Paused;
     },
 
     get currentAnimation() {
@@ -150,20 +191,19 @@ export function createAnimationController(skeleton: PlayerSkeleton): AnimationCo
           amplitude: config?.amplitude ?? 1.0,
         },
         time: 0,
-        isPlaying: true,
-        isPaused: false,
+        playState: AnimationPlayState.Playing,
       };
     },
 
     pause() {
-      if (state.current) {
-        state.current.isPaused = true;
+      if (state.current && state.current.playState === AnimationPlayState.Playing) {
+        state.current.playState = AnimationPlayState.Paused;
       }
     },
 
     resume() {
-      if (state.current) {
-        state.current.isPaused = false;
+      if (state.current && state.current.playState === AnimationPlayState.Paused) {
+        state.current.playState = AnimationPlayState.Playing;
       }
     },
 
@@ -188,7 +228,7 @@ export function updateAnimationController(
 ): void {
   const state = controllerStates.get(controller);
   if (!state || !state.current) return;
-  if (state.current.isPaused) return;
+  if (state.current.playState !== AnimationPlayState.Playing) return;
 
   const { animation, config } = state.current;
 
@@ -200,7 +240,7 @@ export function updateAnimationController(
     state.current.time %= animation.duration;
   } else if (state.current.time >= animation.duration) {
     state.current.time = animation.duration;
-    state.current.isPlaying = false;
+    state.current.playState = AnimationPlayState.Stopped;
   }
 
   // Calculate normalized time (0-1)

@@ -191,6 +191,10 @@ interface SkinViewerState {
   // Back equipment state
   backEquipment: BackEquipment;
 
+  // Performance optimization: bone matrix cache
+  boneMatricesCache: Float32Array;
+  boneMatricesDirty: boolean;
+
   // State flags
   disposed: boolean;
 }
@@ -571,6 +575,8 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     partGeometries,
     partsVisibility: createDefaultVisibility(),
     backEquipment: initialBackEquipment,
+    boneMatricesCache: new Float32Array(24 * 16),
+    boneMatricesDirty: true,
     disposed: false,
   };
 
@@ -599,8 +605,13 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     renderer.clear(0, 0, 0, 0);
 
     if (skinTexture) {
-      // Compute bone matrices
-      const boneMatrices = computeBoneMatrices(state.skeleton);
+      // Compute bone matrices only if dirty
+      if (state.boneMatricesDirty) {
+        const newMatrices = computeBoneMatrices(state.skeleton);
+        state.boneMatricesCache.set(newMatrices);
+        state.boneMatricesDirty = false;
+      }
+      const boneMatrices = state.boneMatricesCache;
 
       // Model matrix (identity for now)
       const modelMatrix = mat4Identity();
@@ -683,6 +694,11 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
     updateOrbitControls(state.controls, deltaTime);
     updateAnimationController(state.animationController, deltaTime);
+
+    // Mark bone matrices as dirty if animation is playing
+    if (state.animationController.isPlaying) {
+      state.boneMatricesDirty = true;
+    }
   };
 
   // Create render loop
@@ -802,6 +818,9 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       // Recreate geometry and buffers
       state.partGeometries = createAllPartGeometries(newVariant);
       state.partBuffers = createAllPartBuffers(state.renderer, state.partGeometries);
+
+      // Mark bone matrices as dirty
+      state.boneMatricesDirty = true;
     },
 
     playAnimation(name: string, config?: AnimationConfig) {
@@ -819,6 +838,7 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     stopAnimation() {
       state.animationController.stop();
       resetSkeleton(state.skeleton);
+      state.boneMatricesDirty = true;
     },
 
     setRotation(theta: number, phi: number) {

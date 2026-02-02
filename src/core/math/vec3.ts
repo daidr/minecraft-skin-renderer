@@ -108,3 +108,79 @@ export function vec3TransformMat4(v: Vec3, m: Float32Array): Vec3 {
 export function vec3ToFloat32Array(v: Vec3): Float32Array {
   return new Float32Array(v);
 }
+
+// ============================================================================
+// Mutable versions (for performance-critical paths)
+// These functions modify the output parameter instead of creating new objects
+// ============================================================================
+
+/** Add two vectors (mutable) */
+export function vec3AddMut(out: Vec3, a: Vec3, b: Vec3): Vec3 {
+  out[0] = a[0] + b[0];
+  out[1] = a[1] + b[1];
+  out[2] = a[2] + b[2];
+  return out;
+}
+
+/** Subtract two vectors (mutable) */
+export function vec3SubMut(out: Vec3, a: Vec3, b: Vec3): Vec3 {
+  out[0] = a[0] - b[0];
+  out[1] = a[1] - b[1];
+  out[2] = a[2] - b[2];
+  return out;
+}
+
+/** Multiply vector by scalar (mutable) */
+export function vec3ScaleMut(out: Vec3, v: Vec3, s: number): Vec3 {
+  out[0] = v[0] * s;
+  out[1] = v[1] * s;
+  out[2] = v[2] * s;
+  return out;
+}
+
+/** Linear interpolation between two vectors (mutable) */
+export function vec3LerpMut(out: Vec3, a: Vec3, b: Vec3, t: number): Vec3 {
+  out[0] = a[0] + (b[0] - a[0]) * t;
+  out[1] = a[1] + (b[1] - a[1]) * t;
+  out[2] = a[2] + (b[2] - a[2]) * t;
+  return out;
+}
+
+/** Normalize a vector (mutable) */
+export function vec3NormalizeMut(out: Vec3, v: Vec3): Vec3 {
+  const len = vec3Length(v);
+  if (len === 0) {
+    out[0] = 0;
+    out[1] = 0;
+    out[2] = 0;
+  } else {
+    out[0] = v[0] / len;
+    out[1] = v[1] / len;
+    out[2] = v[2] / len;
+  }
+  return out;
+}
+
+/** Cross product of two vectors (mutable) */
+export function vec3CrossMut(out: Vec3, a: Vec3, b: Vec3): Vec3 {
+  out[0] = a[1] * b[2] - a[2] * b[1];
+  out[1] = a[2] * b[0] - a[0] * b[2];
+  out[2] = a[0] * b[1] - a[1] * b[0];
+  return out;
+}
+
+/** Copy vector (mutable) */
+export function vec3CopyMut(out: Vec3, v: Vec3): Vec3 {
+  out[0] = v[0];
+  out[1] = v[1];
+  out[2] = v[2];
+  return out;
+}
+
+/** Set vector to zero (mutable) */
+export function vec3ZeroMut(out: Vec3): Vec3 {
+  out[0] = 0;
+  out[1] = 0;
+  out[2] = 0;
+  return out;
+}

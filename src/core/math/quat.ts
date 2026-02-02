@@ -268,3 +268,148 @@ export function quatLength(q: Quat): number {
 export function quatToFloat32Array(q: Quat): Float32Array {
   return new Float32Array(q);
 }
+
+// ============================================================================
+// Mutable versions (for performance-critical paths)
+// These functions modify the output parameter instead of creating new objects
+// ============================================================================
+
+/** Copy quaternion (mutable) */
+export function quatCopyMut(out: Quat, q: Quat): Quat {
+  out[0] = q[0];
+  out[1] = q[1];
+  out[2] = q[2];
+  out[3] = q[3];
+  return out;
+}
+
+/** Set quaternion to identity (mutable) */
+export function quatIdentityMut(out: Quat): Quat {
+  out[0] = 0;
+  out[1] = 0;
+  out[2] = 0;
+  out[3] = 1;
+  return out;
+}
+
+/** Multiply two quaternions (mutable) */
+export function quatMultiplyMut(out: Quat, a: Quat, b: Quat): Quat {
+  const ax = a[0],
+    ay = a[1],
+    az = a[2],
+    aw = a[3];
+  const bx = b[0],
+    by = b[1],
+    bz = b[2],
+    bw = b[3];
+
+  out[0] = ax * bw + aw * bx + ay * bz - az * by;
+  out[1] = ay * bw + aw * by + az * bx - ax * bz;
+  out[2] = az * bw + aw * bz + ax * by - ay * bx;
+  out[3] = aw * bw - ax * bx - ay * by - az * bz;
+
+  return out;
+}
+
+/** Normalize a quaternion (mutable) */
+export function quatNormalizeMut(out: Quat, q: Quat): Quat {
+  const len = Math.sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
+  if (len === 0) {
+    out[0] = 0;
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = 1;
+  } else {
+    out[0] = q[0] / len;
+    out[1] = q[1] / len;
+    out[2] = q[2] / len;
+    out[3] = q[3] / len;
+  }
+  return out;
+}
+
+/** Spherical linear interpolation between two quaternions (mutable) */
+export function quatSlerpMut(out: Quat, a: Quat, b: Quat, t: number): Quat {
+  const ax = a[0],
+    ay = a[1],
+    az = a[2],
+    aw = a[3];
+  let bx = b[0],
+    by = b[1],
+    bz = b[2],
+    bw = b[3];
+
+  let cosom = ax * bx + ay * by + az * bz + aw * bw;
+
+  // Adjust signs (if necessary)
+  if (cosom < 0) {
+    cosom = -cosom;
+    bx = -bx;
+    by = -by;
+    bz = -bz;
+    bw = -bw;
+  }
+
+  let scale0: number;
+  let scale1: number;
+
+  if (1 - cosom > 0.000_001) {
+    // Standard case (slerp)
+    const omega = Math.acos(cosom);
+    const sinom = Math.sin(omega);
+    scale0 = Math.sin((1 - t) * omega) / sinom;
+    scale1 = Math.sin(t * omega) / sinom;
+  } else {
+    // "from" and "to" quaternions are very close, do linear interpolation
+    scale0 = 1 - t;
+    scale1 = t;
+  }
+
+  out[0] = scale0 * ax + scale1 * bx;
+  out[1] = scale0 * ay + scale1 * by;
+  out[2] = scale0 * az + scale1 * bz;
+  out[3] = scale0 * aw + scale1 * bw;
+
+  return out;
+}
+
+/** Convert quaternion to 4x4 rotation matrix (mutable) */
+export function quatToMat4Mut(out: Mat4, q: Quat): Mat4 {
+  const x = q[0],
+    y = q[1],
+    z = q[2],
+    w = q[3];
+
+  const x2 = x + x;
+  const y2 = y + y;
+  const z2 = z + z;
+
+  const xx = x * x2;
+  const yx = y * x2;
+  const yy = y * y2;
+  const zx = z * x2;
+  const zy = z * y2;
+  const zz = z * z2;
+  const wx = w * x2;
+  const wy = w * y2;
+  const wz = w * z2;
+
+  out[0] = 1 - yy - zz;
+  out[1] = yx + wz;
+  out[2] = zx - wy;
+  out[3] = 0;
+  out[4] = yx - wz;
+  out[5] = 1 - xx - zz;
+  out[6] = zy + wx;
+  out[7] = 0;
+  out[8] = zx + wy;
+  out[9] = zy - wx;
+  out[10] = 1 - xx - yy;
+  out[11] = 0;
+  out[12] = 0;
+  out[13] = 0;
+  out[14] = 0;
+  out[15] = 1;
+
+  return out;
+}

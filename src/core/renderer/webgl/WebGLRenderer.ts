@@ -27,6 +27,10 @@ export class WebGLRenderer implements IRenderer {
   private _width: number;
   private _height: number;
 
+  // State cache for reducing redundant WebGL calls
+  private lastPipelineId = -1;
+  private lastVAO: WebGLVertexArrayObject | null = null;
+
   constructor(options: RendererOptions) {
     this.canvas = options.canvas;
     this.pixelRatio = options.pixelRatio ?? globalThis.devicePixelRatio ?? 1;
@@ -96,7 +100,9 @@ export class WebGLRenderer implements IRenderer {
 
   /** Begin a new frame */
   beginFrame(): void {
-    // Nothing to do for WebGL
+    // Reset state cache at frame start
+    this.lastPipelineId = -1;
+    this.lastVAO = null;
   }
 
   /** Clear the framebuffer */
@@ -114,15 +120,19 @@ export class WebGLRenderer implements IRenderer {
 
     if (!program) return;
 
-    // Use program
-    gl.useProgram(program);
+    // Only switch program and apply state if pipeline changed
+    if (this.lastPipelineId !== pipeline.id) {
+      gl.useProgram(program);
+      pipeline.applyState();
+      this.lastPipelineId = pipeline.id;
+    }
 
-    // Apply pipeline state
-    pipeline.applyState();
-
-    // Bind VAO
+    // Bind VAO only if changed
     const vao = pipeline.getVAO();
-    gl.bindVertexArray(vao);
+    if (this.lastVAO !== vao) {
+      gl.bindVertexArray(vao);
+      this.lastVAO = vao;
+    }
 
     // Setup vertex attributes
     const layout = pipeline.vertexLayout;

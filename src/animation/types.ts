@@ -8,6 +8,13 @@ import type { BoneIndex, PlayerSkeleton } from "../model/types";
 /** Easing function type */
 export type EasingFunction = (t: number) => number;
 
+/** Animation playback state */
+export enum AnimationPlayState {
+  Stopped = 0,
+  Playing = 1,
+  Paused = 2,
+}
+
 /** Animation keyframe */
 export interface Keyframe {
   time: number; // 0-1 normalized time

@@ -7,6 +7,23 @@ import type { IPipeline, PipelineConfig, UniformValue, VertexBufferLayout } from
 
 let nextPipelineId = 0;
 
+/** Format information for vertex attributes */
+interface FormatInfo {
+  size: number;
+  type: number;
+  normalized: boolean;
+}
+
+/** Lookup table for vertex format properties */
+const FORMAT_INFO: Record<VertexFormat, FormatInfo> = {
+  [VertexFormat.Float32]: { size: 1, type: WebGL2RenderingContext.FLOAT, normalized: false },
+  [VertexFormat.Float32x2]: { size: 2, type: WebGL2RenderingContext.FLOAT, normalized: false },
+  [VertexFormat.Float32x3]: { size: 3, type: WebGL2RenderingContext.FLOAT, normalized: false },
+  [VertexFormat.Float32x4]: { size: 4, type: WebGL2RenderingContext.FLOAT, normalized: false },
+  [VertexFormat.Uint8x4]: { size: 4, type: WebGL2RenderingContext.UNSIGNED_BYTE, normalized: true },
+  [VertexFormat.Uint32]: { size: 1, type: WebGL2RenderingContext.UNSIGNED_INT, normalized: false },
+};
+
 export interface UniformInfo {
   location: WebGLUniformLocation;
   type: number;
@@ -200,41 +217,24 @@ export class WebGLPipeline implements IPipeline {
     }
   }
 
+  /** Get format info (size, type, normalized) */
+  static getFormatInfo(format: VertexFormat): FormatInfo {
+    return FORMAT_INFO[format];
+  }
+
   /** Get vertex attribute size from format */
   static getFormatSize(format: VertexFormat): number {
-    switch (format) {
-      case VertexFormat.Float32:
-        return 1;
-      case VertexFormat.Float32x2:
-        return 2;
-      case VertexFormat.Float32x3:
-        return 3;
-      case VertexFormat.Float32x4:
-        return 4;
-      case VertexFormat.Uint8x4:
-        return 4;
-      case VertexFormat.Uint32:
-        return 1;
-      default:
-        return 1;
-    }
+    return FORMAT_INFO[format].size;
   }
 
   /** Get GL type from format */
-  static getFormatType(gl: WebGL2RenderingContext, format: VertexFormat): number {
-    switch (format) {
-      case VertexFormat.Uint8x4:
-        return gl.UNSIGNED_BYTE;
-      case VertexFormat.Uint32:
-        return gl.UNSIGNED_INT;
-      default:
-        return gl.FLOAT;
-    }
+  static getFormatType(_gl: WebGL2RenderingContext, format: VertexFormat): number {
+    return FORMAT_INFO[format].type;
   }
 
   /** Check if format should be normalized */
   static isFormatNormalized(format: VertexFormat): boolean {
-    return format === VertexFormat.Uint8x4;
+    return FORMAT_INFO[format].normalized;
   }
 
   /** Apply pipeline state */
