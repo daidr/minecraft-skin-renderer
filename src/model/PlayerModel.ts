@@ -46,11 +46,14 @@ function createOverlayBone(
   parentSize: Vec3,
   scale = BONE_OVERLAY_SCALE,
 ): Bone {
-  return createBone(index, name, parentIndex, [0, 0, 0], [0, 0, 0], [
-    parentSize[0] + scale * 2,
-    parentSize[1] + scale * 2,
-    parentSize[2] + scale * 2,
-  ]);
+  return createBone(
+    index,
+    name,
+    parentIndex,
+    [0, 0, 0],
+    [0, 0, 0],
+    [parentSize[0] + scale * 2, parentSize[1] + scale * 2, parentSize[2] + scale * 2],
+  );
 }
 
 /** Create the player skeleton */

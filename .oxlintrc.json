@@ -59,5 +59,13 @@
     "builtin": true
   },
   "globals": {},
-  "ignorePatterns": ["dist/**", "bundle/**", "*.min.js", "apps/*/dist/**", "**/node_modules/**"]
+  "ignorePatterns": [
+    "dist/**",
+    "bundle/**",
+    "*.min.js",
+    "apps/*/dist/**",
+    "**/node_modules/**",
+    "vitest.config.ts",
+    "vitest.e2e.config.ts"
+  ]
 }

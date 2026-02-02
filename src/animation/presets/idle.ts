@@ -53,7 +53,11 @@ function createIdleAnimation(): Animation {
         boneIndex: BoneIndex.Cape,
         keyframes: [
           { time: 0, rotation: rot(10) },
-          { time: 0.5, rotation: quatFromEuler(degToRad(12), degToRad(2), 0), easing: easeInOutSine },
+          {
+            time: 0.5,
+            rotation: quatFromEuler(degToRad(12), degToRad(2), 0),
+            easing: easeInOutSine,
+          },
           { time: 1, rotation: rot(10), easing: easeInOutSine },
         ],
       },

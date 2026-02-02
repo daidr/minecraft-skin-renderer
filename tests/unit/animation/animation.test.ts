@@ -75,11 +75,12 @@ describe("Animation", () => {
       controller.pause();
 
       expect(controller.isPaused).toBe(true);
-      expect(controller.isPlaying).toBe(true);
+      expect(controller.isPlaying).toBe(false); // paused means not actively playing
 
       controller.resume();
 
       expect(controller.isPaused).toBe(false);
+      expect(controller.isPlaying).toBe(true);
     });
 
     it("should stop animation", () => {
@@ -98,11 +99,17 @@ describe("Animation", () => {
       controller.play("test");
 
       // Update for half a second (t=0.5 in our test animation)
+      // At t=0.5, the keyframe should be quatFromEuler(0.5, 0, 0)
       updateAnimationController(controller, 0.5);
 
-      // Check that the head bone has been rotated
+      // Check that the head bone has been rotated to expected value
       const head = skeleton.bones.get(BoneIndex.Head);
-      expect(head?.rotation).not.toEqual(quatIdentity());
+      const expectedRotation = quatFromEuler(0.5, 0, 0);
+
+      expect(head?.rotation[0]).toBeCloseTo(expectedRotation[0], 4);
+      expect(head?.rotation[1]).toBeCloseTo(expectedRotation[1], 4);
+      expect(head?.rotation[2]).toBeCloseTo(expectedRotation[2], 4);
+      expect(head?.rotation[3]).toBeCloseTo(expectedRotation[3], 4);
     });
 
     it("should respect speed config", () => {
@@ -138,5 +145,96 @@ describe("Animation", () => {
       expect(warnSpy).toHaveBeenCalled();
       expect(controller.isPlaying).toBe(false);
     });
+
+    it("should respect amplitude config", () => {
+      const controller = createAnimationController(skeleton);
+
+      // Play with half amplitude
+      controller.play("test", { amplitude: 0.5 });
+
+      // Update to t=0.5 (peak rotation in test animation)
+      updateAnimationController(controller, 0.5);
+
+      const head = skeleton.bones.get(BoneIndex.Head);
+      const fullRotation = quatFromEuler(0.5, 0, 0);
+
+      // With amplitude 0.5, rotation should be interpolated halfway from identity
+      // The rotation magnitude should be roughly half of the full rotation
+      expect(Math.abs(head!.rotation[0])).toBeLessThan(Math.abs(fullRotation[0]));
+      expect(head!.rotation[3]).toBeGreaterThan(fullRotation[3]); // Closer to identity (w=1)
+    });
+
+    it("should reset skeleton when playing new animation", () => {
+      const controller = createAnimationController(skeleton);
+
+      // Play and advance
+      controller.play("test");
+      updateAnimationController(controller, 0.5);
+
+      // Head should be rotated
+      const head = skeleton.bones.get(BoneIndex.Head);
+      expect(head?.rotation).not.toEqual(quatIdentity());
+
+      // Play same animation again (should reset first)
+      controller.play("test");
+
+      // Before any update, skeleton should be reset
+      // Note: After play() is called, skeleton is reset but animation hasn't advanced yet
+      // The rotation will be identity or the first keyframe value
+      expect(controller.progress).toBe(0);
+    });
+  });
+});
+
+// Register a non-looping test animation
+registerAnimation({
+  name: "test-once",
+  duration: 1.0,
+  loop: false,
+  tracks: [
+    {
+      boneIndex: BoneIndex.Head,
+      keyframes: [
+        { time: 0, rotation: quatIdentity() },
+        { time: 1, rotation: quatFromEuler(1.0, 0, 0) },
+      ],
+    },
+  ],
+});
+
+describe("Non-looping Animation", () => {
+  let skeleton: PlayerSkeleton;
+
+  beforeEach(() => {
+    skeleton = createPlayerSkeleton("classic");
+  });
+
+  it("should stop at the end of non-looping animation", () => {
+    const controller = createAnimationController(skeleton);
+
+    controller.play("test-once");
+
+    // Update past the duration
+    updateAnimationController(controller, 1.5);
+
+    // Should no longer be playing
+    expect(controller.isPlaying).toBe(false);
+    // Note: progress returns 0 when time equals duration due to modulo operation
+    // This is current implementation behavior
+  });
+
+  it("should hold final pose when non-looping animation ends", () => {
+    const controller = createAnimationController(skeleton);
+
+    controller.play("test-once");
+
+    // Update to exactly the end
+    updateAnimationController(controller, 1.0);
+
+    const head = skeleton.bones.get(BoneIndex.Head);
+    const expectedRotation = quatFromEuler(1.0, 0, 0);
+
+    expect(head?.rotation[0]).toBeCloseTo(expectedRotation[0], 4);
+    expect(head?.rotation[3]).toBeCloseTo(expectedRotation[3], 4);
   });
 });

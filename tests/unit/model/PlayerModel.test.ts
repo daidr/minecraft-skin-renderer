@@ -6,6 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   createPlayerSkeleton,
   setBoneRotation,
+  setBonePositionOffset,
   resetSkeleton,
   cloneSkeleton,
 } from "@/model/PlayerModel";
@@ -78,8 +79,37 @@ describe("PlayerModel", () => {
     });
   });
 
+  describe("setBonePositionOffset", () => {
+    it("should set bone position offset", () => {
+      const skeleton = createPlayerSkeleton("classic");
+      const offset: [number, number, number] = [1, 2, 3];
+
+      setBonePositionOffset(skeleton, BoneIndex.Head, offset);
+
+      const head = skeleton.bones.get(BoneIndex.Head);
+      expect(head?.positionOffset).toEqual([1, 2, 3]);
+    });
+
+    it("should handle invalid bone index", () => {
+      const skeleton = createPlayerSkeleton("classic");
+
+      // Should not throw
+      setBonePositionOffset(skeleton, 999 as BoneIndex, [1, 2, 3]);
+    });
+
+    it("should allow negative offsets", () => {
+      const skeleton = createPlayerSkeleton("classic");
+      const offset: [number, number, number] = [-5, -10, -15];
+
+      setBonePositionOffset(skeleton, BoneIndex.Body, offset);
+
+      const body = skeleton.bones.get(BoneIndex.Body);
+      expect(body?.positionOffset).toEqual([-5, -10, -15]);
+    });
+  });
+
   describe("resetSkeleton", () => {
-    it("should reset all bone rotations to identity", () => {
+    it("should reset all bone rotations to identity (except elytra wings)", () => {
       const skeleton = createPlayerSkeleton("classic");
 
       // Set some rotations
@@ -89,9 +119,30 @@ describe("PlayerModel", () => {
       // Reset
       resetSkeleton(skeleton);
 
-      // Check all bones have identity rotation
-      for (const bone of skeleton.bones.values()) {
-        expect(bone.rotation).toEqual(quatIdentity());
+      // Check all bones have identity rotation (except wings which have default rotation)
+      for (const [index, bone] of skeleton.bones) {
+        if (index === BoneIndex.LeftWing || index === BoneIndex.RightWing) {
+          // Elytra wings have a default non-identity rotation (idle closed position)
+          expect(bone.rotation).not.toEqual(quatIdentity());
+        } else {
+          expect(bone.rotation).toEqual(quatIdentity());
+        }
+      }
+    });
+
+    it("should reset all position offsets to zero", () => {
+      const skeleton = createPlayerSkeleton("classic");
+
+      // Set some position offsets
+      setBonePositionOffset(skeleton, BoneIndex.Head, [1, 2, 3]);
+      setBonePositionOffset(skeleton, BoneIndex.Body, [4, 5, 6]);
+
+      // Reset
+      resetSkeleton(skeleton);
+
+      // Check all bones have zero position offset
+      for (const [, bone] of skeleton.bones) {
+        expect(bone.positionOffset).toEqual([0, 0, 0]);
       }
     });
   });

@@ -520,7 +520,10 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     if (fallbackBackend) {
       const fallbackPlugin = getRendererPlugin(fallbackBackend);
       if (fallbackPlugin) {
-        console.warn(`${targetBackend} initialization failed, falling back to ${fallbackBackend}:`, e);
+        console.warn(
+          `${targetBackend} initialization failed, falling back to ${fallbackBackend}:`,
+          e,
+        );
         renderer = await fallbackPlugin.createRenderer(rendererOptions);
       } else {
         throw e;

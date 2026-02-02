@@ -79,9 +79,17 @@ function createFlyAnimation(): Animation {
         boneIndex: BoneIndex.Cape,
         keyframes: [
           { time: 0, rotation: rot(10) },
-          { time: 0.25, rotation: quatFromEuler(degToRad(15), degToRad(2), 0), easing: easeInOutSine },
+          {
+            time: 0.25,
+            rotation: quatFromEuler(degToRad(15), degToRad(2), 0),
+            easing: easeInOutSine,
+          },
           { time: 0.5, rotation: rot(5), easing: easeInOutSine },
-          { time: 0.75, rotation: quatFromEuler(degToRad(15), degToRad(-2), 0), easing: easeInOutSine },
+          {
+            time: 0.75,
+            rotation: quatFromEuler(degToRad(15), degToRad(-2), 0),
+            easing: easeInOutSine,
+          },
           { time: 1, rotation: rot(10), easing: easeInOutSine },
         ],
       },
