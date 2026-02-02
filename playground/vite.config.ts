@@ -15,5 +15,11 @@ export default defineConfig({
   build: {
     outDir: resolve(__dirname, "../dist-playground"),
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, "index.html"),
+        "perf-test": resolve(__dirname, "perf-test.html"),
+      },
+    },
   },
 });
