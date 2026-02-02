@@ -2,8 +2,14 @@
  * Playground main entry point
  */
 
-import { createSkinViewer, PART_NAMES } from "../src";
+import { use, createSkinViewer, PART_NAMES } from "../src";
 import type { BackendType, BackEquipment, SkinViewer, PartName } from "../src";
+import { WebGLRendererPlugin } from "../src/webgl";
+import { WebGPURendererPlugin } from "../src/webgpu";
+
+// Register both renderers for the playground
+use(WebGLRendererPlugin);
+use(WebGPURendererPlugin);
 
 // Default texture paths
 const DEFAULT_SKIN_URL = "./default.png";

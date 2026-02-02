@@ -25,12 +25,7 @@ import {
   isWebGPUSupported,
 } from "../core/renderer/types";
 import type { BackendType, IBuffer, IPipeline, IRenderer, ITexture } from "../core/renderer/types";
-import {
-  createWebGLRenderer,
-  SKIN_FRAGMENT_SHADER,
-  SKIN_VERTEX_SHADER,
-} from "../core/renderer/webgl";
-import { createWebGPURenderer, SKIN_SHADER_WGSL } from "../core/renderer/webgpu";
+import { getRendererPlugin, getRegisteredBackends } from "../core/renderer/registry";
 import { BoneIndex, PART_NAMES, VERTEX_STRIDE, createDefaultVisibility } from "../model/types";
 import type {
   BoxGeometry,
@@ -473,32 +468,66 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
   // Determine and create renderer based on preferred backend
   const preferredBackend = options.preferredBackend ?? "auto";
-  let renderer: IRenderer;
+  const registeredBackends = getRegisteredBackends();
 
-  if (preferredBackend === "webgpu" || (preferredBackend === "auto" && isWebGPUSupported())) {
-    try {
-      renderer = await createWebGPURenderer({
-        canvas,
-        antialias: options.antialias ?? true,
-        pixelRatio: options.pixelRatio,
-        preserveDrawingBuffer: true,
-      });
-    } catch (e) {
-      console.warn("WebGPU initialization failed, falling back to WebGL:", e);
-      renderer = createWebGLRenderer({
-        canvas,
-        antialias: options.antialias ?? true,
-        pixelRatio: options.pixelRatio,
-        preserveDrawingBuffer: true,
-      });
+  if (registeredBackends.length === 0) {
+    throw new Error(
+      "No renderer registered. Please register a renderer using use():\n" +
+        "  import { use } from 'minecraft-skin-renderer'\n" +
+        "  import { WebGLRendererPlugin } from 'minecraft-skin-renderer/webgl'\n" +
+        "  use(WebGLRendererPlugin)",
+    );
+  }
+
+  // Determine which backend to use
+  let targetBackend: BackendType;
+  if (preferredBackend === "auto") {
+    // Prefer WebGPU if registered and supported, otherwise use first registered backend
+    if (getRendererPlugin("webgpu") && isWebGPUSupported()) {
+      targetBackend = "webgpu";
+    } else if (getRendererPlugin("webgl")) {
+      targetBackend = "webgl";
+    } else {
+      targetBackend = registeredBackends[0];
     }
   } else {
-    renderer = createWebGLRenderer({
-      canvas,
-      antialias: options.antialias ?? true,
-      pixelRatio: options.pixelRatio,
-      preserveDrawingBuffer: true,
-    });
+    targetBackend = preferredBackend;
+  }
+
+  const plugin = getRendererPlugin(targetBackend);
+  if (!plugin) {
+    throw new Error(
+      `Renderer "${targetBackend}" is not registered. Available: [${registeredBackends.join(", ")}]\n` +
+        `Please register it using use():\n` +
+        `  import { ${targetBackend === "webgpu" ? "WebGPURendererPlugin" : "WebGLRendererPlugin"} } from 'minecraft-skin-renderer/${targetBackend}'\n` +
+        `  use(${targetBackend === "webgpu" ? "WebGPURendererPlugin" : "WebGLRendererPlugin"})`,
+    );
+  }
+
+  const rendererOptions = {
+    canvas,
+    antialias: options.antialias ?? true,
+    pixelRatio: options.pixelRatio,
+    preserveDrawingBuffer: true,
+  };
+
+  let renderer: IRenderer;
+  try {
+    renderer = await plugin.createRenderer(rendererOptions);
+  } catch (e) {
+    // Try fallback to other registered backend
+    const fallbackBackend = registeredBackends.find((b) => b !== targetBackend);
+    if (fallbackBackend) {
+      const fallbackPlugin = getRendererPlugin(fallbackBackend);
+      if (fallbackPlugin) {
+        console.warn(`${targetBackend} initialization failed, falling back to ${fallbackBackend}:`, e);
+        renderer = await fallbackPlugin.createRenderer(rendererOptions);
+      } else {
+        throw e;
+      }
+    } else {
+      throw e;
+    }
   }
 
   renderer.resize(width, height);
@@ -542,10 +571,10 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     ],
   };
 
-  // Select shaders based on backend
-  const isWebGPU = renderer.backend === "webgpu";
-  const vertexShader = isWebGPU ? SKIN_SHADER_WGSL : SKIN_VERTEX_SHADER;
-  const fragmentShader = isWebGPU ? SKIN_SHADER_WGSL : SKIN_FRAGMENT_SHADER;
+  // Get shaders from the active plugin
+  const activePlugin = getRendererPlugin(renderer.backend)!;
+  const vertexShader = activePlugin.shaders.vertex;
+  const fragmentShader = activePlugin.shaders.fragment;
 
   // Create pipeline for inner parts (with backface culling)
   const skinPipeline = renderer.createPipeline({

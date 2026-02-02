@@ -5,7 +5,11 @@
  *
  * @example
  * ```ts
- * import { createSkinViewer } from 'minecraft-skin-renderer'
+ * import { use, createSkinViewer } from 'minecraft-skin-renderer'
+ * import { WebGLRendererPlugin } from 'minecraft-skin-renderer/webgl'
+ *
+ * // Register the renderer you want to use
+ * use(WebGLRendererPlugin)
  *
  * const viewer = await createSkinViewer({
  *   canvas: document.getElementById('canvas') as HTMLCanvasElement,
@@ -16,6 +20,10 @@
  * viewer.startRenderLoop()
  * ```
  */
+
+// Renderer registration
+export { use } from "./core/renderer/registry";
+export type { RendererPlugin, ShaderSources } from "./core/renderer/registry";
 
 // Main API
 export {

@@ -2,8 +2,14 @@
  * Performance test - unlimited frame rate rendering
  */
 
-import { createSkinViewer } from "../src";
+import { use, createSkinViewer } from "../src";
 import type { BackendType, SkinViewer } from "../src";
+import { WebGLRendererPlugin } from "../src/webgl";
+import { WebGPURendererPlugin } from "../src/webgpu";
+
+// Register both renderers for the performance test
+use(WebGLRendererPlugin);
+use(WebGPURendererPlugin);
 
 // Default textures
 const DEFAULT_SKIN_URL = "./default.png";
