@@ -57,7 +57,7 @@ function createIdleAnimation(): Animation {
           { time: 1, rotation: quatFromEuler(degToRad(10), 0, 0), easing: easeInOutSine },
         ],
       },
-      // Elytra wings closed - static position
+      // Elytra wings closed - subtle breathing motion
       {
         boneIndex: BoneIndex.LeftWing,
         keyframes: [
@@ -66,8 +66,14 @@ function createIdleAnimation(): Animation {
             rotation: quatFromEuler(degToRad(wingClosedX), degToRad(wingClosedY), degToRad(wingClosedZ)),
           },
           {
+            time: 0.5,
+            rotation: quatFromEuler(degToRad(wingClosedX + 2), degToRad(wingClosedY), degToRad(wingClosedZ + 1)),
+            easing: easeInOutSine,
+          },
+          {
             time: 1,
             rotation: quatFromEuler(degToRad(wingClosedX), degToRad(wingClosedY), degToRad(wingClosedZ)),
+            easing: easeInOutSine,
           },
         ],
       },
@@ -79,8 +85,14 @@ function createIdleAnimation(): Animation {
             rotation: quatFromEuler(degToRad(wingClosedX), degToRad(-wingClosedY), degToRad(-wingClosedZ)),
           },
           {
+            time: 0.5,
+            rotation: quatFromEuler(degToRad(wingClosedX + 2), degToRad(-wingClosedY), degToRad(-wingClosedZ - 1)),
+            easing: easeInOutSine,
+          },
+          {
             time: 1,
             rotation: quatFromEuler(degToRad(wingClosedX), degToRad(-wingClosedY), degToRad(-wingClosedZ)),
+            easing: easeInOutSine,
           },
         ],
       },

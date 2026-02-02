@@ -361,16 +361,21 @@ function computeBoneMatrices(skeleton: PlayerSkeleton): Float32Array {
     }
 
     // Compute local matrix:
-    // 1. Translate to bone position (relative to parent)
+    // 1. Translate to bone position (relative to parent) + animation offset
     // 2. Apply rotation around pivot point
     const pos = bone.position;
+    const offset = bone.positionOffset;
     const pivot = bone.pivot;
 
     // Local transform: translate to position, then rotate around pivot
     let localMatrix = mat4Identity();
 
-    // Translate to bone position
-    localMatrix = mat4Translate(localMatrix, pos);
+    // Translate to bone position + animation offset
+    localMatrix = mat4Translate(localMatrix, [
+      pos[0] + offset[0],
+      pos[1] + offset[1],
+      pos[2] + offset[2],
+    ]);
 
     // Translate to pivot, rotate, translate back
     localMatrix = mat4Translate(localMatrix, pivot);

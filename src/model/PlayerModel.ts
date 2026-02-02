@@ -32,6 +32,7 @@ function createBone(
     position,
     pivot,
     rotation: quatIdentity(),
+    positionOffset: [0, 0, 0],
     size,
   };
 }
@@ -266,10 +267,23 @@ export function setBoneRotation(
   }
 }
 
-/** Reset all bone rotations to identity */
+/** Set bone position offset (for animation) */
+export function setBonePositionOffset(
+  skeleton: PlayerSkeleton,
+  boneIndex: BoneIndex,
+  offset: Vec3,
+): void {
+  const bone = skeleton.bones.get(boneIndex);
+  if (bone) {
+    bone.positionOffset = offset;
+  }
+}
+
+/** Reset all bone rotations and position offsets */
 export function resetSkeleton(skeleton: PlayerSkeleton): void {
   for (const bone of skeleton.bones.values()) {
     bone.rotation = quatIdentity();
+    bone.positionOffset = [0, 0, 0];
   }
 }
 
@@ -282,6 +296,7 @@ export function cloneSkeleton(skeleton: PlayerSkeleton): PlayerSkeleton {
       position: [...bone.position] as Vec3,
       pivot: [...bone.pivot] as Vec3,
       rotation: [...bone.rotation] as Quat,
+      positionOffset: [...bone.positionOffset] as Vec3,
       size: [...bone.size] as Vec3,
     });
   }

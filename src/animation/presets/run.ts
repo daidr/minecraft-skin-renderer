@@ -18,11 +18,25 @@ function createRunAnimation(): Animation {
   const wingClosedY = 0.5;
   const wingClosedZ = 15;
 
+  // Vertical bobbing amplitude (in pixels) - like a small jump
+  const bobHeight = 1;
+
   return {
     name: "run",
     duration: 0.5, // 0.5 second cycle (running pace, faster than walk)
     loop: true,
     tracks: [
+      // Root vertical bobbing (twice per cycle - once for each step)
+      {
+        boneIndex: BoneIndex.Root,
+        keyframes: [
+          { time: 0, position: [0, 0, 0] },
+          { time: 0.25, position: [0, bobHeight, 0], easing: easeInOutSine },
+          { time: 0.5, position: [0, 0, 0], easing: easeInOutSine },
+          { time: 0.75, position: [0, bobHeight, 0], easing: easeInOutSine },
+          { time: 1, position: [0, 0, 0], easing: easeInOutSine },
+        ],
+      },
       // Head slight bob (same as walk, just faster)
       {
         boneIndex: BoneIndex.Head,
@@ -70,18 +84,18 @@ function createRunAnimation(): Animation {
           { time: 1, rotation: quatFromEuler(degToRad(legSwing), 0, 0), easing: easeInOutSine },
         ],
       },
-      // Cape flows back more while running
+      // Cape flows back more while running (minimal side sway)
       {
         boneIndex: BoneIndex.Cape,
         keyframes: [
-          { time: 0, rotation: quatFromEuler(degToRad(25), degToRad(8), 0) },
-          { time: 0.25, rotation: quatFromEuler(degToRad(18), 0, 0), easing: easeInOutSine },
-          { time: 0.5, rotation: quatFromEuler(degToRad(25), degToRad(-8), 0), easing: easeInOutSine },
-          { time: 0.75, rotation: quatFromEuler(degToRad(18), 0, 0), easing: easeInOutSine },
-          { time: 1, rotation: quatFromEuler(degToRad(25), degToRad(8), 0), easing: easeInOutSine },
+          { time: 0, rotation: quatFromEuler(degToRad(55), degToRad(2), 0) },
+          { time: 0.25, rotation: quatFromEuler(degToRad(50), 0, 0), easing: easeInOutSine },
+          { time: 0.5, rotation: quatFromEuler(degToRad(55), degToRad(-2), 0), easing: easeInOutSine },
+          { time: 0.75, rotation: quatFromEuler(degToRad(50), 0, 0), easing: easeInOutSine },
+          { time: 1, rotation: quatFromEuler(degToRad(55), degToRad(2), 0), easing: easeInOutSine },
         ],
       },
-      // Elytra wings closed - static position
+      // Elytra wings closed - more sway while running (Y stays same sign to avoid clipping)
       {
         boneIndex: BoneIndex.LeftWing,
         keyframes: [
@@ -90,8 +104,14 @@ function createRunAnimation(): Animation {
             rotation: quatFromEuler(degToRad(wingClosedX), degToRad(wingClosedY), degToRad(wingClosedZ)),
           },
           {
+            time: 0.5,
+            rotation: quatFromEuler(degToRad(wingClosedX + 5), degToRad(wingClosedY + 3), degToRad(wingClosedZ + 3)),
+            easing: easeInOutSine,
+          },
+          {
             time: 1,
             rotation: quatFromEuler(degToRad(wingClosedX), degToRad(wingClosedY), degToRad(wingClosedZ)),
+            easing: easeInOutSine,
           },
         ],
       },
@@ -103,8 +123,14 @@ function createRunAnimation(): Animation {
             rotation: quatFromEuler(degToRad(wingClosedX), degToRad(-wingClosedY), degToRad(-wingClosedZ)),
           },
           {
+            time: 0.5,
+            rotation: quatFromEuler(degToRad(wingClosedX + 5), degToRad(-wingClosedY - 3), degToRad(-wingClosedZ - 3)),
+            easing: easeInOutSine,
+          },
+          {
             time: 1,
             rotation: quatFromEuler(degToRad(wingClosedX), degToRad(-wingClosedY), degToRad(-wingClosedZ)),
+            easing: easeInOutSine,
           },
         ],
       },

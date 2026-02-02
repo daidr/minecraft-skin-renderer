@@ -2,7 +2,7 @@
  * Animation system types
  */
 
-import type { Quat } from "../core/math";
+import type { Quat, Vec3 } from "../core/math";
 import type { BoneIndex, PlayerSkeleton } from "../model/types";
 
 /** Easing function type */
@@ -11,7 +11,8 @@ export type EasingFunction = (t: number) => number;
 /** Animation keyframe */
 export interface Keyframe {
   time: number; // 0-1 normalized time
-  rotation: Quat; // Target rotation
+  rotation?: Quat; // Target rotation (optional)
+  position?: Vec3; // Target position offset (optional)
   easing?: EasingFunction;
 }
 

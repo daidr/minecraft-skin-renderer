@@ -37,6 +37,7 @@ export interface Bone {
   position: Vec3; // Local position relative to parent
   pivot: Vec3; // Pivot point for rotation
   rotation: Quat; // Current rotation
+  positionOffset: Vec3; // Animation-driven position offset
   size: Vec3; // Size of the associated geometry
 }
 
@@ -100,8 +101,12 @@ export function getBoneLocalMatrix(bone: Bone): Mat4 {
   // Translate to pivot, rotate, translate back, then apply position
   let matrix = mat4Identity();
 
-  // Apply position offset
-  matrix = mat4Translate(matrix, bone.position);
+  // Apply position offset (base position + animation offset)
+  matrix = mat4Translate(matrix, [
+    bone.position[0] + bone.positionOffset[0],
+    bone.position[1] + bone.positionOffset[1],
+    bone.position[2] + bone.positionOffset[2],
+  ]);
 
   // Move to pivot point
   matrix = mat4Translate(matrix, bone.pivot);

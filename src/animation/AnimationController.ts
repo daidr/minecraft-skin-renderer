@@ -2,10 +2,10 @@
  * Animation controller implementation
  */
 
-import { quatIdentity, quatSlerp } from "../core/math";
-import type { Quat } from "../core/math";
+import { quatIdentity, quatSlerp, vec3Lerp, vec3Zero } from "../core/math";
+import type { Quat, Vec3 } from "../core/math";
 import type { PlayerSkeleton } from "../model/types";
-import { setBoneRotation, resetSkeleton } from "../model/PlayerModel";
+import { setBoneRotation, setBonePositionOffset, resetSkeleton } from "../model/PlayerModel";
 import { linear } from "./easing";
 import { getAnimation } from "./types";
 import type { Animation, AnimationConfig, AnimationController, Keyframe } from "./types";
@@ -31,6 +31,12 @@ interface ControllerState {
 // Internal state storage using WeakMap
 const controllerStates = new WeakMap<AnimationController, ControllerState>();
 
+/** Result of keyframe interpolation */
+interface InterpolationResult {
+  rotation?: Quat;
+  position?: Vec3;
+}
+
 /**
  * Interpolate between keyframes
  */
@@ -38,13 +44,9 @@ function interpolateKeyframes(
   keyframes: Keyframe[],
   normalizedTime: number,
   amplitude: number,
-): Quat {
+): InterpolationResult {
   if (keyframes.length === 0) {
-    return quatIdentity();
-  }
-
-  if (keyframes.length === 1) {
-    return keyframes[0]!.rotation;
+    return {};
   }
 
   // Find the two keyframes to interpolate between
@@ -74,12 +76,26 @@ function interpolateKeyframes(
   const easing = nextKeyframe.easing ?? linear;
   const easedT = easing(localT);
 
-  // Interpolate rotation
-  const result = quatSlerp(prevKeyframe.rotation, nextKeyframe.rotation, easedT);
+  const result: InterpolationResult = {};
 
-  // Apply amplitude scaling (interpolate from identity)
-  if (amplitude !== 1.0) {
-    return quatSlerp(quatIdentity(), result, amplitude);
+  // Interpolate rotation if present
+  if (prevKeyframe.rotation && nextKeyframe.rotation) {
+    let rotation = quatSlerp(prevKeyframe.rotation, nextKeyframe.rotation, easedT);
+    // Apply amplitude scaling (interpolate from identity)
+    if (amplitude !== 1.0) {
+      rotation = quatSlerp(quatIdentity(), rotation, amplitude);
+    }
+    result.rotation = rotation;
+  }
+
+  // Interpolate position if present
+  if (prevKeyframe.position && nextKeyframe.position) {
+    let position = vec3Lerp(prevKeyframe.position, nextKeyframe.position, easedT);
+    // Apply amplitude scaling
+    if (amplitude !== 1.0) {
+      position = vec3Lerp(vec3Zero(), position, amplitude);
+    }
+    result.position = position;
   }
 
   return result;
@@ -194,7 +210,12 @@ export function updateAnimationController(
   const amplitude = config.amplitude ?? 1.0;
 
   for (const track of animation.tracks) {
-    const rotation = interpolateKeyframes(track.keyframes, normalizedTime, amplitude);
-    setBoneRotation(controller.skeleton, track.boneIndex, rotation);
+    const result = interpolateKeyframes(track.keyframes, normalizedTime, amplitude);
+    if (result.rotation) {
+      setBoneRotation(controller.skeleton, track.boneIndex, result.rotation);
+    }
+    if (result.position) {
+      setBonePositionOffset(controller.skeleton, track.boneIndex, result.position);
+    }
   }
 }

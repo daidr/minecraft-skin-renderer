@@ -10,7 +10,7 @@ import type { Animation } from "../types";
 
 /** Create walk animation */
 function createWalkAnimation(): Animation {
-  const armSwing = 30; // degrees
+  const armSwing = 24; // degrees
   const legSwing = 40; // degrees
 
   // Elytra closed position
@@ -70,18 +70,18 @@ function createWalkAnimation(): Animation {
           { time: 1, rotation: quatFromEuler(degToRad(legSwing), 0, 0), easing: easeInOutSine },
         ],
       },
-      // Cape sway while walking
+      // Cape sway while walking (minimal side sway)
       {
         boneIndex: BoneIndex.Cape,
         keyframes: [
-          { time: 0, rotation: quatFromEuler(degToRad(15), degToRad(5), 0) },
-          { time: 0.25, rotation: quatFromEuler(degToRad(10), 0, 0), easing: easeInOutSine },
-          { time: 0.5, rotation: quatFromEuler(degToRad(15), degToRad(-5), 0), easing: easeInOutSine },
-          { time: 0.75, rotation: quatFromEuler(degToRad(10), 0, 0), easing: easeInOutSine },
-          { time: 1, rotation: quatFromEuler(degToRad(15), degToRad(5), 0), easing: easeInOutSine },
+          { time: 0, rotation: quatFromEuler(degToRad(22), degToRad(2), 0) },
+          { time: 0.25, rotation: quatFromEuler(degToRad(18), 0, 0), easing: easeInOutSine },
+          { time: 0.5, rotation: quatFromEuler(degToRad(22), degToRad(-2), 0), easing: easeInOutSine },
+          { time: 0.75, rotation: quatFromEuler(degToRad(18), 0, 0), easing: easeInOutSine },
+          { time: 1, rotation: quatFromEuler(degToRad(22), degToRad(2), 0), easing: easeInOutSine },
         ],
       },
-      // Elytra wings closed - static position
+      // Elytra wings closed - slight sway while walking (Y stays same sign to avoid clipping)
       {
         boneIndex: BoneIndex.LeftWing,
         keyframes: [
@@ -90,8 +90,14 @@ function createWalkAnimation(): Animation {
             rotation: quatFromEuler(degToRad(wingClosedX), degToRad(wingClosedY), degToRad(wingClosedZ)),
           },
           {
+            time: 0.5,
+            rotation: quatFromEuler(degToRad(wingClosedX + 3), degToRad(wingClosedY + 1), degToRad(wingClosedZ + 2)),
+            easing: easeInOutSine,
+          },
+          {
             time: 1,
             rotation: quatFromEuler(degToRad(wingClosedX), degToRad(wingClosedY), degToRad(wingClosedZ)),
+            easing: easeInOutSine,
           },
         ],
       },
@@ -103,8 +109,14 @@ function createWalkAnimation(): Animation {
             rotation: quatFromEuler(degToRad(wingClosedX), degToRad(-wingClosedY), degToRad(-wingClosedZ)),
           },
           {
+            time: 0.5,
+            rotation: quatFromEuler(degToRad(wingClosedX + 3), degToRad(-wingClosedY - 1), degToRad(-wingClosedZ - 2)),
+            easing: easeInOutSine,
+          },
+          {
             time: 1,
             rotation: quatFromEuler(degToRad(wingClosedX), degToRad(-wingClosedY), degToRad(-wingClosedZ)),
+            easing: easeInOutSine,
           },
         ],
       },
