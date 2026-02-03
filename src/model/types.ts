@@ -2,7 +2,7 @@
  * Model system types
  */
 
-import type { Mat4, Quat, Vec3 } from "../core/math";
+import type { Quat, Vec3 } from "../core/math";
 
 /** Model variant (arm width) */
 export type ModelVariant = "classic" | "slim";
@@ -154,31 +154,6 @@ export function createDefaultVisibility(): PartsVisibility {
 /** Vertex data stride (floats per vertex) */
 export const VERTEX_STRIDE = 10; // 3 pos + 2 uv + 3 normal + 1 boneIndex + 1 padding
 
-/** Get bone matrix from bone state */
-export function getBoneLocalMatrix(bone: Bone): Mat4 {
-  // Import dynamically to avoid circular dependency
-  const { mat4Identity, mat4Translate, mat4Multiply } = require("../core/math");
-  const { quatToMat4 } = require("../core/math");
-
-  // Translate to pivot, rotate, translate back, then apply position
-  let matrix = mat4Identity();
-
-  // Apply position offset (base position + animation offset)
-  matrix = mat4Translate(matrix, [
-    bone.position[0] + bone.positionOffset[0],
-    bone.position[1] + bone.positionOffset[1],
-    bone.position[2] + bone.positionOffset[2],
-  ]);
-
-  // Move to pivot point
-  matrix = mat4Translate(matrix, bone.pivot);
-
-  // Apply rotation
-  const rotMatrix = quatToMat4(bone.rotation);
-  matrix = mat4Multiply(matrix, rotMatrix);
-
-  // Move back from pivot
-  matrix = mat4Translate(matrix, [-bone.pivot[0], -bone.pivot[1], -bone.pivot[2]]);
-
-  return matrix;
-}
+// Re-export getBoneLocalMatrix from bone-utils to maintain backwards compatibility
+// This avoids circular dependency between model/types and core/math
+export { getBoneLocalMatrix } from "./bone-utils";

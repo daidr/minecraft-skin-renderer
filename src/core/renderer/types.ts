@@ -158,6 +158,101 @@ export interface IPipeline {
   dispose(): void;
 }
 
+/**
+ * Uniform buffer interface for structured uniform data management.
+ * This provides a more efficient way to manage uniforms, especially for WebGPU
+ * where uniforms are typically stored in a single buffer.
+ */
+export interface IUniformBuffer {
+  readonly id: number;
+
+  /**
+   * Set a mat4 uniform value
+   * @param name - Uniform name (e.g., "modelMatrix")
+   * @param value - 16-element Float32Array or Mat4
+   */
+  setMat4(name: string, value: Float32Array | Mat4): void;
+
+  /**
+   * Set a mat4 array uniform value (e.g., bone matrices)
+   * @param name - Base uniform name (e.g., "boneMatrices")
+   * @param value - Float32Array containing all matrices
+   * @param count - Number of matrices
+   */
+  setMat4Array(name: string, value: Float32Array, count: number): void;
+
+  /**
+   * Set a float uniform value
+   * @param name - Uniform name
+   * @param value - Float value
+   */
+  setFloat(name: string, value: number): void;
+
+  /**
+   * Set a vec2 uniform value
+   * @param name - Uniform name
+   * @param value - [x, y] tuple
+   */
+  setVec2(name: string, value: [number, number]): void;
+
+  /**
+   * Set a vec3 uniform value
+   * @param name - Uniform name
+   * @param value - [x, y, z] tuple
+   */
+  setVec3(name: string, value: [number, number, number]): void;
+
+  /**
+   * Set a vec4 uniform value
+   * @param name - Uniform name
+   * @param value - [x, y, z, w] tuple
+   */
+  setVec4(name: string, value: [number, number, number, number]): void;
+
+  /**
+   * Upload all pending uniform changes to GPU.
+   * Call this before draw calls to ensure uniforms are up to date.
+   */
+  upload(): void;
+
+  /**
+   * Mark all uniforms as dirty, forcing a full upload on next upload() call.
+   */
+  markDirty(): void;
+
+  /**
+   * Dispose the uniform buffer and release GPU resources.
+   */
+  dispose(): void;
+}
+
+/**
+ * Uniform buffer layout descriptor for defining uniform structure.
+ * Used when creating uniform buffers with specific layouts.
+ */
+export interface UniformBufferLayout {
+  /** Total size in bytes */
+  size: number;
+  /** Uniform entries with their offsets */
+  entries: UniformLayoutEntry[];
+}
+
+/**
+ * Individual uniform entry in a buffer layout.
+ */
+export interface UniformLayoutEntry {
+  /** Uniform name for lookup */
+  name: string;
+  /** Byte offset within the buffer */
+  offset: number;
+  /** Size in bytes */
+  size: number;
+  /** Type hint for validation */
+  type: "float" | "vec2" | "vec3" | "vec4" | "mat4" | "mat4[]";
+  /** For array types, the number of elements */
+  count?: number;
+}
+
 /** Bind group for uniforms and textures */
 export interface BindGroup {
   uniforms: Record<string, UniformValue>;

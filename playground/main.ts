@@ -93,7 +93,9 @@ const showAllPartsBtn = document.getElementById("showAllParts") as HTMLButtonEle
 const hideAllOuterBtn = document.getElementById("hideAllOuter") as HTMLButtonElement;
 
 // Panorama controls
-const loadDefaultPanoramaBtn = document.getElementById("loadDefaultPanoramaBtn") as HTMLButtonElement;
+const loadDefaultPanoramaBtn = document.getElementById(
+  "loadDefaultPanoramaBtn",
+) as HTMLButtonElement;
 const panoramaUrlInput = document.getElementById("panoramaUrl") as HTMLInputElement;
 const loadPanoramaBtn = document.getElementById("loadPanoramaBtn") as HTMLButtonElement;
 const panoramaFileInput = document.getElementById("panoramaFile") as HTMLInputElement;

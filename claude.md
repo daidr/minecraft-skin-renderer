@@ -24,14 +24,15 @@ Use `bun` for all commands (not npm/yarn/pnpm):
 The library uses a plugin system for tree-shaking renderers:
 
 ```ts
-import { use, createSkinViewer } from 'minecraft-skin-renderer'
-import { WebGLRendererPlugin } from 'minecraft-skin-renderer/webgl'
+import { use, createSkinViewer } from "minecraft-skin-renderer";
+import { WebGLRendererPlugin } from "minecraft-skin-renderer/webgl";
 
-use(WebGLRendererPlugin)  // Register before creating viewer
-const viewer = await createSkinViewer({ canvas, skin: '...' })
+use(WebGLRendererPlugin); // Register before creating viewer
+const viewer = await createSkinViewer({ canvas, skin: "..." });
 ```
 
 Three package entry points:
+
 - `minecraft-skin-renderer` - Main API (SkinViewer, types, utilities)
 - `minecraft-skin-renderer/webgl` - WebGL renderer plugin
 - `minecraft-skin-renderer/webgpu` - WebGPU renderer plugin

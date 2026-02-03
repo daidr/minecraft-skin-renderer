@@ -17,6 +17,9 @@ export class WebGPUTextureImpl implements ITexture {
   private sampler: GPUSampler;
   private disposed = false;
 
+  /** Version counter for cancelling pending updates */
+  private updateVersion = 0;
+
   private constructor(
     device: GPUDevice,
     texture: GPUTexture,
@@ -131,18 +134,33 @@ export class WebGPUTextureImpl implements ITexture {
   update(source: TexImageSource): void {
     if (this.disposed) return;
 
+    // Increment version to cancel any pending updates
+    this.updateVersion++;
+
     // For WebGPU, we need to handle this asynchronously
-    // but the interface expects sync. We'll use a fire-and-forget approach
-    this.updateAsync(source).catch(console.error);
+    // but the interface expects sync. We use version checking to handle race conditions
+    this.updateAsync(source, this.updateVersion).catch(console.error);
   }
 
-  /** Async update implementation */
-  private async updateAsync(source: TexImageSource): Promise<void> {
+  /**
+   * Async update implementation with version checking.
+   * If the version changes during the async operation, the update is cancelled.
+   */
+  private async updateAsync(source: TexImageSource, version: number): Promise<void> {
     let bitmap: ImageBitmap;
     if (source instanceof ImageBitmap) {
       bitmap = source;
     } else {
       bitmap = await createImageBitmap(source);
+    }
+
+    // Check if this update has been superseded by a newer one
+    if (this.disposed || this.updateVersion !== version) {
+      // Close the bitmap if we created it and won't use it
+      if (!(source instanceof ImageBitmap)) {
+        bitmap.close();
+      }
+      return;
     }
 
     this.device.queue.copyExternalImageToTexture(

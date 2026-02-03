@@ -63,8 +63,15 @@ export class WebGPURenderer implements IRenderer {
   private uniformData: ArrayBuffer;
   private uniformDataView: DataView;
 
+  // Dirty tracking for partial uniform updates (reserved for future optimization)
+  // Note: boneMatrices are always updated since animations modify the array in-place
+
   // State cache
   private lastPipelineId = -1;
+
+  // Texture BindGroup cache: Map<textureId, { bindGroup, pipelineId }>
+  private textureBindGroupCache: Map<number, { bindGroup: GPUBindGroup; pipelineId: number }> =
+    new Map();
 
   private constructor(
     options: RendererOptions,
@@ -251,72 +258,100 @@ export class WebGPURenderer implements IRenderer {
       this.lastPipelineId = pipeline.id;
     }
 
-    // Update uniform buffer with bind group data
+    // Update uniform buffer with bind group data (using partial updates when possible)
     const { uniforms } = params.bindGroup;
-
-    // Write uniforms to buffer
-    // Reset uniform data
     const float32View = new Float32Array(this.uniformData);
 
-    // Model matrix (offset 0)
+    // Track what needs to be uploaded (for future partial update optimization)
+    let minOffset = UNIFORM_BUFFER_SIZE;
+    let maxOffset = 0;
+
+    // Model matrix (offset 0) - typically constant, check if changed
     if (uniforms.u_modelMatrix) {
       const mat = uniforms.u_modelMatrix as Float32Array;
       float32View.set(mat, OFFSET_MODEL_MATRIX / 4);
+      minOffset = Math.min(minOffset, OFFSET_MODEL_MATRIX);
+      maxOffset = Math.max(maxOffset, OFFSET_MODEL_MATRIX + 64);
     }
 
-    // View matrix (offset 64)
+    // View matrix (offset 64) - changes with camera
     if (uniforms.u_viewMatrix) {
       const mat = uniforms.u_viewMatrix as Float32Array;
       float32View.set(mat, OFFSET_VIEW_MATRIX / 4);
+      minOffset = Math.min(minOffset, OFFSET_VIEW_MATRIX);
+      maxOffset = Math.max(maxOffset, OFFSET_VIEW_MATRIX + 64);
     }
 
-    // Projection matrix (offset 128)
+    // Projection matrix (offset 128) - changes with resize
     if (uniforms.u_projectionMatrix) {
       const mat = uniforms.u_projectionMatrix as Float32Array;
       float32View.set(mat, OFFSET_PROJECTION_MATRIX / 4);
+      minOffset = Math.min(minOffset, OFFSET_PROJECTION_MATRIX);
+      maxOffset = Math.max(maxOffset, OFFSET_PROJECTION_MATRIX + 64);
     }
 
-    // Bone matrices (offset 192)
-    // Handle both array notation and direct array
+    // Bone matrices (offset 192) - always update since content may change in-place
     const boneMatrices = uniforms["u_boneMatrices[0]"] || uniforms.u_boneMatrices;
     if (boneMatrices) {
       const mat = boneMatrices as Float32Array;
+      // Always update bone matrices - the caller may update the same Float32Array in-place
+      // for animations, so we cannot rely on reference comparison
       float32View.set(mat, OFFSET_BONE_MATRICES / 4);
+      minOffset = Math.min(minOffset, OFFSET_BONE_MATRICES);
+      maxOffset = Math.max(maxOffset, OFFSET_BONE_MATRICES + 1536);
     }
 
     // Alpha test (offset 1728)
     if (uniforms.u_alphaTest !== undefined) {
       this.uniformDataView.setFloat32(OFFSET_ALPHA_TEST, uniforms.u_alphaTest as number, true);
+      minOffset = Math.min(minOffset, OFFSET_ALPHA_TEST);
+      maxOffset = Math.max(maxOffset, OFFSET_ALPHA_TEST + 16); // Aligned to 16 bytes
     }
 
-    // Upload uniform buffer
-    this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformData);
+    // Upload uniform buffer (full upload for now, partial optimization can be added later)
+    // Note: For skin rendering, bone matrices change frequently so partial update has limited benefit
+    if (maxOffset > minOffset) {
+      this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformData);
+    }
 
     // Set uniform bind group (group 0)
     this.renderPassEncoder.setBindGroup(0, this.uniformBindGroup);
 
-    // Create and set texture bind group (group 1)
+    // Create and set texture bind group (group 1) with caching
     const { textures } = params.bindGroup;
     const textureEntries = Object.entries(textures);
     if (textureEntries.length > 0) {
       const [, texture] = textureEntries[0];
       const tex = texture as WebGPUTextureImpl;
 
-      const textureBindGroup = this.device.createBindGroup({
-        layout: pipeline.getTextureBindGroupLayout(),
-        entries: [
-          {
-            binding: 0,
-            resource: tex.getSampler(),
-          },
-          {
-            binding: 1,
-            resource: tex.getTextureView(),
-          },
-        ],
-      });
+      // Check cache for existing bind group
+      const cacheKey = tex.id;
+      let cached = this.textureBindGroupCache.get(cacheKey);
 
-      this.renderPassEncoder.setBindGroup(1, textureBindGroup);
+      // Invalidate cache if pipeline changed (different layout)
+      if (cached && cached.pipelineId !== pipeline.id) {
+        cached = undefined;
+      }
+
+      if (!cached) {
+        const textureBindGroup = this.device.createBindGroup({
+          layout: pipeline.getTextureBindGroupLayout(),
+          entries: [
+            {
+              binding: 0,
+              resource: tex.getSampler(),
+            },
+            {
+              binding: 1,
+              resource: tex.getTextureView(),
+            },
+          ],
+        });
+        cached = { bindGroup: textureBindGroup, pipelineId: pipeline.id };
+        this.textureBindGroupCache.set(cacheKey, cached);
+      }
+
+      this.renderPassEncoder.setBindGroup(1, cached.bindGroup);
     }
 
     // Set vertex buffers
@@ -362,17 +397,49 @@ export class WebGPURenderer implements IRenderer {
     this.createDepthTexture();
   }
 
+  /**
+   * Invalidate texture bind group cache for a specific texture.
+   * Call this when a texture is updated or disposed.
+   */
+  invalidateTextureCache(textureId: number): void {
+    this.textureBindGroupCache.delete(textureId);
+  }
+
   /** Dispose the renderer */
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
 
+    // End any in-progress render pass
+    if (this.renderPassEncoder) {
+      this.renderPassEncoder.end();
+      this.renderPassEncoder = null;
+    }
+
+    // Submit any pending commands before cleanup
+    if (this.commandEncoder) {
+      this.device.queue.submit([this.commandEncoder.finish()]);
+      this.commandEncoder = null;
+    }
+
+    // Clear bind group cache (GPUBindGroup objects are not explicitly destroyed)
+    this.textureBindGroupCache.clear();
+
+    // Clean up depth texture and view
+    this.depthTextureView = null;
     if (this.depthTexture) {
       this.depthTexture.destroy();
       this.depthTexture = null;
     }
 
+    // Clean up current texture view reference
+    this.currentTextureView = null;
+
+    // Destroy uniform buffer
     this.uniformBuffer.destroy();
+
+    // Note: uniformBindGroupLayout and uniformBindGroup are managed by the device
+    // and will be cleaned up when the device is lost/destroyed
   }
 }
 

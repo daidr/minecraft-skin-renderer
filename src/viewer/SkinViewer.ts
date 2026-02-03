@@ -1,9 +1,13 @@
 /**
  * Main SkinViewer implementation
+ *
+ * This module provides the public API for the Minecraft skin viewer.
+ * It orchestrates the rendering subsystems while delegating specific concerns to:
+ * - ResourceManager: GPU resource lifecycle
+ * - BoneMatrixComputer: Skeleton matrix calculations
+ * - RenderState: Pre-allocated render objects
  */
 
-import { mat4Identity, mat4Multiply, mat4Translate, quatToMat4 } from "../core/math";
-import type { Mat4 } from "../core/math";
 import { createCamera, setCameraAspect } from "../core/camera/Camera";
 import type { Camera } from "../core/camera/Camera";
 import {
@@ -16,24 +20,10 @@ import {
   updateOrbitControls,
 } from "../core/camera/OrbitControls";
 import type { OrbitControls } from "../core/camera/OrbitControls";
-import {
-  BlendMode,
-  BufferUsage,
-  CullMode,
-  DepthCompare,
-  VertexFormat,
-  isWebGPUSupported,
-} from "../core/renderer/types";
-import type {
-  BackendType,
-  IBuffer,
-  IPipeline,
-  IRenderer,
-  ITexture,
-  UniformValue,
-} from "../core/renderer/types";
+import { BufferUsage, isWebGPUSupported } from "../core/renderer/types";
+import type { BackendType, IBuffer, IPipeline, IRenderer, ITexture } from "../core/renderer/types";
 import { getRendererPlugin, getRegisteredBackends } from "../core/renderer/registry";
-import { BoneIndex, PART_NAMES, VERTEX_STRIDE, createDefaultVisibility } from "../model/types";
+import { PART_NAMES, createDefaultVisibility } from "../model/types";
 import type {
   BoxGeometry,
   ModelVariant,
@@ -42,13 +32,6 @@ import type {
   PartsVisibility,
 } from "../model/types";
 import { createPlayerSkeleton, resetSkeleton } from "../model/PlayerModel";
-import {
-  createBoxGeometry,
-  createCapeBoxGeometry,
-  mergeGeometries,
-} from "../model/geometry/BoxGeometry";
-import { getSkinUV } from "../model/uv/SkinUV";
-import { getCapeUV, getElytraUV } from "../model/uv/CapeUV";
 import { loadSkinTexture, loadCapeTexture, createPlaceholderTexture } from "../texture";
 import type { TextureSource } from "../texture";
 import { createRenderLoop, startRenderLoop, stopRenderLoop } from "./RenderLoop";
@@ -60,6 +43,20 @@ import {
 } from "../animation/AnimationController";
 import type { BackgroundRenderer } from "../core/plugins/types";
 import { getBackgroundPlugin } from "../core/plugins/registry";
+
+// Import refactored modules
+import {
+  createAllPartGeometries,
+  createAllPartBuffers,
+  disposeAllPartBuffers,
+  createCapeGeometry,
+  createElytraGeometry,
+  createPipelines,
+} from "./ResourceManager";
+import type { PartBuffers, PartGeometry } from "./ResourceManager";
+import { computeBoneMatrices } from "./BoneMatrixComputer";
+import { createRenderBindGroups } from "./RenderState";
+import type { RenderBindGroups } from "./RenderState";
 
 /** Back equipment type (cape, elytra, or none) */
 export type BackEquipment = "cape" | "elytra" | "none";
@@ -157,21 +154,7 @@ export interface SkinViewer {
   dispose(): void;
 }
 
-/** Geometry for a single part with inner and outer layers */
-interface PartGeometry {
-  inner: BoxGeometry;
-  outer: BoxGeometry;
-}
-
-/** GPU buffers for a single part */
-interface PartBuffers {
-  innerVertexBuffer: IBuffer;
-  innerIndexBuffer: IBuffer;
-  outerVertexBuffer: IBuffer;
-  outerIndexBuffer: IBuffer;
-  innerIndexCount: number;
-  outerIndexCount: number;
-}
+// PartGeometry and PartBuffers are imported from ResourceManager
 
 /** Internal SkinViewer state */
 interface SkinViewerState {
@@ -185,299 +168,44 @@ interface SkinViewerState {
   variant: ModelVariant;
 
   // GPU resources - pipelines
-  skinPipeline: IPipeline; // inner parts (with backface culling)
-  overlayPipeline: IPipeline; // overlay parts (double-sided, no culling)
-  capePipeline: IPipeline; // cape/elytra (double-sided)
+  skinPipeline: IPipeline;
+  overlayPipeline: IPipeline;
+  capePipeline: IPipeline;
 
-  // GPU resources - part buffers (each part has inner and outer)
+  // GPU resources - part buffers
   partBuffers: Record<PartName, PartBuffers>;
 
-  // GPU resources - cape
+  // GPU resources - cape/elytra
   capeVertexBuffer: IBuffer;
   capeIndexBuffer: IBuffer;
   capeGeometry: BoxGeometry;
-
-  // GPU resources - elytra
   elytraVertexBuffer: IBuffer;
   elytraIndexBuffer: IBuffer;
   elytraGeometry: BoxGeometry;
 
+  // Textures
   skinTexture: ITexture | null;
-  /** Cape texture used for both cape and elytra */
   capeTexture: ITexture | null;
 
   // Geometry data
   partGeometries: Record<PartName, PartGeometry>;
 
-  // Parts visibility
+  // Visibility and equipment
   partsVisibility: PartsVisibility;
-
-  // Back equipment state
   backEquipment: BackEquipment;
 
   // Performance optimization: bone matrix cache
   boneMatricesCache: Float32Array;
   boneMatricesDirty: boolean;
 
-  // Background state (only used if a background plugin is registered)
+  // Performance optimization: pre-allocated render objects (from RenderState module)
+  renderBindGroups: RenderBindGroups;
+
+  // Background state
   backgroundRenderer: BackgroundRenderer | null;
 
   // State flags
   disposed: boolean;
-}
-
-/**
- * Create geometry for all parts (separated by part and layer)
- */
-function createAllPartGeometries(variant: ModelVariant): Record<PartName, PartGeometry> {
-  const uvMap = getSkinUV(variant);
-  const armWidth = variant === "slim" ? 3 : 4;
-
-  return {
-    head: {
-      inner: createBoxGeometry([8, 8, 8], uvMap.head.inner, BoneIndex.Head, [0, 4, 0]),
-      outer: createBoxGeometry([8, 8, 8], uvMap.head.outer, BoneIndex.HeadOverlay, [0, 4, 0], 0.5),
-    },
-    body: {
-      inner: createBoxGeometry([8, 12, 4], uvMap.body.inner, BoneIndex.Body, [0, -6, 0]),
-      outer: createBoxGeometry(
-        [8, 12, 4],
-        uvMap.body.outer,
-        BoneIndex.BodyOverlay,
-        [0, -6, 0],
-        0.25,
-      ),
-    },
-    rightArm: {
-      inner: createBoxGeometry(
-        [armWidth, 12, 4],
-        uvMap.rightArm.inner,
-        BoneIndex.RightArm,
-        [0, -6, 0],
-      ),
-      outer: createBoxGeometry(
-        [armWidth, 12, 4],
-        uvMap.rightArm.outer,
-        BoneIndex.RightArmOverlay,
-        [0, -6, 0],
-        0.25,
-      ),
-    },
-    leftArm: {
-      inner: createBoxGeometry(
-        [armWidth, 12, 4],
-        uvMap.leftArm.inner,
-        BoneIndex.LeftArm,
-        [0, -6, 0],
-      ),
-      outer: createBoxGeometry(
-        [armWidth, 12, 4],
-        uvMap.leftArm.outer,
-        BoneIndex.LeftArmOverlay,
-        [0, -6, 0],
-        0.25,
-      ),
-    },
-    rightLeg: {
-      inner: createBoxGeometry([4, 12, 4], uvMap.rightLeg.inner, BoneIndex.RightLeg, [0, -6, 0]),
-      outer: createBoxGeometry(
-        [4, 12, 4],
-        uvMap.rightLeg.outer,
-        BoneIndex.RightLegOverlay,
-        [0, -6, 0],
-        0.25,
-      ),
-    },
-    leftLeg: {
-      inner: createBoxGeometry([4, 12, 4], uvMap.leftLeg.inner, BoneIndex.LeftLeg, [0, -6, 0]),
-      outer: createBoxGeometry(
-        [4, 12, 4],
-        uvMap.leftLeg.outer,
-        BoneIndex.LeftLegOverlay,
-        [0, -6, 0],
-        0.25,
-      ),
-    },
-  };
-}
-
-/**
- * Create GPU buffers for a part geometry
- */
-function createPartBuffers(renderer: IRenderer, geometry: PartGeometry): PartBuffers {
-  return {
-    innerVertexBuffer: renderer.createBuffer(BufferUsage.Vertex, geometry.inner.vertices),
-    innerIndexBuffer: renderer.createBuffer(BufferUsage.Index, geometry.inner.indices),
-    outerVertexBuffer: renderer.createBuffer(BufferUsage.Vertex, geometry.outer.vertices),
-    outerIndexBuffer: renderer.createBuffer(BufferUsage.Index, geometry.outer.indices),
-    innerIndexCount: geometry.inner.indexCount,
-    outerIndexCount: geometry.outer.indexCount,
-  };
-}
-
-/**
- * Create GPU buffers for all parts
- */
-function createAllPartBuffers(
-  renderer: IRenderer,
-  geometries: Record<PartName, PartGeometry>,
-): Record<PartName, PartBuffers> {
-  const result = {} as Record<PartName, PartBuffers>;
-  for (const part of PART_NAMES) {
-    result[part] = createPartBuffers(renderer, geometries[part]);
-  }
-  return result;
-}
-
-/**
- * Dispose all part buffers
- */
-function disposeAllPartBuffers(buffers: Record<PartName, PartBuffers>): void {
-  for (const part of PART_NAMES) {
-    const b = buffers[part];
-    b.innerVertexBuffer.dispose();
-    b.innerIndexBuffer.dispose();
-    b.outerVertexBuffer.dispose();
-    b.outerIndexBuffer.dispose();
-  }
-}
-
-/**
- * Create cape geometry
- * Cape: 10 wide, 16 tall, 1 deep, attached to Cape bone
- * Cape hangs down from attachment point at neck
- */
-function createCapeGeometry(): BoxGeometry {
-  const capeUV = getCapeUV();
-  // Cape hangs down from the top
-  // Offset: y=-8 so top of cape (y=+8 from center) is at bone origin (y=0)
-  // z=-0.5 to position cape slightly behind the attachment point
-  return createCapeBoxGeometry([10, 16, 1], capeUV, BoneIndex.Cape, [0, -8, -0.5]);
-}
-
-/**
- * Create elytra geometry (both wings merged)
- * Based on skinview3d: each wing pivots from attachment point
- * Geometry: 12 wide, 22 tall, 4 deep (actual mesh size)
- * UV mapping: 10 wide, 20 tall, 2 deep (texture layout)
- *
- * In skinview3d:
- * - Left wing: pivot at x=5, mesh offset (-5, -10, -1), no scale
- * - Right wing: pivot at x=-5, mesh offset (-5, -10, -1) with scale.x=-1
- *
- * Note: In our coordinate system when viewed from behind:
- * - Positive X = screen right = player's left
- * - Negative X = screen left = player's right
- */
-function createElytraGeometry(): BoxGeometry {
-  const elytraUV = getElytraUV();
-
-  // Left wing (player's left = screen right when viewed from behind)
-  // Bone at x=+5, wing extends towards center
-  // No mirror - uses original geometry orientation (like skinview3d)
-  const leftWing = createCapeBoxGeometry(
-    [12, 22, 4], // Geometry size
-    elytraUV,
-    BoneIndex.LeftWing,
-    [-5, -10, -1], // Wing offset from pivot
-    false, // No mirror (skinview3d has no scale on left wing)
-  );
-
-  // Right wing (player's right = screen left when viewed from behind)
-  // Bone at x=-5, wing extends towards center
-  // Mirror to match skinview3d's scale.x=-1
-  const rightWing = createCapeBoxGeometry(
-    [12, 22, 4], // Same geometry size
-    elytraUV,
-    BoneIndex.RightWing,
-    [-5, -10, -1], // Same offset
-    true, // Mirror X (simulates skinview3d's scale.x=-1)
-  );
-
-  return mergeGeometries([leftWing, rightWing]);
-}
-
-/**
- * Compute bone matrices for the skeleton
- */
-function computeBoneMatrices(skeleton: PlayerSkeleton): Float32Array {
-  const matrices = new Float32Array(24 * 16); // 24 bones, 16 floats each
-
-  // Helper to set matrix for bone index
-  const setMatrix = (index: number, matrix: Mat4) => {
-    matrices.set(matrix, index * 16);
-  };
-
-  // Initialize all matrices to identity
-  for (let i = 0; i < 24; i++) {
-    setMatrix(i, mat4Identity());
-  }
-
-  // Compute world matrices for each bone
-  const worldMatrices = new Map<BoneIndex, Mat4>();
-
-  // Process bones in parent-first order
-  const boneOrder = [
-    BoneIndex.Root,
-    BoneIndex.Body,
-    BoneIndex.Head,
-    BoneIndex.RightArm,
-    BoneIndex.LeftArm,
-    BoneIndex.RightLeg,
-    BoneIndex.LeftLeg,
-    BoneIndex.HeadOverlay,
-    BoneIndex.BodyOverlay,
-    BoneIndex.RightArmOverlay,
-    BoneIndex.LeftArmOverlay,
-    BoneIndex.RightLegOverlay,
-    BoneIndex.LeftLegOverlay,
-    // Cape and elytra bones (attached to body)
-    BoneIndex.Cape,
-    BoneIndex.LeftWing,
-    BoneIndex.RightWing,
-  ];
-
-  for (const boneIndex of boneOrder) {
-    const bone = skeleton.bones.get(boneIndex);
-    if (!bone) continue;
-
-    // Get parent matrix
-    let parentMatrix = mat4Identity();
-    if (bone.parentIndex !== null) {
-      parentMatrix = worldMatrices.get(bone.parentIndex) ?? mat4Identity();
-    }
-
-    // Compute local matrix:
-    // 1. Translate to bone position (relative to parent) + animation offset
-    // 2. Apply rotation around pivot point
-    const pos = bone.position;
-    const offset = bone.positionOffset;
-    const pivot = bone.pivot;
-
-    // Local transform: translate to position, then rotate around pivot
-    let localMatrix = mat4Identity();
-
-    // Translate to bone position + animation offset
-    localMatrix = mat4Translate(localMatrix, [
-      pos[0] + offset[0],
-      pos[1] + offset[1],
-      pos[2] + offset[2],
-    ]);
-
-    // Translate to pivot, rotate, translate back
-    localMatrix = mat4Translate(localMatrix, pivot);
-    localMatrix = mat4Multiply(localMatrix, quatToMat4(bone.rotation));
-    localMatrix = mat4Translate(localMatrix, [-pivot[0], -pivot[1], -pivot[2]]);
-
-    // Compute world matrix
-    const worldMatrix = mat4Multiply(parentMatrix, localMatrix);
-    worldMatrices.set(boneIndex, worldMatrix);
-
-    // Store in uniform buffer
-    setMatrix(boneIndex, worldMatrix);
-  }
-
-  return matrices;
 }
 
 /**
@@ -583,47 +311,11 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
   // Create skeleton
   const skeleton = createPlayerSkeleton(variant);
 
-  // Create geometry for all parts
+  // Create geometry for all parts (using ResourceManager)
   const partGeometries = createAllPartGeometries(variant);
 
-  // Vertex layout shared by all pipelines
-  const vertexLayout = {
-    stride: VERTEX_STRIDE * 4, // bytes
-    attributes: [
-      { name: "a_position", location: 0, format: VertexFormat.Float32x3, offset: 0 },
-      { name: "a_uv", location: 1, format: VertexFormat.Float32x2, offset: 12 },
-      { name: "a_normal", location: 2, format: VertexFormat.Float32x3, offset: 20 },
-      { name: "a_boneIndex", location: 3, format: VertexFormat.Float32, offset: 32 },
-    ],
-  };
-
-  // Get shaders from the active plugin
-  const activePlugin = getRendererPlugin(renderer.backend)!;
-  const shaders = activePlugin.shaders;
-  const vertexShader = shaders.vertex;
-  const fragmentShader = shaders.fragment;
-
-  // Create pipeline for inner parts (with backface culling)
-  const skinPipeline = renderer.createPipeline({
-    vertexShader,
-    fragmentShader,
-    vertexLayout,
-    cullMode: CullMode.Back,
-    blendMode: BlendMode.Alpha,
-    depthWrite: true,
-    depthCompare: DepthCompare.Less,
-  });
-
-  // Create pipeline for overlay parts (double-sided, no culling)
-  const overlayPipeline = renderer.createPipeline({
-    vertexShader,
-    fragmentShader,
-    vertexLayout,
-    cullMode: CullMode.None,
-    blendMode: BlendMode.Alpha,
-    depthWrite: true,
-    depthCompare: DepthCompare.Less,
-  });
+  // Create pipelines (using ResourceManager)
+  const { skinPipeline, overlayPipeline, capePipeline } = createPipelines(renderer);
 
   // Create buffers for all parts
   const partBuffers = createAllPartBuffers(renderer, partGeometries);
@@ -637,17 +329,6 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
   const elytraGeometry = createElytraGeometry();
   const elytraVertexBuffer = renderer.createBuffer(BufferUsage.Vertex, elytraGeometry.vertices);
   const elytraIndexBuffer = renderer.createBuffer(BufferUsage.Index, elytraGeometry.indices);
-
-  // Create pipeline for cape/elytra (double-sided, no culling)
-  const capePipeline = renderer.createPipeline({
-    vertexShader,
-    fragmentShader,
-    vertexLayout,
-    cullMode: CullMode.None,
-    blendMode: BlendMode.Alpha,
-    depthWrite: true,
-    depthCompare: DepthCompare.Less,
-  });
 
   // Load initial skin texture
   let skinTexture: ITexture | null = null;
@@ -686,6 +367,9 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     initialBackEquipment = "cape"; // Default to cape if texture is provided but no explicit setting
   }
 
+  // Pre-allocate render objects to avoid GC pressure (using RenderState module)
+  const renderBindGroups = createRenderBindGroups();
+
   // Create state object
   const state: SkinViewerState = {
     renderer,
@@ -712,6 +396,7 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     backEquipment: initialBackEquipment,
     boneMatricesCache: new Float32Array(24 * 16),
     boneMatricesDirty: true,
+    renderBindGroups,
     backgroundRenderer: null,
     disposed: false,
   };
@@ -770,23 +455,13 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
         state.boneMatricesCache.set(newMatrices);
         state.boneMatricesDirty = false;
       }
-      const boneMatrices = state.boneMatricesCache;
 
-      // Model matrix (identity for now)
-      const modelMatrix = mat4Identity();
-
-      // Common bind group uniforms
-      const uniforms: Record<string, UniformValue> = {
-        u_modelMatrix: modelMatrix,
-        u_viewMatrix: camera.viewMatrix,
-        u_projectionMatrix: camera.projectionMatrix,
-        "u_boneMatrices[0]": boneMatrices,
-        u_alphaTest: 0.01,
-      };
-
-      const textures = {
-        u_skinTexture: skinTexture,
-      };
+      // Update pre-allocated bind groups (using RenderState module)
+      const { renderBindGroups } = state;
+      renderBindGroups.uniforms.u_viewMatrix = camera.viewMatrix;
+      renderBindGroups.uniforms.u_projectionMatrix = camera.projectionMatrix;
+      renderBindGroups.uniforms["u_boneMatrices[0]"] = state.boneMatricesCache;
+      renderBindGroups.skinTextures.u_skinTexture = skinTexture;
 
       // Draw each part based on visibility settings
       for (const partName of PART_NAMES) {
@@ -800,7 +475,7 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
             vertexBuffers: [buffers.innerVertexBuffer],
             indexBuffer: buffers.innerIndexBuffer,
             indexCount: buffers.innerIndexCount,
-            bindGroup: { uniforms, textures },
+            bindGroup: renderBindGroups.skinBindGroup,
           });
         }
 
@@ -811,16 +486,15 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
             vertexBuffers: [buffers.outerVertexBuffer],
             indexBuffer: buffers.outerIndexBuffer,
             indexCount: buffers.outerIndexCount,
-            bindGroup: { uniforms, textures },
+            bindGroup: renderBindGroups.skinBindGroup,
           });
         }
       }
 
       // Draw cape or elytra if texture is available and equipment is enabled
       if (capeTexture && backEquipment !== "none") {
-        const capeTextures = {
-          u_skinTexture: capeTexture,
-        };
+        // Update cape textures cache
+        renderBindGroups.capeTextures.u_skinTexture = capeTexture;
 
         if (backEquipment === "cape") {
           // Draw cape
@@ -829,7 +503,7 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
             vertexBuffers: [capeVertexBuffer],
             indexBuffer: capeIndexBuffer,
             indexCount: state.capeGeometry.indexCount,
-            bindGroup: { uniforms, textures: capeTextures },
+            bindGroup: renderBindGroups.capeBindGroup,
           });
         } else if (backEquipment === "elytra") {
           // Draw elytra wings
@@ -838,7 +512,7 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
             vertexBuffers: [elytraVertexBuffer],
             indexBuffer: elytraIndexBuffer,
             indexCount: state.elytraGeometry.indexCount,
-            bindGroup: { uniforms, textures: capeTextures },
+            bindGroup: renderBindGroups.capeBindGroup,
           });
         }
       }
