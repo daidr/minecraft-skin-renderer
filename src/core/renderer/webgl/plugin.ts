@@ -12,9 +12,10 @@
  * ```
  */
 
-import type { RendererPlugin } from "../registry";
+import type { RendererPlugin, ShaderSources } from "../registry";
 import { createWebGLRenderer } from "./WebGLRenderer";
 import { SKIN_VERTEX_SHADER, SKIN_FRAGMENT_SHADER } from "./shaders";
+import { composeVertexShader, composeFragmentShader } from "../shader-composer";
 
 /** WebGL renderer plugin for registration */
 export const WebGLRendererPlugin: RendererPlugin = {
@@ -23,5 +24,11 @@ export const WebGLRendererPlugin: RendererPlugin = {
   shaders: {
     vertex: SKIN_VERTEX_SHADER,
     fragment: SKIN_FRAGMENT_SHADER,
+  },
+  getComposedShaders(): ShaderSources {
+    return {
+      vertex: composeVertexShader(SKIN_VERTEX_SHADER, "webgl"),
+      fragment: composeFragmentShader(SKIN_FRAGMENT_SHADER, "webgl"),
+    };
   },
 };

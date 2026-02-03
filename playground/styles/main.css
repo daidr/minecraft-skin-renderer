@@ -382,6 +382,18 @@ button:active {
   opacity: 1;
 }
 
+/* Primary button style */
+.primary-btn {
+  background: hsl(217 91% 60%) !important;
+  color: white !important;
+  border: none !important;
+}
+
+.primary-btn:hover {
+  background: hsl(217 91% 50%) !important;
+  opacity: 1 !important;
+}
+
 .button-group {
   display: flex;
   gap: 0.5rem;
@@ -459,4 +471,14 @@ button:active {
 .control-group input[type="text"] + button {
   margin-top: 0.5rem;
   width: 100%;
+}
+
+/* Disabled checkbox label */
+label.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+label.disabled input[type="checkbox"] {
+  cursor: not-allowed;
 }

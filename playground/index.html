@@ -151,6 +151,23 @@
           </section>
 
           <section class="control-section">
+            <h2>Background</h2>
+            <div class="control-group">
+              <button id="loadDefaultPanoramaBtn" class="primary-btn">Load Default Panorama</button>
+            </div>
+            <div class="control-group">
+              <label for="panoramaUrl">Panorama URL</label>
+              <input type="text" id="panoramaUrl" placeholder="https://example.com/panorama.jpg" />
+              <button id="loadPanoramaBtn">Load</button>
+            </div>
+            <div class="control-group">
+              <label for="panoramaFile">Or upload file</label>
+              <input type="file" id="panoramaFile" accept="image/*" />
+            </div>
+            <button id="clearPanoramaBtn">Clear Panorama</button>
+          </section>
+
+          <section class="control-section">
             <h2>Export</h2>
             <button id="screenshotBtn">Take Screenshot</button>
           </section>

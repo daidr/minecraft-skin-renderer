@@ -38,6 +38,7 @@ export class WebGPURenderer implements IRenderer {
   readonly backend = "webgpu" as const;
   readonly canvas: HTMLCanvasElement;
   readonly pixelRatio: number;
+  readonly supportsRenderTargets = false; // WebGPU render targets not yet implemented
 
   private device: GPUDevice;
   private context: GPUCanvasContext;

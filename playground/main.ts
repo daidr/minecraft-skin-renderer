@@ -7,14 +7,17 @@ import { use, createSkinViewer, PART_NAMES } from "../src";
 import type { BackendType, BackEquipment, SkinViewer, PartName } from "../src";
 import { WebGLRendererPlugin } from "../src/webgl";
 import { WebGPURendererPlugin } from "../src/webgpu";
+import { PanoramaPlugin } from "../src/panorama";
 
-// Register both renderers for the playground
+// Register all plugins for the playground
 use(WebGLRendererPlugin);
 use(WebGPURendererPlugin);
+use(PanoramaPlugin);
 
 // Default texture paths
 const DEFAULT_SKIN_URL = "./default.png";
 const DEFAULT_CAPE_URL = "./cape.png";
+const DEFAULT_PANORAMA_URL = "./panorama.png";
 
 // LocalStorage key for settings
 const STORAGE_KEY = "minecraft-skin-renderer-playground-settings";
@@ -30,6 +33,7 @@ interface PlaygroundSettings {
   zoom: number;
   autoRotate: boolean;
   partsVisibility: Record<string, { inner: boolean; outer: boolean }>;
+  panoramaUrl: string;
 }
 
 let viewer: SkinViewer | null = null;
@@ -88,6 +92,16 @@ const screenshotBtn = document.getElementById("screenshotBtn") as HTMLButtonElem
 const showAllPartsBtn = document.getElementById("showAllParts") as HTMLButtonElement;
 const hideAllOuterBtn = document.getElementById("hideAllOuter") as HTMLButtonElement;
 
+// Panorama controls
+const loadDefaultPanoramaBtn = document.getElementById("loadDefaultPanoramaBtn") as HTMLButtonElement;
+const panoramaUrlInput = document.getElementById("panoramaUrl") as HTMLInputElement;
+const loadPanoramaBtn = document.getElementById("loadPanoramaBtn") as HTMLButtonElement;
+const panoramaFileInput = document.getElementById("panoramaFile") as HTMLInputElement;
+const clearPanoramaBtn = document.getElementById("clearPanoramaBtn") as HTMLButtonElement;
+
+// Current panorama source (for preserving across backend switches)
+let currentPanoramaSource: TextureSource = null;
+
 /**
  * Get default settings
  */
@@ -106,6 +120,7 @@ function getDefaultSettings(): PlaygroundSettings {
     zoom: 50,
     autoRotate: false,
     partsVisibility,
+    panoramaUrl: "",
   };
 }
 
@@ -150,6 +165,7 @@ function getCurrentSettingsFromUI(): PlaygroundSettings {
     zoom: Number.parseFloat(zoomSlider.value),
     autoRotate: autoRotateCheckbox.checked,
     partsVisibility,
+    panoramaUrl: panoramaUrlInput?.value ?? "",
   };
 }
 
@@ -191,6 +207,9 @@ function applySettingsToUI(settings: PlaygroundSettings) {
     if (innerCheckbox) innerCheckbox.checked = visibility.inner;
     if (outerCheckbox) outerCheckbox.checked = visibility.outer;
   }
+
+  // Apply panorama settings
+  if (panoramaUrlInput) panoramaUrlInput.value = settings.panoramaUrl;
 }
 
 /**
@@ -271,6 +290,7 @@ async function createViewerWithBackend() {
       antialias: true,
       enableRotate: true,
       enableZoom: true,
+      panorama: currentPanoramaSource ?? undefined,
     });
 
     // Update backend badge
@@ -534,6 +554,57 @@ function setupEventListeners() {
 
   // Update zoom when user zooms with mouse wheel
   attachCanvasWheelListener();
+
+  // Panorama controls
+  loadDefaultPanoramaBtn?.addEventListener("click", async () => {
+    if (!viewer) return;
+
+    try {
+      await viewer.setPanorama(DEFAULT_PANORAMA_URL);
+      currentPanoramaSource = DEFAULT_PANORAMA_URL;
+      panoramaUrlInput.value = "";
+      saveSettings();
+    } catch (error) {
+      console.error("Failed to load default panorama:", error);
+      alert("Failed to load default panorama");
+    }
+  });
+
+  loadPanoramaBtn?.addEventListener("click", async () => {
+    const url = panoramaUrlInput.value.trim();
+    if (!url || !viewer) return;
+
+    try {
+      await viewer.setPanorama(url);
+      currentPanoramaSource = url;
+      saveSettings();
+    } catch (error) {
+      console.error("Failed to load panorama:", error);
+      alert("Failed to load panorama from URL");
+    }
+  });
+
+  panoramaFileInput?.addEventListener("change", async () => {
+    const file = panoramaFileInput.files?.[0];
+    if (!file || !viewer) return;
+
+    try {
+      await viewer.setPanorama(file);
+      currentPanoramaSource = file;
+      saveSettings();
+    } catch (error) {
+      console.error("Failed to load panorama:", error);
+      alert("Failed to load panorama from file");
+    }
+  });
+
+  clearPanoramaBtn?.addEventListener("click", async () => {
+    if (!viewer) return;
+    await viewer.setPanorama(null);
+    currentPanoramaSource = null;
+    panoramaUrlInput.value = "";
+    saveSettings();
+  });
 
   // Parts visibility controls
   for (const part of PART_NAMES) {

@@ -191,7 +191,7 @@ export class WebGLRenderer implements IRenderer {
 
   /** End the current frame */
   endFrame(): void {
-    // Nothing to do for WebGL
+    // Frame complete
   }
 
   /** Resize the renderer */

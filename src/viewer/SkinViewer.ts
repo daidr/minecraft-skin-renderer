@@ -24,7 +24,14 @@ import {
   VertexFormat,
   isWebGPUSupported,
 } from "../core/renderer/types";
-import type { BackendType, IBuffer, IPipeline, IRenderer, ITexture } from "../core/renderer/types";
+import type {
+  BackendType,
+  IBuffer,
+  IPipeline,
+  IRenderer,
+  ITexture,
+  UniformValue,
+} from "../core/renderer/types";
 import { getRendererPlugin, getRegisteredBackends } from "../core/renderer/registry";
 import { BoneIndex, PART_NAMES, VERTEX_STRIDE, createDefaultVisibility } from "../model/types";
 import type {
@@ -51,6 +58,8 @@ import {
   createAnimationController,
   updateAnimationController,
 } from "../animation/AnimationController";
+import type { BackgroundRenderer } from "../core/plugins/types";
+import { getBackgroundPlugin } from "../core/plugins/registry";
 
 /** Back equipment type (cape, elytra, or none) */
 export type BackEquipment = "cape" | "elytra" | "none";
@@ -73,6 +82,11 @@ export interface SkinViewerOptions {
   enableZoom?: boolean;
   autoRotate?: boolean;
   autoRotateSpeed?: number;
+  /**
+   * Panorama background. Requires PanoramaPlugin to be registered.
+   * Provide a URL or TextureSource for an equirectangular panorama image.
+   */
+  panorama?: TextureSource;
 }
 
 /** SkinViewer interface */
@@ -129,6 +143,12 @@ export interface SkinViewer {
   resize(width: number, height: number): void;
 
   screenshot(type?: "png" | "jpeg", quality?: number): string;
+
+  /**
+   * Set panorama background. Requires PanoramaPlugin to be registered.
+   * @param source - Panorama texture source, or null to clear
+   */
+  setPanorama(source: TextureSource | null): Promise<void>;
 
   readonly isPlaying: boolean;
   readonly currentAnimation: string | null;
@@ -198,6 +218,9 @@ interface SkinViewerState {
   // Performance optimization: bone matrix cache
   boneMatricesCache: Float32Array;
   boneMatricesDirty: boolean;
+
+  // Background state (only used if a background plugin is registered)
+  backgroundRenderer: BackgroundRenderer | null;
 
   // State flags
   disposed: boolean;
@@ -576,8 +599,9 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
   // Get shaders from the active plugin
   const activePlugin = getRendererPlugin(renderer.backend)!;
-  const vertexShader = activePlugin.shaders.vertex;
-  const fragmentShader = activePlugin.shaders.fragment;
+  const shaders = activePlugin.shaders;
+  const vertexShader = shaders.vertex;
+  const fragmentShader = shaders.fragment;
 
   // Create pipeline for inner parts (with backface culling)
   const skinPipeline = renderer.createPipeline({
@@ -688,8 +712,27 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     backEquipment: initialBackEquipment,
     boneMatricesCache: new Float32Array(24 * 16),
     boneMatricesDirty: true,
+    backgroundRenderer: null,
     disposed: false,
   };
+
+  // Initialize panorama background if plugin is registered and source provided
+  if (options.panorama) {
+    const panoramaPlugin = getBackgroundPlugin("panorama");
+    if (panoramaPlugin) {
+      state.backgroundRenderer = panoramaPlugin.createRenderer(renderer);
+      // Load panorama asynchronously (don't await to avoid blocking)
+      state.backgroundRenderer.setSource(options.panorama).catch((e) => {
+        console.warn("Failed to load panorama:", e);
+      });
+    } else {
+      console.warn(
+        "PanoramaPlugin is not registered. Import and use() it to enable panorama backgrounds:\n" +
+          "  import { PanoramaPlugin } from 'minecraft-skin-renderer/panorama'\n" +
+          "  use(PanoramaPlugin)",
+      );
+    }
+  }
 
   // Render function
   const doRender = () => {
@@ -715,6 +758,11 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     renderer.beginFrame();
     renderer.clear(0, 0, 0, 0);
 
+    // Render background first (if available)
+    if (state.backgroundRenderer) {
+      state.backgroundRenderer.render(camera);
+    }
+
     if (skinTexture) {
       // Compute bone matrices only if dirty
       if (state.boneMatricesDirty) {
@@ -728,7 +776,7 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       const modelMatrix = mat4Identity();
 
       // Common bind group uniforms
-      const uniforms = {
+      const uniforms: Record<string, UniformValue> = {
         u_modelMatrix: modelMatrix,
         u_viewMatrix: camera.viewMatrix,
         u_projectionMatrix: camera.projectionMatrix,
@@ -1000,6 +1048,35 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       return canvas.toDataURL(`image/${type}`, quality);
     },
 
+    async setPanorama(source: TextureSource | null) {
+      if (state.disposed) return;
+
+      // Clear existing background
+      if (state.backgroundRenderer) {
+        state.backgroundRenderer.dispose();
+        state.backgroundRenderer = null;
+      }
+
+      if (source === null) {
+        return;
+      }
+
+      // Get panorama plugin
+      const panoramaPlugin = getBackgroundPlugin("panorama");
+      if (!panoramaPlugin) {
+        console.warn(
+          "PanoramaPlugin is not registered. Import and use() it to enable panorama backgrounds:\n" +
+            "  import { PanoramaPlugin } from 'minecraft-skin-renderer/panorama'\n" +
+            "  use(PanoramaPlugin)",
+        );
+        return;
+      }
+
+      // Create and set up new background renderer
+      state.backgroundRenderer = panoramaPlugin.createRenderer(renderer);
+      await state.backgroundRenderer.setSource(source);
+    },
+
     dispose() {
       if (state.disposed) return;
       state.disposed = true;
@@ -1021,6 +1098,12 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       state.elytraVertexBuffer.dispose();
       state.elytraIndexBuffer.dispose();
       state.capePipeline.dispose();
+
+      // Dispose background renderer
+      if (state.backgroundRenderer) {
+        state.backgroundRenderer.dispose();
+        state.backgroundRenderer = null;
+      }
 
       state.renderer.dispose();
     },

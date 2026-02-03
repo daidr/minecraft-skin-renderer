@@ -10,7 +10,7 @@ precision highp float;
 // Vertex attributes
 layout(location = 0) in vec3 a_position;
 layout(location = 1) in vec2 a_uv;
-layout(location = 2) in vec3 a_normal;  // Unused but kept for vertex layout compatibility
+layout(location = 2) in vec3 a_normal;
 layout(location = 3) in float a_boneIndex;
 
 // Uniforms
@@ -21,6 +21,8 @@ uniform mat4 u_boneMatrices[24];
 
 // Outputs to fragment shader
 out vec2 v_uv;
+
+// [PLUGIN_VERTEX_DECLARATIONS]
 
 void main() {
     // Get bone transform
@@ -36,6 +38,8 @@ void main() {
     // Pass UV to fragment shader
     v_uv = a_uv;
 
+    // [PLUGIN_VERTEX_MAIN]
+
     // Final position
     gl_Position = u_projectionMatrix * u_viewMatrix * worldPos;
 }
@@ -47,6 +51,8 @@ precision highp float;
 
 // Inputs from vertex shader
 in vec2 v_uv;
+
+// [PLUGIN_FRAGMENT_DECLARATIONS]
 
 // Uniforms
 uniform sampler2D u_skinTexture;
@@ -64,8 +70,10 @@ void main() {
         discard;
     }
 
-    // Output texture color directly (no lighting)
+    // Default output (will be replaced if lighting plugin is active)
     fragColor = texColor;
+
+    // [PLUGIN_FRAGMENT_OUTPUT]
 }
 `;
 

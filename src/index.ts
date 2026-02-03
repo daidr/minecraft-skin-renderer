@@ -40,6 +40,9 @@ export type { ModelVariant, PartName, LayerVisibility, PartsVisibility } from ".
 export { PART_NAMES, createDefaultVisibility } from "./model/types";
 export type { TextureSource } from "./texture";
 
+// Plugin types
+export type { PluginType } from "./core/plugins/types";
+
 // Utilities
 export { isWebGPUSupported, isWebGL2Supported, detectBestBackend } from "./core/renderer/types";
 export { loadSkinTexture, loadCapeTexture, loadElytraTexture } from "./texture";

@@ -24,6 +24,7 @@
   "types": "./dist/index.d.mts",
   "exports": {
     ".": "./dist/index.mjs",
+    "./panorama": "./dist/panorama.mjs",
     "./webgl": "./dist/webgl.mjs",
     "./webgpu": "./dist/webgpu.mjs",
     "./package.json": "./package.json"
