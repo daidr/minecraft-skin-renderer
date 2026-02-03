@@ -633,12 +633,12 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       skinTexture = await renderer.createTexture(bitmap);
     } catch {
       // Use placeholder
-      const placeholder = createPlaceholderTexture();
+      const placeholder = await createPlaceholderTexture();
       skinTexture = await renderer.createTexture(placeholder);
     }
   } else {
     // Create placeholder texture
-    const placeholder = createPlaceholderTexture();
+    const placeholder = await createPlaceholderTexture();
     skinTexture = await renderer.createTexture(placeholder);
   }
 

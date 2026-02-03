@@ -158,7 +158,7 @@ export function detectSlimModel(imageData: ImageData): boolean {
 /**
  * Create a placeholder texture (magenta/black checkerboard)
  */
-export function createPlaceholderTexture(width = 64, height = 64): ImageBitmap {
+export async function createPlaceholderTexture(width = 64, height = 64): Promise<ImageBitmap> {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
@@ -174,15 +174,17 @@ export function createPlaceholderTexture(width = 64, height = 64): ImageBitmap {
     }
   }
 
-  // Note: This is synchronous but createImageBitmap is async
-  // For placeholder, we return a promise that resolves immediately
-  return (canvas as unknown as OffscreenCanvas).transferToImageBitmap();
+  return createImageBitmap(canvas);
 }
 
 /**
  * Create a solid color texture
  */
-export function createSolidTexture(color: string, width = 64, height = 64): ImageBitmap {
+export async function createSolidTexture(
+  color: string,
+  width = 64,
+  height = 64,
+): Promise<ImageBitmap> {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
@@ -191,5 +193,5 @@ export function createSolidTexture(color: string, width = 64, height = 64): Imag
   ctx.fillStyle = color;
   ctx.fillRect(0, 0, width, height);
 
-  return (canvas as unknown as OffscreenCanvas).transferToImageBitmap();
+  return createImageBitmap(canvas);
 }
