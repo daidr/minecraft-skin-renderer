@@ -1,6 +1,9 @@
 # minecraft-skin-renderer
 
-[![npm version](https://img.shields.io/npm/v/minecraft-skin-renderer.svg)](https://www.npmjs.com/package/minecraft-skin-renderer)
+[![npm version](https://img.shields.io/npm/v/@daidr/minecraft-skin-renderer.svg)](https://www.npmjs.com/package/@daidr/minecraft-skin-renderer)
+[![JSR](https://jsr.io/badges/@daidr/minecraft-skin-renderer)](https://jsr.io/@daidr/minecraft-skin-renderer)
+[![JSR Score](https://jsr.io/badges/@daidr/minecraft-skin-renderer/score)](https://jsr.io/@daidr/minecraft-skin-renderer)
+[![GitHub Packages](https://img.shields.io/badge/GitHub%20Packages-available-blue?logo=github)](https://github.com/daidr/minecraft-skin-renderer/pkgs/npm/minecraft-skin-renderer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 高性能、基于浏览器的 3D Minecraft 皮肤渲染器，支持 WebGL 和 WebGPU。
