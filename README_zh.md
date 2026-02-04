@@ -5,7 +5,7 @@
 
 高性能、基于浏览器的 3D Minecraft 皮肤渲染器，支持 WebGL 和 WebGPU。
 
-<!-- [在线演示](DEMO_URL) -->
+[在线演示](https://mcskin.daidr.me)
 
 ## 特性
 

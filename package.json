@@ -12,6 +12,7 @@
     "webgl",
     "webgpu"
   ],
+  "homepage": "https://mcskin.daidr.me",
   "license": "MIT",
   "repository": {
     "type": "git",

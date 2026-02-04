@@ -120,6 +120,23 @@ body {
   color: hsl(38 92% 50%);
 }
 
+/* GitHub link */
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius);
+  color: var(--muted-foreground);
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.github-link:hover {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
 /* Main layout */
 .main {
   display: flex;

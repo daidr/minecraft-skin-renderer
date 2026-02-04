@@ -5,7 +5,7 @@
 
 A high-performance, browser-based 3D Minecraft skin renderer with WebGL and WebGPU support.
 
-<!-- [Online Demo](DEMO_URL) -->
+[Online Demo](https://mcskin.daidr.me)
 
 ## Features
 
