@@ -1,16 +1,19 @@
 /**
- * Minecraft Skin Renderer
+ * A high-performance, browser-based 3D Minecraft skin renderer with WebGL and WebGPU support.
  *
- * A browser-based library for rendering Minecraft skins with WebGL and WebGPU support.
+ * This module provides the main API for creating and controlling skin viewers.
+ * Use the {@link use} function to register renderer plugins, then {@link createSkinViewer}
+ * to create viewer instances.
  *
- * @example
+ * @example Basic Usage
  * ```ts
- * import { use, createSkinViewer } from 'minecraft-skin-renderer'
- * import { WebGLRendererPlugin } from 'minecraft-skin-renderer/webgl'
+ * import { use, createSkinViewer } from '@daidr/minecraft-skin-renderer'
+ * import { WebGLRendererPlugin } from '@daidr/minecraft-skin-renderer/webgl'
  *
- * // Register the renderer you want to use
+ * // Register the renderer plugin (required before creating viewer)
  * use(WebGLRendererPlugin)
  *
+ * // Create and start the viewer
  * const viewer = await createSkinViewer({
  *   canvas: document.getElementById('canvas') as HTMLCanvasElement,
  *   skin: 'https://example.com/skin.png',
@@ -19,6 +22,26 @@
  * viewer.playAnimation('walk')
  * viewer.startRenderLoop()
  * ```
+ *
+ * @example With Cape and Panorama Background
+ * ```ts
+ * import { use, createSkinViewer } from '@daidr/minecraft-skin-renderer'
+ * import { WebGLRendererPlugin } from '@daidr/minecraft-skin-renderer/webgl'
+ * import { PanoramaPlugin } from '@daidr/minecraft-skin-renderer/panorama'
+ *
+ * use(WebGLRendererPlugin)
+ * use(PanoramaPlugin)
+ *
+ * const viewer = await createSkinViewer({
+ *   canvas: document.getElementById('canvas') as HTMLCanvasElement,
+ *   skin: 'https://example.com/skin.png',
+ *   cape: 'https://example.com/cape.png',
+ *   backEquipment: 'cape',
+ *   panorama: 'https://example.com/panorama.jpg',
+ * })
+ * ```
+ *
+ * @module minecraft-skin-renderer
  */
 
 // Renderer registration
