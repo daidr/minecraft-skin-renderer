@@ -1,7 +1,7 @@
 {
-  "name": "minecraft-skin-renderer",
+  "name": "@daidr/minecraft-skin-renderer",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "description": "A browser-based Minecraft skin renderer with WebGL and WebGPU support",
   "keywords": [
     "3d",
@@ -15,7 +15,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/user/minecraft-skin-renderer"
+    "url": "https://github.com/daidr/minecraft-skin-renderer"
   },
   "files": [
     "dist"

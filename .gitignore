@@ -15,6 +15,7 @@ out/
 # production
 build
 dist
+dist-playground
 
 # misc
 .DS_Store

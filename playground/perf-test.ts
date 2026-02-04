@@ -12,7 +12,7 @@ use(WebGLRendererPlugin);
 use(WebGPURendererPlugin);
 
 // Default textures
-const DEFAULT_SKIN_URL = "./default.png";
+const DEFAULT_SKIN_URL = "./skin.png";
 const DEFAULT_CAPE_URL = "./cape.png";
 
 // DOM Elements

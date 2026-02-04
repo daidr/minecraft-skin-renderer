@@ -15,7 +15,7 @@ use(WebGPURendererPlugin);
 use(PanoramaPlugin);
 
 // Default texture paths
-const DEFAULT_SKIN_URL = "./default.png";
+const DEFAULT_SKIN_URL = "./skin.png";
 const DEFAULT_CAPE_URL = "./cape.png";
 const DEFAULT_PANORAMA_URL = "./panorama.png";
 
