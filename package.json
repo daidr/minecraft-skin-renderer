@@ -13,10 +13,14 @@
     "webgpu"
   ],
   "homepage": "https://mcskin.daidr.me",
+  "bugs": {
+    "url": "https://github.com/daidr/minecraft-skin-renderer/issues"
+  },
   "license": "MIT",
+  "author": "Dai Xuezhou <i@daidr.me>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/daidr/minecraft-skin-renderer"
+    "url": "git+https://github.com/daidr/minecraft-skin-renderer.git"
   },
   "files": [
     "dist"
