@@ -2,7 +2,7 @@
   "name": "@daidr/minecraft-skin-renderer",
   "version": "0.1.0",
   "private": false,
-  "description": "A browser-based Minecraft skin renderer with WebGL and WebGPU support",
+  "description": "A zero-dependency Minecraft skin renderer with WebGL and WebGPU support",
   "keywords": [
     "3d",
     "canvas",
