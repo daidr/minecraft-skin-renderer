@@ -47,6 +47,11 @@
     "fmt:check": "oxfmt --check",
     "lint": "oxlint --type-aware --type-check",
     "lint:fix": "oxlint --type-aware --type-check --fix",
+    "bench:math": "bun run benchmarks/math/index.ts",
+    "bench:math:vec3": "bun run benchmarks/math/vec3.bench.ts",
+    "bench:math:mat4": "bun run benchmarks/math/mat4.bench.ts",
+    "bench:math:quat": "bun run benchmarks/math/quat.bench.ts",
+    "bench:math:utils": "bun run benchmarks/math/utils.bench.ts",
     "postinstall": "git-hooks"
   },
   "devDependencies": {
@@ -59,6 +64,7 @@
     "bun-git-hooks": "^0.3.1",
     "happy-dom": "^20.4.0",
     "lint-staged": "^16.2.7",
+    "mitata": "^1.0.34",
     "oxfmt": "^0.28.0",
     "oxlint": "^1.43.0",
     "oxlint-tsgolint": "^0.11.3",
