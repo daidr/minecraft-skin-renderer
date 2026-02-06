@@ -325,8 +325,6 @@ function resizeCanvas() {
   const rect = container.getBoundingClientRect();
   canvas.width = rect.width * devicePixelRatio;
   canvas.height = rect.height * devicePixelRatio;
-  canvas.style.width = `${rect.width}px`;
-  canvas.style.height = `${rect.height}px`;
 
   if (viewer) {
     viewer.resize(rect.width, rect.height);

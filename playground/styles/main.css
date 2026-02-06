@@ -129,7 +129,9 @@ body {
   height: 2rem;
   border-radius: var(--radius);
   color: var(--muted-foreground);
-  transition: color 0.15s, background-color 0.15s;
+  transition:
+    color 0.15s,
+    background-color 0.15s;
 }
 
 .github-link:hover {
@@ -146,10 +148,12 @@ body {
 
 .canvas-container {
   flex: 1;
+  min-width: 0;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   background: radial-gradient(ellipse at center, var(--canvas-gradient) 0%, var(--background) 100%);
 }
 
@@ -160,7 +164,7 @@ body {
 
 /* Controls sidebar */
 .controls {
-  width: 320px;
+  flex: 0 0 320px;
   border-left: 1px solid var(--border);
   overflow-y: auto;
   padding: 1rem;
