@@ -77,7 +77,9 @@ export function vec3Lerp(a: Vec3, b: Vec3, t: number): Vec3 {
 
 /** Distance between two vectors */
 export function vec3Distance(a: Vec3, b: Vec3): number {
-  const dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2];
+  const dx = a[0] - b[0],
+    dy = a[1] - b[1],
+    dz = a[2] - b[2];
   return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
 

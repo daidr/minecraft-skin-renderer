@@ -214,8 +214,10 @@ export function quatNormalizeMut(out: Quat, q: Quat): Quat {
     return quatIdentityMut(out);
   }
   const invLen = 1 / len;
-  out[0] = q[0] * invLen; out[1] = q[1] * invLen;
-  out[2] = q[2] * invLen; out[3] = q[3] * invLen;
+  out[0] = q[0] * invLen;
+  out[1] = q[1] * invLen;
+  out[2] = q[2] * invLen;
+  out[3] = q[3] * invLen;
   return out;
 }
 
@@ -266,16 +268,33 @@ export function quatSlerpMut(out: Quat, a: Quat, b: Quat, t: number): Quat {
 
 /** Convert quaternion to 4x4 rotation matrix (mutable) */
 export function quatToMat4Mut(out: Mat4, q: Quat): Mat4 {
-  const x = q[0], y = q[1], z = q[2], w = q[3];
-  const x2 = x + x, y2 = y + y, z2 = z + z;
-  const xx = x * x2, yx = y * x2, yy = y * y2;
-  const zx = z * x2, zy = z * y2, zz = z * z2;
-  const wx = w * x2, wy = w * y2, wz = w * z2;
+  const x = q[0],
+    y = q[1],
+    z = q[2],
+    w = q[3];
+  const x2 = x + x,
+    y2 = y + y,
+    z2 = z + z;
+  const xx = x * x2,
+    yx = y * x2,
+    yy = y * y2;
+  const zx = z * x2,
+    zy = z * y2,
+    zz = z * z2;
+  const wx = w * x2,
+    wy = w * y2,
+    wz = w * z2;
 
   out.fill(0);
-  out[0] = 1 - yy - zz; out[1] = yx + wz; out[2] = zx - wy;
-  out[4] = yx - wz; out[5] = 1 - xx - zz; out[6] = zy + wx;
-  out[8] = zx + wy; out[9] = zy - wx; out[10] = 1 - xx - yy;
+  out[0] = 1 - yy - zz;
+  out[1] = yx + wz;
+  out[2] = zx - wy;
+  out[4] = yx - wz;
+  out[5] = 1 - xx - zz;
+  out[6] = zy + wx;
+  out[8] = zx + wy;
+  out[9] = zy - wx;
+  out[10] = 1 - xx - yy;
   out[15] = 1;
 
   return out;
