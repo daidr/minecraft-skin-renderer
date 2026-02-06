@@ -35,7 +35,7 @@ export function isZero(value: number, epsilon = 0.000_001): boolean {
 
 /** Check if two numbers are approximately equal */
 export function approxEquals(a: number, b: number, epsilon = 0.000_001): boolean {
-  return Math.abs(a - b) < epsilon;
+  return isZero(a - b, epsilon);
 }
 
 /** Map a value from one range to another */
@@ -62,14 +62,7 @@ export function isPowerOfTwo(value: number): boolean {
 
 /** Get the next power of two >= value */
 export function nextPowerOfTwo(value: number): number {
-  if (value <= 0) return 1;
-  value -= 1;
-  value |= value >> 1;
-  value |= value >> 2;
-  value |= value >> 4;
-  value |= value >> 8;
-  value |= value >> 16;
-  return value + 1;
+  return value <= 1 ? 1 : 1 << (32 - Math.clz32(value - 1));
 }
 
 /** Sign of a number (-1, 0, or 1) */
