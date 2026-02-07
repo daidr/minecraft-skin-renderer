@@ -18,7 +18,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
-        "perf-test": resolve(__dirname, "perf-test.html"),
       },
     },
   },
