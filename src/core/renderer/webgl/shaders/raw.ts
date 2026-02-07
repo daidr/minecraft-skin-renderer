@@ -62,8 +62,19 @@ uniform float u_alphaTest;
 out vec4 fragColor;
 
 void main() {
-    // Sample texture
-    vec4 texColor = texture(u_skinTexture, v_uv);
+    // Sharp bilinear: smooth texel edges while preserving pixel art
+    // NOTE: Use intermediate variables to prevent shader minifier from dropping parentheses
+    vec2 texSize = vec2(textureSize(u_skinTexture, 0));
+    vec2 texelCoord = v_uv * texSize;
+    vec2 texelFloor = floor(texelCoord - 0.5) + 0.5;
+    vec2 texelFrac = texelCoord - texelFloor;
+    vec2 fw = fwidth(texelCoord);
+    vec2 fracShifted = texelFrac - 0.5;
+    vec2 sharpFrac = clamp(fracShifted / fw + 0.5, vec2(0.0), vec2(1.0));
+    vec2 sharpCoord = texelFloor + sharpFrac;
+    vec2 sharpUV = sharpCoord / texSize;
+
+    vec4 texColor = texture(u_skinTexture, sharpUV);
 
     // Alpha test (discard fully transparent pixels)
     if (texColor.a < u_alphaTest) {

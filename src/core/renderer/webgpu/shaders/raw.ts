@@ -66,8 +66,19 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 
 @fragment
 fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
-  // Sample texture
-  let texColor = textureSample(skinTexture, texSampler, input.uv);
+  // Sharp bilinear: smooth texel edges while preserving pixel art
+  // NOTE: Use intermediate variables to prevent shader minifier from dropping parentheses
+  let texSize = vec2<f32>(textureDimensions(skinTexture));
+  let texelCoord = input.uv * texSize;
+  let texelFloor = floor(texelCoord - 0.5) + 0.5;
+  let texelFrac = texelCoord - texelFloor;
+  let fw = fwidth(texelCoord);
+  let fracShifted = texelFrac - 0.5;
+  let sharpFrac = clamp(fracShifted / fw + 0.5, vec2(0.0), vec2(1.0));
+  let sharpCoord = texelFloor + sharpFrac;
+  let sharpUV = sharpCoord / texSize;
+
+  let texColor = textureSample(skinTexture, texSampler, sharpUV);
 
   // Alpha test (discard fully transparent pixels)
   if (texColor.a < uniforms.alphaTest) {

@@ -10,6 +10,7 @@ import {
   BlendMode,
   CullMode,
   DepthCompare,
+  TextureFilter,
   VertexFormat,
 } from "../core/renderer/types";
 import { getRendererPlugin } from "../core/renderer/registry";
@@ -303,19 +304,22 @@ export async function initializeResources(
   const elytraVertexBuffer = renderer.createBuffer(BufferUsage.Vertex, elytraGeometry.vertices);
   const elytraIndexBuffer = renderer.createBuffer(BufferUsage.Index, elytraGeometry.indices);
 
+  // Texture options: use linear filter for sharp bilinear sampling in shader
+  const texOpts = { magFilter: TextureFilter.Linear, minFilter: TextureFilter.Linear };
+
   // Load skin texture
   let skinTexture: ITexture | null = null;
   if (skinSource) {
     try {
       const bitmap = await loadSkinTexture(skinSource);
-      skinTexture = await renderer.createTexture(bitmap);
+      skinTexture = await renderer.createTexture(bitmap, texOpts);
     } catch {
       const placeholder = await createPlaceholderTexture();
-      skinTexture = await renderer.createTexture(placeholder);
+      skinTexture = await renderer.createTexture(placeholder, texOpts);
     }
   } else {
     const placeholder = await createPlaceholderTexture();
-    skinTexture = await renderer.createTexture(placeholder);
+    skinTexture = await renderer.createTexture(placeholder, texOpts);
   }
 
   // Load cape texture
@@ -323,7 +327,7 @@ export async function initializeResources(
   if (capeSource) {
     try {
       const bitmap = await loadCapeTexture(capeSource);
-      capeTexture = await renderer.createTexture(bitmap);
+      capeTexture = await renderer.createTexture(bitmap, texOpts);
     } catch {
       // Cape texture failed to load, continue without it
     }

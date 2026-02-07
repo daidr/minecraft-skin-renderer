@@ -20,7 +20,7 @@ import {
   updateOrbitControls,
 } from "../core/camera/OrbitControls";
 import type { OrbitControls } from "../core/camera/OrbitControls";
-import { BufferUsage, isWebGPUSupported } from "../core/renderer/types";
+import { BufferUsage, TextureFilter, isWebGPUSupported } from "../core/renderer/types";
 import type { BackendType, BindGroup, IBuffer, IPipeline, IRenderer, ITexture } from "../core/renderer/types";
 import { getRendererPlugin, getRegisteredBackends } from "../core/renderer/registry";
 import { PART_NAMES, createDefaultVisibility } from "../model/types";
@@ -328,7 +328,8 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
   } catch {
     skinBitmap = await createPlaceholderTexture();
   }
-  let skinTexture: ITexture | null = await renderer.createTexture(skinBitmap);
+  const texOpts = { magFilter: TextureFilter.Linear, minFilter: TextureFilter.Linear };
+  let skinTexture: ITexture | null = await renderer.createTexture(skinBitmap, texOpts);
 
   // Create animation controller
   const animationController = createAnimationController(skeleton);
@@ -338,7 +339,7 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
   if (options.cape) {
     try {
       const bitmap = await loadCapeTexture(options.cape);
-      capeTexture = await renderer.createTexture(bitmap);
+      capeTexture = await renderer.createTexture(bitmap, texOpts);
     } catch {
       // Cape texture failed to load, continue without it
     }
@@ -512,7 +513,7 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
       if (source) {
         const bitmap = await loadSkinTexture(source);
-        state.skinTexture = await state.renderer.createTexture(bitmap);
+        state.skinTexture = await state.renderer.createTexture(bitmap, texOpts);
       }
     },
 
@@ -526,7 +527,7 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
       if (source) {
         const bitmap = await loadCapeTexture(source);
-        state.capeTexture = await state.renderer.createTexture(bitmap);
+        state.capeTexture = await state.renderer.createTexture(bitmap, texOpts);
         // Auto-enable cape display if not already showing something
         if (state.backEquipment === "none") {
           state.backEquipment = "cape";
