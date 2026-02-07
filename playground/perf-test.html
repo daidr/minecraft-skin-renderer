@@ -4,199 +4,115 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Performance Test - Minecraft Skin Renderer</title>
+    <link rel="stylesheet" href="./styles/main.css" />
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        background: #1a1a2e;
-        color: #fff;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-      }
-
+      /* Perf-test specific styles, built on top of main.css design tokens */
       .header {
-        padding: 1rem 2rem;
-        background: #16213e;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid #0f3460;
-      }
-
-      .header h1 {
-        font-size: 1.25rem;
-        font-weight: 600;
+        gap: 1.5rem;
       }
 
       .stats {
         display: flex;
-        gap: 2rem;
-        font-family: monospace;
-        font-size: 0.9rem;
+        gap: 1.5rem;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       }
 
       .stat {
         display: flex;
         flex-direction: column;
         align-items: center;
+        gap: 0.125rem;
       }
 
       .stat-label {
-        color: #888;
-        font-size: 0.75rem;
+        font-size: 0.625rem;
+        font-weight: 500;
         text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted-foreground);
       }
 
       .stat-value {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #4ade80;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: hsl(142 76% 56%);
+        line-height: 1;
       }
 
       .stat-value.warning {
-        color: #fbbf24;
+        color: hsl(38 92% 50%);
       }
 
       .stat-value.danger {
-        color: #f87171;
+        color: hsl(0 84% 60%);
       }
 
-      .controls {
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-      }
-
-      .backend-badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 4px;
+      .canvas-container .info {
+        position: absolute;
+        bottom: 0.75rem;
+        left: 0.75rem;
         font-size: 0.75rem;
-        font-weight: bold;
-        text-transform: uppercase;
+        color: var(--muted-foreground);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       }
 
-      .backend-badge.webgl {
-        background: #3b82f6;
-      }
-
-      .backend-badge.webgpu {
-        background: #8b5cf6;
-      }
-
-      button {
-        padding: 0.5rem 1rem;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: 500;
-        transition: opacity 0.2s;
-      }
-
-      button:hover {
-        opacity: 0.9;
-      }
-
-      button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .btn-start {
-        background: #22c55e;
-        color: #fff;
-      }
-
-      .btn-stop {
-        background: #ef4444;
-        color: #fff;
-      }
-
-      select {
-        padding: 0.5rem;
-        border: 1px solid #0f3460;
-        border-radius: 4px;
-        background: #16213e;
-        color: #fff;
-        cursor: pointer;
+      #canvas {
+        width: 100%;
+        height: 100%;
       }
 
       .main {
         flex: 1;
         display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 2rem;
       }
 
       .canvas-container {
-        position: relative;
-        width: 800px;
-        height: 600px;
-        background: #0a0a0a;
-        border-radius: 8px;
-        overflow: hidden;
-      }
-
-      canvas {
-        width: 100%;
-        height: 100%;
-      }
-
-      .info {
-        position: absolute;
-        bottom: 1rem;
-        left: 1rem;
-        font-size: 0.75rem;
-        color: #666;
-        font-family: monospace;
+        flex: 1;
       }
     </style>
   </head>
   <body>
-    <header class="header">
-      <h1>Performance Test</h1>
+    <div class="app">
+      <header class="header">
+        <h1>Performance Test</h1>
 
-      <div class="stats">
-        <div class="stat">
-          <span class="stat-label">FPS</span>
-          <span class="stat-value" id="fpsValue">--</span>
+        <div class="stats">
+          <div class="stat">
+            <span class="stat-label">FPS</span>
+            <span class="stat-value" id="fpsValue">--</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Frame Time</span>
+            <span class="stat-value" id="frameTimeValue">--</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Frames</span>
+            <span class="stat-value" id="frameCountValue">0</span>
+          </div>
         </div>
-        <div class="stat">
-          <span class="stat-label">Frame Time</span>
-          <span class="stat-value" id="frameTimeValue">--</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Frames</span>
-          <span class="stat-value" id="frameCountValue">0</span>
-        </div>
-      </div>
 
-      <div class="controls">
-        <select id="backendSelect">
-          <option value="auto">Auto</option>
-          <option value="webgpu">WebGPU</option>
-          <option value="webgl">WebGL</option>
-        </select>
-        <span class="backend-badge" id="backendBadge">--</span>
-        <button class="btn-start" id="startBtn">Start</button>
-        <button class="btn-stop" id="stopBtn" disabled>Stop</button>
-      </div>
-    </header>
-
-    <main class="main">
-      <div class="canvas-container">
-        <canvas id="canvas"></canvas>
-        <div class="info">
-          Unlimited frame rate rendering test with default skin, cape, and auto-rotation enabled.
+        <div class="header-controls">
+          <label for="backendSelect">Backend:</label>
+          <select id="backendSelect">
+            <option value="auto">Auto</option>
+            <option value="webgpu">WebGPU</option>
+            <option value="webgl">WebGL</option>
+          </select>
+          <span class="backend-badge" id="backendBadge">--</span>
+          <button id="startBtn">Start</button>
+          <button id="stopBtn" disabled>Stop</button>
         </div>
-      </div>
-    </main>
+      </header>
+
+      <main class="main">
+        <div class="canvas-container">
+          <canvas id="canvas"></canvas>
+          <div class="info">
+            Unlimited frame rate rendering test with default skin, cape, and auto-rotation enabled.
+          </div>
+        </div>
+      </main>
+    </div>
 
     <script type="module" src="./perf-test.ts"></script>
   </body>

@@ -1,9 +1,7 @@
 import { defineConfig } from "vitest/config";
 import { resolve } from "node:path";
-import { getShaderDefines } from "./scripts/minify-shaders";
 
 export default defineConfig({
-  define: getShaderDefines(),
   test: {
     environment: "happy-dom",
     setupFiles: ["./tests/setup.ts"],

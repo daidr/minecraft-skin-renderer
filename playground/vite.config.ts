@@ -1,6 +1,5 @@
 import { defineConfig } from "vite";
 import { resolve } from "node:path";
-import { getShaderDefines } from "../scripts/minify-shaders";
 
 export default defineConfig({
   root: resolve(__dirname),
@@ -9,7 +8,6 @@ export default defineConfig({
       "@": resolve(__dirname, "../src"),
     },
   },
-  define: getShaderDefines(),
   server: {
     port: 3000,
     open: true,

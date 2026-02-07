@@ -1,7 +1,4 @@
-/**
- * WebGL panorama shaders - minified at build time via define replacement.
- * Edit raw shaders in ./webgl.raw.ts
- */
-
-export const PANORAMA_VERTEX_SHADER: string = __GLSL_PANORAMA_VERTEX_SHADER__;
-export const PANORAMA_FRAGMENT_SHADER: string = __GLSL_PANORAMA_FRAGMENT_SHADER__;
+export {
+  PANORAMA_VERTEX_SHADER_RAW as PANORAMA_VERTEX_SHADER,
+  PANORAMA_FRAGMENT_SHADER_RAW as PANORAMA_FRAGMENT_SHADER,
+} from "./webgl.raw.ts";

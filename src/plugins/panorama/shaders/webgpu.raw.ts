@@ -1,6 +1,5 @@
 /**
- * Raw WebGPU panorama shaders (unminified source)
- * Edit these shaders directly. They are minified at build time.
+ * Raw WebGPU panorama shaders
  */
 
 export const PANORAMA_WGSL_SHADER_RAW = `

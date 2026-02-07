@@ -68,7 +68,6 @@
     "oxfmt": "^0.28.0",
     "oxlint": "^1.43.0",
     "oxlint-tsgolint": "^0.11.3",
-    "shaderkit": "^0.8.0",
     "stats.js": "^0.17.0",
     "tsdown": "^0.20.1",
     "typescript": "^5.9.3",

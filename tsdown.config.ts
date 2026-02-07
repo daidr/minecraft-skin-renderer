@@ -1,5 +1,4 @@
 import { defineConfig } from "tsdown";
-import { getShaderDefines } from "./scripts/minify-shaders.ts";
 
 export default defineConfig([{
   platform: 'neutral',
@@ -14,7 +13,6 @@ export default defineConfig([{
   sourcemap: true,
   exports: true,
   treeshake: true,
-  define: getShaderDefines(),
 }, {
   platform: 'browser',
   entry: { "minecraft-skin-renderer": "src/iife.ts" },
@@ -26,5 +24,4 @@ export default defineConfig([{
   minify: true,
   sourcemap: true,
   treeshake: true,
-  define: getShaderDefines(),
 }]);

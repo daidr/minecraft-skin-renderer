@@ -1,6 +1,1 @@
-/**
- * WebGPU panorama shaders - minified at build time via define replacement.
- * Edit raw shaders in ./webgpu.raw.ts
- */
-
-export const PANORAMA_WGSL_SHADER: string = __WGSL_PANORAMA_SHADER__;
+export { PANORAMA_WGSL_SHADER_RAW as PANORAMA_WGSL_SHADER } from "./webgpu.raw.ts";

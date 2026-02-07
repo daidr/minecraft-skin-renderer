@@ -1,6 +1,5 @@
 /**
- * Raw WGSL Shaders (unminified source)
- * Edit these shaders directly. They are minified at build time.
+ * Raw WGSL Shaders
  */
 
 /**

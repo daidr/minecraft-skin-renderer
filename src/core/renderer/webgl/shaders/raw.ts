@@ -1,6 +1,5 @@
 /**
- * Raw GLSL Shaders (unminified source)
- * Edit these shaders directly. They are minified at build time.
+ * Raw GLSL Shaders
  */
 
 export const SKIN_VERTEX_SHADER_RAW = `#version 300 es

@@ -1,6 +1,5 @@
 /**
- * Raw WebGL panorama shaders (unminified source)
- * Edit these shaders directly. They are minified at build time.
+ * Raw WebGL panorama shaders
  */
 
 export const PANORAMA_VERTEX_SHADER_RAW = `#version 300 es
