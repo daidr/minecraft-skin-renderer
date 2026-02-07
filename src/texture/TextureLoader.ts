@@ -77,7 +77,7 @@ export async function loadImageBitmap(source: TextureSource): Promise<ImageBitma
 /**
  * Generic texture loader (alias for loadImageBitmap)
  */
-export const loadTexture = loadImageBitmap;
+export const loadTexture: (source: TextureSource) => Promise<ImageBitmap> = loadImageBitmap;
 
 /**
  * Get image data from an image source

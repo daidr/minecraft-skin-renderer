@@ -85,13 +85,13 @@ export function seededRandom(seed: number): () => number {
 }
 
 /** PI constant */
-export const PI = Math.PI;
+export const PI: number = Math.PI;
 
 /** Two PI (full circle) */
-export const TWO_PI = Math.PI * 2;
+export const TWO_PI: number = Math.PI * 2;
 
 /** Half PI (quarter circle) */
-export const HALF_PI = Math.PI / 2;
+export const HALF_PI: number = Math.PI / 2;
 
 /** Small number for floating point comparisons */
 export const EPSILON = 0.000_001;

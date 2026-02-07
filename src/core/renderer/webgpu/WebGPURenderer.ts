@@ -47,6 +47,11 @@ export class WebGPURenderer implements IRenderer {
   private _width: number;
   private _height: number;
 
+  // MSAA
+  readonly sampleCount: number;
+  private msaaTexture: GPUTexture | null = null;
+  private msaaTextureView: GPUTextureView | null = null;
+
   // Depth buffer
   private depthTexture: GPUTexture | null = null;
   private depthTextureView: GPUTextureView | null = null;
@@ -84,6 +89,7 @@ export class WebGPURenderer implements IRenderer {
     this.device = device;
     this.context = context;
     this.format = format;
+    this.sampleCount = (options.antialias ?? true) ? 4 : 1;
 
     this._width = this.canvas.width;
     this._height = this.canvas.height;
@@ -167,19 +173,32 @@ export class WebGPURenderer implements IRenderer {
     return this._height;
   }
 
-  /** Create or recreate depth texture */
+  /** Create or recreate depth texture and MSAA texture */
   private createDepthTexture(): void {
     if (this.depthTexture) {
       this.depthTexture.destroy();
+    }
+    if (this.msaaTexture) {
+      this.msaaTexture.destroy();
     }
 
     this.depthTexture = this.device.createTexture({
       size: { width: this._width, height: this._height },
       format: "depth24plus",
+      sampleCount: this.sampleCount,
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
     });
-
     this.depthTextureView = this.depthTexture.createView();
+
+    if (this.sampleCount > 1) {
+      this.msaaTexture = this.device.createTexture({
+        size: { width: this._width, height: this._height },
+        format: this.format,
+        sampleCount: this.sampleCount,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+      });
+      this.msaaTextureView = this.msaaTexture.createView();
+    }
   }
 
   /** Get the uniform bind group layout for pipeline creation */
@@ -204,7 +223,13 @@ export class WebGPURenderer implements IRenderer {
 
   /** Create a pipeline */
   createPipeline(config: PipelineConfig): IPipeline {
-    return new WebGPUPipeline(this.device, config, this.format, this.uniformBindGroupLayout);
+    return new WebGPUPipeline(
+      this.device,
+      config,
+      this.format,
+      this.uniformBindGroupLayout,
+      this.sampleCount,
+    );
   }
 
   /** Begin a new frame */
@@ -226,15 +251,25 @@ export class WebGPURenderer implements IRenderer {
     }
 
     // Start render pass with clear color
+    // When MSAA is enabled, render to msaaTextureView and resolve to canvas texture
+    const colorAttachment: GPURenderPassColorAttachment =
+      this.msaaTextureView
+        ? {
+            view: this.msaaTextureView,
+            resolveTarget: this.currentTextureView,
+            clearValue: { r, g, b, a },
+            loadOp: "clear",
+            storeOp: "discard",
+          }
+        : {
+            view: this.currentTextureView,
+            clearValue: { r, g, b, a },
+            loadOp: "clear",
+            storeOp: "store",
+          };
+
     const renderPassDescriptor: GPURenderPassDescriptor = {
-      colorAttachments: [
-        {
-          view: this.currentTextureView,
-          clearValue: { r, g, b, a },
-          loadOp: "clear",
-          storeOp: "store",
-        },
-      ],
+      colorAttachments: [colorAttachment],
       depthStencilAttachment: {
         view: this.depthTextureView,
         depthClearValue: 1.0,
@@ -393,7 +428,7 @@ export class WebGPURenderer implements IRenderer {
     this.canvas.width = this._width;
     this.canvas.height = this._height;
 
-    // Recreate depth texture
+    // Recreate depth texture and MSAA texture
     this.createDepthTexture();
   }
 
@@ -424,6 +459,13 @@ export class WebGPURenderer implements IRenderer {
 
     // Clear bind group cache (GPUBindGroup objects are not explicitly destroyed)
     this.textureBindGroupCache.clear();
+
+    // Clean up MSAA texture
+    this.msaaTextureView = null;
+    if (this.msaaTexture) {
+      this.msaaTexture.destroy();
+      this.msaaTexture = null;
+    }
 
     // Clean up depth texture and view
     this.depthTextureView = null;

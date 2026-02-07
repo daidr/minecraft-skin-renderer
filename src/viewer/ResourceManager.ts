@@ -68,7 +68,15 @@ export interface ResourceState {
 }
 
 /** Shared vertex layout for all skin pipelines */
-export const SKIN_VERTEX_LAYOUT = {
+export const SKIN_VERTEX_LAYOUT: {
+  stride: number;
+  attributes: {
+    name: string;
+    location: number;
+    format: VertexFormat;
+    offset: number;
+  }[];
+} = {
   stride: VERTEX_STRIDE * 4, // bytes
   attributes: [
     { name: "a_position", location: 0, format: VertexFormat.Float32x3, offset: 0 },

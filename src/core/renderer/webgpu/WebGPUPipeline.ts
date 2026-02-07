@@ -144,6 +144,7 @@ export class WebGPUPipeline implements IPipeline {
     config: PipelineConfig,
     format: GPUTextureFormat,
     uniformBindGroupLayout: GPUBindGroupLayout,
+    sampleCount: number = 1,
   ) {
     this.id = pipelineId();
     this.vertexLayout = config.vertexLayout;
@@ -211,6 +212,9 @@ export class WebGPUPipeline implements IPipeline {
         depthWriteEnabled: config.depthWrite ?? true,
         depthCompare: convertDepthCompare(config.depthCompare),
         format: "depth24plus",
+      },
+      multisample: {
+        count: sampleCount,
       },
     });
   }
