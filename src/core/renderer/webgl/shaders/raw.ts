@@ -74,9 +74,14 @@ void main() {
 
     vec4 texColor = texture(u_skinTexture, sharpUV);
 
-    // Alpha test (discard fully transparent pixels)
-    if (texColor.a < u_alphaTest) {
-        discard;
+    if (u_alphaTest > 0.0) {
+        // Outer layer: alpha test (discard fully transparent pixels)
+        if (texColor.a < u_alphaTest) {
+            discard;
+        }
+    } else {
+        // Inner layer: force fully opaque (transparent pixels become black)
+        texColor.a = 1.0;
     }
 
     // Default output (will be replaced if lighting plugin is active)

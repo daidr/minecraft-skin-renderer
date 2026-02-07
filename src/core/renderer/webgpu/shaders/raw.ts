@@ -75,11 +75,16 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
   let sharpCoord = texelFloor + sharpFrac;
   let sharpUV = sharpCoord / texSize;
 
-  let texColor = textureSample(skinTexture, texSampler, sharpUV);
+  var texColor = textureSample(skinTexture, texSampler, sharpUV);
 
-  // Alpha test (discard fully transparent pixels)
-  if (texColor.a < uniforms.alphaTest) {
-    discard;
+  if (uniforms.alphaTest > 0.0) {
+    // Outer layer: alpha test (discard fully transparent pixels)
+    if (texColor.a < uniforms.alphaTest) {
+      discard;
+    }
+  } else {
+    // Inner layer: force fully opaque (transparent pixels become black)
+    texColor.a = 1.0;
   }
 
   // Output texture color directly (no lighting)

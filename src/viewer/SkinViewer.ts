@@ -456,9 +456,18 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       for (const partName of PART_NAMES) {
         const visibility = partsVisibility[partName];
         const buffers = partBuffers[partName];
-        if (visibility.inner) draw(skinPipeline, buffers.innerVertexBuffer, buffers.innerIndexBuffer, buffers.innerIndexCount, renderBindGroups.skinBindGroup);
-        if (visibility.outer) draw(overlayPipeline, buffers.outerVertexBuffer, buffers.outerIndexBuffer, buffers.outerIndexCount, renderBindGroups.skinBindGroup);
+        if (visibility.inner) {
+          renderBindGroups.uniforms.u_alphaTest = 0.0; // Inner layer: force opaque
+          draw(skinPipeline, buffers.innerVertexBuffer, buffers.innerIndexBuffer, buffers.innerIndexCount, renderBindGroups.skinBindGroup);
+        }
+        if (visibility.outer) {
+          renderBindGroups.uniforms.u_alphaTest = 0.01; // Outer layer: alpha test
+          draw(overlayPipeline, buffers.outerVertexBuffer, buffers.outerIndexBuffer, buffers.outerIndexCount, renderBindGroups.skinBindGroup);
+        }
       }
+
+      // Restore alpha test for cape/elytra rendering
+      renderBindGroups.uniforms.u_alphaTest = 0.01;
 
       // Draw cape or elytra if texture is available and equipment is enabled
       if (capeTexture && backEquipment !== "none") {
