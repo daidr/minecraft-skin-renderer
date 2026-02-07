@@ -15,8 +15,7 @@ layout(location = 3) in float a_boneIndex;
 
 // Uniforms
 uniform mat4 u_modelMatrix;
-uniform mat4 u_viewMatrix;
-uniform mat4 u_projectionMatrix;
+uniform mat4 u_viewProjectionMatrix;
 uniform mat4 u_boneMatrices[24];
 
 // Outputs to fragment shader
@@ -41,7 +40,7 @@ void main() {
     // [PLUGIN_VERTEX_MAIN]
 
     // Final position
-    gl_Position = u_projectionMatrix * u_viewMatrix * worldPos;
+    gl_Position = u_viewProjectionMatrix * worldPos;
 }
 `;
 

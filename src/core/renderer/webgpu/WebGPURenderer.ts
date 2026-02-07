@@ -19,20 +19,18 @@ import { WebGPUTextureImpl } from "./WebGPUTexture";
 
 /**
  * Uniform buffer layout (must match WGSL struct):
- * - modelMatrix:      64 bytes  (offset 0)
- * - viewMatrix:       64 bytes  (offset 64)
- * - projectionMatrix: 64 bytes  (offset 128)
- * - boneMatrices:     1536 bytes (offset 192, 24 * 64)
- * - alphaTest:        4 bytes   (offset 1728)
- * - padding:          12 bytes  (offset 1732, align to 16)
- * Total: 1744 bytes
+ * - modelMatrix:          64 bytes  (offset 0)
+ * - viewProjectionMatrix: 64 bytes  (offset 64)
+ * - boneMatrices:         1536 bytes (offset 128, 24 * 64)
+ * - alphaTest:            4 bytes   (offset 1664)
+ * - padding:              12 bytes  (offset 1668, align to 16)
+ * Total: 1680 bytes
  */
-const UNIFORM_BUFFER_SIZE = 1744;
+const UNIFORM_BUFFER_SIZE = 1680;
 const OFFSET_MODEL_MATRIX = 0;
-const OFFSET_VIEW_MATRIX = 64;
-const OFFSET_PROJECTION_MATRIX = 128;
-const OFFSET_BONE_MATRICES = 192;
-const OFFSET_ALPHA_TEST = 1728;
+const OFFSET_VIEW_PROJECTION_MATRIX = 64;
+const OFFSET_BONE_MATRICES = 128;
+const OFFSET_ALPHA_TEST = 1664;
 
 export class WebGPURenderer implements IRenderer {
   readonly backend = "webgpu" as const;
@@ -68,11 +66,12 @@ export class WebGPURenderer implements IRenderer {
   private uniformData: ArrayBuffer;
   private uniformDataView: DataView;
 
-  // Dirty tracking for partial uniform updates (reserved for future optimization)
-  // Note: boneMatrices are always updated since animations modify the array in-place
+  // Pre-allocated typed array view to avoid per-draw allocation
+  private uniformFloat32View: Float32Array;
 
   // State cache
   private lastPipelineId = -1;
+  private uniformBindGroupBound = false;
 
   // Texture BindGroup cache: Map<textureId, { bindGroup, pipelineId }>
   private textureBindGroupCache: Map<number, { bindGroup: GPUBindGroup; pipelineId: number }> =
@@ -97,6 +96,7 @@ export class WebGPURenderer implements IRenderer {
     // Create uniform buffer
     this.uniformData = new ArrayBuffer(UNIFORM_BUFFER_SIZE);
     this.uniformDataView = new DataView(this.uniformData);
+    this.uniformFloat32View = new Float32Array(this.uniformData);
 
     this.uniformBuffer = device.createBuffer({
       size: UNIFORM_BUFFER_SIZE,
@@ -236,6 +236,7 @@ export class WebGPURenderer implements IRenderer {
   beginFrame(): void {
     // Reset state cache
     this.lastPipelineId = -1;
+    this.uniformBindGroupBound = false;
 
     // Get current texture
     this.currentTextureView = this.context.getCurrentTexture().createView();
@@ -293,45 +294,32 @@ export class WebGPURenderer implements IRenderer {
       this.lastPipelineId = pipeline.id;
     }
 
-    // Update uniform buffer with bind group data (using partial updates when possible)
+    // Update uniform buffer with bind group data (using partial updates)
     const { uniforms } = params.bindGroup;
-    const float32View = new Float32Array(this.uniformData);
+    const float32View = this.uniformFloat32View;
 
-    // Track what needs to be uploaded (for future partial update optimization)
+    // Track dirty range for partial upload
     let minOffset = UNIFORM_BUFFER_SIZE;
     let maxOffset = 0;
 
-    // Model matrix (offset 0) - typically constant, check if changed
+    // Model matrix (offset 0)
     if (uniforms.u_modelMatrix) {
-      const mat = uniforms.u_modelMatrix as Float32Array;
-      float32View.set(mat, OFFSET_MODEL_MATRIX / 4);
+      float32View.set(uniforms.u_modelMatrix as Float32Array, OFFSET_MODEL_MATRIX / 4);
       minOffset = Math.min(minOffset, OFFSET_MODEL_MATRIX);
       maxOffset = Math.max(maxOffset, OFFSET_MODEL_MATRIX + 64);
     }
 
-    // View matrix (offset 64) - changes with camera
-    if (uniforms.u_viewMatrix) {
-      const mat = uniforms.u_viewMatrix as Float32Array;
-      float32View.set(mat, OFFSET_VIEW_MATRIX / 4);
-      minOffset = Math.min(minOffset, OFFSET_VIEW_MATRIX);
-      maxOffset = Math.max(maxOffset, OFFSET_VIEW_MATRIX + 64);
-    }
-
-    // Projection matrix (offset 128) - changes with resize
-    if (uniforms.u_projectionMatrix) {
-      const mat = uniforms.u_projectionMatrix as Float32Array;
-      float32View.set(mat, OFFSET_PROJECTION_MATRIX / 4);
-      minOffset = Math.min(minOffset, OFFSET_PROJECTION_MATRIX);
-      maxOffset = Math.max(maxOffset, OFFSET_PROJECTION_MATRIX + 64);
+    // ViewProjection matrix (offset 64) - precomputed on CPU
+    if (uniforms.u_viewProjectionMatrix) {
+      float32View.set(uniforms.u_viewProjectionMatrix as Float32Array, OFFSET_VIEW_PROJECTION_MATRIX / 4);
+      minOffset = Math.min(minOffset, OFFSET_VIEW_PROJECTION_MATRIX);
+      maxOffset = Math.max(maxOffset, OFFSET_VIEW_PROJECTION_MATRIX + 64);
     }
 
     // Bone matrices (offset 192) - always update since content may change in-place
     const boneMatrices = uniforms["u_boneMatrices[0]"] || uniforms.u_boneMatrices;
     if (boneMatrices) {
-      const mat = boneMatrices as Float32Array;
-      // Always update bone matrices - the caller may update the same Float32Array in-place
-      // for animations, so we cannot rely on reference comparison
-      float32View.set(mat, OFFSET_BONE_MATRICES / 4);
+      float32View.set(boneMatrices as Float32Array, OFFSET_BONE_MATRICES / 4);
       minOffset = Math.min(minOffset, OFFSET_BONE_MATRICES);
       maxOffset = Math.max(maxOffset, OFFSET_BONE_MATRICES + 1536);
     }
@@ -343,21 +331,26 @@ export class WebGPURenderer implements IRenderer {
       maxOffset = Math.max(maxOffset, OFFSET_ALPHA_TEST + 16); // Aligned to 16 bytes
     }
 
-    // Upload uniform buffer (full upload for now, partial optimization can be added later)
-    // Note: For skin rendering, bone matrices change frequently so partial update has limited benefit
+    // Partial upload: only send the dirty range to GPU
     if (maxOffset > minOffset) {
-      this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformData);
+      this.device.queue.writeBuffer(
+        this.uniformBuffer, minOffset,
+        this.uniformData, minOffset,
+        maxOffset - minOffset,
+      );
     }
 
-    // Set uniform bind group (group 0)
-    this.renderPassEncoder.setBindGroup(0, this.uniformBindGroup);
+    // Set uniform bind group (group 0) - only once per frame
+    if (!this.uniformBindGroupBound) {
+      this.renderPassEncoder.setBindGroup(0, this.uniformBindGroup);
+      this.uniformBindGroupBound = true;
+    }
 
     // Create and set texture bind group (group 1) with caching
     const { textures } = params.bindGroup;
-    const textureEntries = Object.entries(textures);
-    if (textureEntries.length > 0) {
-      const [, texture] = textureEntries[0];
-      const tex = texture as WebGPUTextureImpl;
+    const firstTextureKey = Object.keys(textures)[0];
+    if (firstTextureKey) {
+      const tex = textures[firstTextureKey] as WebGPUTextureImpl;
 
       // Check cache for existing bind group
       const cacheKey = tex.id;

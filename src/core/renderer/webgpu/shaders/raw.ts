@@ -9,17 +9,15 @@
  */
 export const SKIN_SHADER_WGSL_RAW = /* wgsl */ `
 // Uniform buffer layout
-// Total size: 1744 bytes (aligned to 16)
-// - modelMatrix:      64 bytes  (offset 0)
-// - viewMatrix:       64 bytes  (offset 64)
-// - projectionMatrix: 64 bytes  (offset 128)
-// - boneMatrices:     1536 bytes (offset 192, 24 * 64)
-// - alphaTest:        4 bytes   (offset 1728)
+// Total size: 1680 bytes (aligned to 16)
+// - modelMatrix:          64 bytes  (offset 0)
+// - viewProjectionMatrix: 64 bytes  (offset 64)
+// - boneMatrices:         1536 bytes (offset 128, 24 * 64)
+// - alphaTest:            4 bytes   (offset 1664)
 
 struct Uniforms {
   modelMatrix: mat4x4<f32>,
-  viewMatrix: mat4x4<f32>,
-  projectionMatrix: mat4x4<f32>,
+  viewProjectionMatrix: mat4x4<f32>,
   boneMatrices: array<mat4x4<f32>, 24>,
   alphaTest: f32,
 }
@@ -59,7 +57,7 @@ fn vs_main(input: VertexInput) -> VertexOutput {
   output.uv = input.uv;
 
   // Final position
-  output.position = uniforms.projectionMatrix * uniforms.viewMatrix * worldPos;
+  output.position = uniforms.viewProjectionMatrix * worldPos;
 
   return output;
 }

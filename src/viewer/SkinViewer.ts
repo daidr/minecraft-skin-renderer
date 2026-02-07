@@ -55,7 +55,7 @@ import {
 } from "./ResourceManager";
 import type { PartBuffers, PartGeometry } from "./ResourceManager";
 import { computeBoneMatrices } from "./BoneMatrixComputer";
-import { createRenderBindGroups } from "./RenderState";
+import { createRenderBindGroups, updateRenderBindGroups } from "./RenderState";
 import type { RenderBindGroups } from "./RenderState";
 
 /** Panorama plugin not registered warning */
@@ -438,10 +438,14 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
       // Update pre-allocated bind groups (using RenderState module)
       const { renderBindGroups } = state;
-      renderBindGroups.uniforms.u_viewMatrix = camera.viewMatrix;
-      renderBindGroups.uniforms.u_projectionMatrix = camera.projectionMatrix;
-      renderBindGroups.uniforms["u_boneMatrices[0]"] = state.boneMatricesCache;
-      renderBindGroups.skinTextures.u_skinTexture = skinTexture;
+      updateRenderBindGroups(
+        renderBindGroups,
+        camera.viewMatrix,
+        camera.projectionMatrix,
+        state.boneMatricesCache,
+        skinTexture,
+        capeTexture,
+      );
 
       // Helper to issue a draw call
       const draw = (pl: IPipeline, vb: IBuffer, ib: IBuffer, ic: number, bg: BindGroup) => {
@@ -458,7 +462,6 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
       // Draw cape or elytra if texture is available and equipment is enabled
       if (capeTexture && backEquipment !== "none") {
-        renderBindGroups.capeTextures.u_skinTexture = capeTexture;
         const isCape = backEquipment === "cape";
         draw(
           capePipeline,
