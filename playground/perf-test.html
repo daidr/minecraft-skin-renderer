@@ -69,6 +69,49 @@
       .canvas-container {
         flex: 1;
       }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 0.75rem;
+      }
+
+      @media (max-width: 768px) {
+        .header {
+          flex-wrap: wrap;
+          gap: 0.75rem;
+        }
+
+        .header h1 {
+          width: 100%;
+        }
+
+        .stats {
+          gap: 1rem;
+        }
+
+        .header-right {
+          width: 100%;
+          flex-wrap: wrap;
+        }
+
+        .header-controls {
+          width: 100%;
+        }
+
+        .header-actions {
+          width: 100%;
+        }
+
+        .header-actions button {
+          flex: 1;
+        }
+      }
     </style>
   </head>
   <body>
@@ -91,16 +134,21 @@
           </div>
         </div>
 
-        <div class="header-controls">
-          <label for="backendSelect">Backend:</label>
-          <select id="backendSelect">
-            <option value="auto">Auto</option>
-            <option value="webgpu">WebGPU</option>
-            <option value="webgl">WebGL</option>
-          </select>
-          <span class="backend-badge" id="backendBadge">--</span>
-          <button id="startBtn">Start</button>
-          <button id="stopBtn" disabled>Stop</button>
+        <div class="header-right">
+          <div class="header-controls">
+            <label for="backendSelect">Backend:</label>
+            <select id="backendSelect">
+              <option value="auto">Auto</option>
+              <option value="webgpu">WebGPU</option>
+              <option value="webgl">WebGL</option>
+            </select>
+            <span class="backend-badge" id="backendBadge">--</span>
+          </div>
+
+          <div class="header-actions">
+            <button id="startBtn">Start</button>
+            <button id="stopBtn" disabled>Stop</button>
+          </div>
         </div>
       </header>
 
