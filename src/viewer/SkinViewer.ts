@@ -21,7 +21,7 @@ import {
 } from "../core/camera/OrbitControls";
 import type { OrbitControls } from "../core/camera/OrbitControls";
 import { BufferUsage, isWebGPUSupported } from "../core/renderer/types";
-import type { BackendType, IBuffer, IPipeline, IRenderer, ITexture } from "../core/renderer/types";
+import type { BackendType, BindGroup, IBuffer, IPipeline, IRenderer, ITexture } from "../core/renderer/types";
 import { getRendererPlugin, getRegisteredBackends } from "../core/renderer/registry";
 import { PART_NAMES, createDefaultVisibility } from "../model/types";
 import type {
@@ -57,6 +57,12 @@ import type { PartBuffers, PartGeometry } from "./ResourceManager";
 import { computeBoneMatrices } from "./BoneMatrixComputer";
 import { createRenderBindGroups } from "./RenderState";
 import type { RenderBindGroups } from "./RenderState";
+
+/** Panorama plugin not registered warning */
+const PANORAMA_WARN =
+  "PanoramaPlugin is not registered. Import and use() it to enable panorama backgrounds:\n" +
+  "  import { PanoramaPlugin } from 'minecraft-skin-renderer/panorama'\n" +
+  "  use(PanoramaPlugin)";
 
 /** Back equipment type (cape, elytra, or none) */
 export type BackEquipment = "cape" | "elytra" | "none";
@@ -154,8 +160,6 @@ export interface SkinViewer {
   dispose(): void;
 }
 
-// PartGeometry and PartBuffers are imported from ResourceManager
-
 /** Internal SkinViewer state */
 interface SkinViewerState {
   renderer: IRenderer;
@@ -230,20 +234,15 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     );
   }
 
-  // Determine which backend to use
-  let targetBackend: BackendType;
-  if (preferredBackend === "auto") {
-    // Prefer WebGPU if registered and supported, otherwise use first registered backend
-    if (getRendererPlugin("webgpu") && isWebGPUSupported()) {
-      targetBackend = "webgpu";
-    } else if (getRendererPlugin("webgl")) {
-      targetBackend = "webgl";
-    } else {
-      targetBackend = registeredBackends[0];
-    }
-  } else {
-    targetBackend = preferredBackend;
-  }
+  // Determine which backend to use (prefer WebGPU if available)
+  const targetBackend: BackendType =
+    preferredBackend !== "auto"
+      ? preferredBackend
+      : getRendererPlugin("webgpu") && isWebGPUSupported()
+        ? "webgpu"
+        : getRendererPlugin("webgl")
+          ? "webgl"
+          : registeredBackends[0];
 
   const plugin = getRendererPlugin(targetBackend);
   if (!plugin) {
@@ -267,21 +266,11 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     renderer = await plugin.createRenderer(rendererOptions);
   } catch (e) {
     // Try fallback to other registered backend
-    const fallbackBackend = registeredBackends.find((b) => b !== targetBackend);
-    if (fallbackBackend) {
-      const fallbackPlugin = getRendererPlugin(fallbackBackend);
-      if (fallbackPlugin) {
-        console.warn(
-          `${targetBackend} initialization failed, falling back to ${fallbackBackend}:`,
-          e,
-        );
-        renderer = await fallbackPlugin.createRenderer(rendererOptions);
-      } else {
-        throw e;
-      }
-    } else {
-      throw e;
-    }
+    const fb = registeredBackends.find((b) => b !== targetBackend);
+    const fbPlugin = fb && getRendererPlugin(fb);
+    if (!fbPlugin) throw e;
+    console.warn(`${targetBackend} initialization failed, falling back to ${fb}:`, e);
+    renderer = await fbPlugin.createRenderer(rendererOptions);
   }
 
   renderer.resize(width, height);
@@ -330,22 +319,16 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
   const elytraVertexBuffer = renderer.createBuffer(BufferUsage.Vertex, elytraGeometry.vertices);
   const elytraIndexBuffer = renderer.createBuffer(BufferUsage.Index, elytraGeometry.indices);
 
-  // Load initial skin texture
-  let skinTexture: ITexture | null = null;
-  if (options.skin) {
-    try {
-      const bitmap = await loadSkinTexture(options.skin);
-      skinTexture = await renderer.createTexture(bitmap);
-    } catch {
-      // Use placeholder
-      const placeholder = await createPlaceholderTexture();
-      skinTexture = await renderer.createTexture(placeholder);
-    }
-  } else {
-    // Create placeholder texture
-    const placeholder = await createPlaceholderTexture();
-    skinTexture = await renderer.createTexture(placeholder);
+  // Load initial skin texture (fallback to placeholder)
+  let skinBitmap: ImageBitmap;
+  try {
+    skinBitmap = options.skin
+      ? await loadSkinTexture(options.skin)
+      : await createPlaceholderTexture();
+  } catch {
+    skinBitmap = await createPlaceholderTexture();
   }
+  let skinTexture: ITexture | null = await renderer.createTexture(skinBitmap);
 
   // Create animation controller
   const animationController = createAnimationController(skeleton);
@@ -411,11 +394,7 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
         console.warn("Failed to load panorama:", e);
       });
     } else {
-      console.warn(
-        "PanoramaPlugin is not registered. Import and use() it to enable panorama backgrounds:\n" +
-          "  import { PanoramaPlugin } from 'minecraft-skin-renderer/panorama'\n" +
-          "  use(PanoramaPlugin)",
-      );
+      console.warn(PANORAMA_WARN);
     }
   }
 
@@ -463,58 +442,30 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       renderBindGroups.uniforms["u_boneMatrices[0]"] = state.boneMatricesCache;
       renderBindGroups.skinTextures.u_skinTexture = skinTexture;
 
+      // Helper to issue a draw call
+      const draw = (pl: IPipeline, vb: IBuffer, ib: IBuffer, ic: number, bg: BindGroup) => {
+        renderer.draw({ pipeline: pl, vertexBuffers: [vb], indexBuffer: ib, indexCount: ic, bindGroup: bg });
+      };
+
       // Draw each part based on visibility settings
       for (const partName of PART_NAMES) {
         const visibility = partsVisibility[partName];
         const buffers = partBuffers[partName];
-
-        // Draw inner layer if visible
-        if (visibility.inner) {
-          renderer.draw({
-            pipeline: skinPipeline,
-            vertexBuffers: [buffers.innerVertexBuffer],
-            indexBuffer: buffers.innerIndexBuffer,
-            indexCount: buffers.innerIndexCount,
-            bindGroup: renderBindGroups.skinBindGroup,
-          });
-        }
-
-        // Draw outer layer if visible
-        if (visibility.outer) {
-          renderer.draw({
-            pipeline: overlayPipeline,
-            vertexBuffers: [buffers.outerVertexBuffer],
-            indexBuffer: buffers.outerIndexBuffer,
-            indexCount: buffers.outerIndexCount,
-            bindGroup: renderBindGroups.skinBindGroup,
-          });
-        }
+        if (visibility.inner) draw(skinPipeline, buffers.innerVertexBuffer, buffers.innerIndexBuffer, buffers.innerIndexCount, renderBindGroups.skinBindGroup);
+        if (visibility.outer) draw(overlayPipeline, buffers.outerVertexBuffer, buffers.outerIndexBuffer, buffers.outerIndexCount, renderBindGroups.skinBindGroup);
       }
 
       // Draw cape or elytra if texture is available and equipment is enabled
       if (capeTexture && backEquipment !== "none") {
-        // Update cape textures cache
         renderBindGroups.capeTextures.u_skinTexture = capeTexture;
-
-        if (backEquipment === "cape") {
-          // Draw cape
-          renderer.draw({
-            pipeline: capePipeline,
-            vertexBuffers: [capeVertexBuffer],
-            indexBuffer: capeIndexBuffer,
-            indexCount: state.capeGeometry.indexCount,
-            bindGroup: renderBindGroups.capeBindGroup,
-          });
-        } else if (backEquipment === "elytra") {
-          // Draw elytra wings
-          renderer.draw({
-            pipeline: capePipeline,
-            vertexBuffers: [elytraVertexBuffer],
-            indexBuffer: elytraIndexBuffer,
-            indexCount: state.elytraGeometry.indexCount,
-            bindGroup: renderBindGroups.capeBindGroup,
-          });
-        }
+        const isCape = backEquipment === "cape";
+        draw(
+          capePipeline,
+          isCape ? capeVertexBuffer : elytraVertexBuffer,
+          isCape ? capeIndexBuffer : elytraIndexBuffer,
+          (isCape ? state.capeGeometry : state.elytraGeometry).indexCount,
+          renderBindGroups.capeBindGroup,
+        );
       }
     }
 
@@ -698,17 +649,11 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       resetOrbitControls(state.controls);
     },
 
-    render() {
-      doRender();
-    },
+    render: doRender,
 
-    startRenderLoop() {
-      startRenderLoop(state.renderLoop);
-    },
+    startRenderLoop: () => startRenderLoop(state.renderLoop),
 
-    stopRenderLoop() {
-      stopRenderLoop(state.renderLoop);
-    },
+    stopRenderLoop: () => stopRenderLoop(state.renderLoop),
 
     resize(width: number, height: number) {
       if (state.disposed) return;
@@ -738,11 +683,7 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       // Get panorama plugin
       const panoramaPlugin = getBackgroundPlugin("panorama");
       if (!panoramaPlugin) {
-        console.warn(
-          "PanoramaPlugin is not registered. Import and use() it to enable panorama backgrounds:\n" +
-            "  import { PanoramaPlugin } from 'minecraft-skin-renderer/panorama'\n" +
-            "  use(PanoramaPlugin)",
-        );
+        console.warn(PANORAMA_WARN);
         return;
       }
 
@@ -760,24 +701,14 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
       // Dispose all part buffers
       disposeAllPartBuffers(state.partBuffers);
-      state.skinPipeline.dispose();
-      state.overlayPipeline.dispose();
 
-      if (state.skinTexture) state.skinTexture.dispose();
-      if (state.capeTexture) state.capeTexture.dispose();
-
-      // Dispose cape/elytra resources
-      state.capeVertexBuffer.dispose();
-      state.capeIndexBuffer.dispose();
-      state.elytraVertexBuffer.dispose();
-      state.elytraIndexBuffer.dispose();
-      state.capePipeline.dispose();
-
-      // Dispose background renderer
-      if (state.backgroundRenderer) {
-        state.backgroundRenderer.dispose();
-        state.backgroundRenderer = null;
-      }
+      // Dispose pipelines, buffers, textures, and background
+      for (const r of [
+        state.skinPipeline, state.overlayPipeline, state.capePipeline,
+        state.capeVertexBuffer, state.capeIndexBuffer,
+        state.elytraVertexBuffer, state.elytraIndexBuffer,
+        state.skinTexture, state.capeTexture, state.backgroundRenderer,
+      ]) r?.dispose();
 
       state.renderer.dispose();
     },
