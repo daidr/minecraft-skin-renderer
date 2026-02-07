@@ -147,11 +147,16 @@ export function detectSlimModel(imageData: ImageData): boolean {
   // Check the rightmost column of the right arm area
   // If it's fully transparent, it's likely a slim skin
   const data = imageData.data;
+  const scale = imageData.width / 64;
 
-  // Check pixels at x=46, y=52 (right arm overlay area)
+  // Check pixels at x=46, y=52 (right arm overlay area) scaled to actual resolution
   // In classic skins, this would have content; in slim, it's transparent
-  for (let y = 52; y < 64; y++) {
-    const idx = (y * 64 + 46) * 4;
+  const startY = Math.round(52 * scale);
+  const endY = Math.round(64 * scale);
+  const checkX = Math.round(46 * scale);
+
+  for (let y = startY; y < endY; y++) {
+    const idx = (y * imageData.width + checkX) * 4;
     if (data[idx + 3] > 0) {
       return false; // Has content, likely classic
     }
