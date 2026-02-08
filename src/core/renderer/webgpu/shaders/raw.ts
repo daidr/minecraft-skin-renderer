@@ -78,10 +78,17 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
   var texColor = textureSample(skinTexture, texSampler, sharpUV);
 
   if (uniforms.alphaTest > 0.0) {
-    // Outer layer: alpha test (discard fully transparent pixels)
-    if (texColor.a < uniforms.alphaTest) {
+    // Outer layer: nearest-neighbor alpha to avoid bilinear bleeding
+    let nearestTexel = clamp(vec2<i32>(floor(texelCoord)), vec2<i32>(0), vec2<i32>(texSize) - 1);
+    let nearestAlpha = textureLoad(skinTexture, nearestTexel, 0).a;
+    if (nearestAlpha < uniforms.alphaTest) {
       discard;
     }
+    // Fix RGB contamination from bilinear filtering at transparency edges
+    if (texColor.a > 0.001) {
+      texColor = vec4<f32>(texColor.rgb / texColor.a, texColor.a);
+    }
+    texColor.a = 1.0;
   } else {
     // Inner layer: force fully opaque (transparent pixels become black)
     texColor.a = 1.0;

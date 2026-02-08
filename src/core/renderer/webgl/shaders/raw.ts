@@ -75,10 +75,17 @@ void main() {
     vec4 texColor = texture(u_skinTexture, sharpUV);
 
     if (u_alphaTest > 0.0) {
-        // Outer layer: alpha test (discard fully transparent pixels)
-        if (texColor.a < u_alphaTest) {
+        // Outer layer: nearest-neighbor alpha to avoid bilinear bleeding
+        ivec2 nearestTexel = clamp(ivec2(floor(texelCoord)), ivec2(0), ivec2(texSize) - 1);
+        float nearestAlpha = texelFetch(u_skinTexture, nearestTexel, 0).a;
+        if (nearestAlpha < u_alphaTest) {
             discard;
         }
+        // Fix RGB contamination from bilinear filtering at transparency edges
+        if (texColor.a > 0.001) {
+            texColor.rgb /= texColor.a;
+        }
+        texColor.a = 1.0;
     } else {
         // Inner layer: force fully opaque (transparent pixels become black)
         texColor.a = 1.0;
