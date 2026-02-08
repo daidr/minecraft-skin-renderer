@@ -19,20 +19,21 @@ import { WebGPUTextureImpl } from "./WebGPUTexture";
 
 /**
  * Uniform buffer layout (must match WGSL struct):
- * - modelMatrix:      64 bytes  (offset 0)
- * - viewMatrix:       64 bytes  (offset 64)
- * - projectionMatrix: 64 bytes  (offset 128)
- * - boneMatrices:     1536 bytes (offset 192, 24 * 64)
- * - alphaTest:        4 bytes   (offset 1728)
- * - padding:          12 bytes  (offset 1732, align to 16)
- * Total: 1744 bytes
+ * - modelMatrix:          64 bytes  (offset 0)
+ * - viewProjectionMatrix: 64 bytes  (offset 64)
+ * - boneMatrices:         1536 bytes (offset 128, 24 * 64)
+ * - alphaTest:            4 bytes   (offset 1664)
+ * - padding:              12 bytes  (offset 1668, align to 16)
+ * Total: 1680 bytes
  */
-const UNIFORM_BUFFER_SIZE = 1744;
+const UNIFORM_BUFFER_SIZE = 1680;
 const OFFSET_MODEL_MATRIX = 0;
-const OFFSET_VIEW_MATRIX = 64;
-const OFFSET_PROJECTION_MATRIX = 128;
-const OFFSET_BONE_MATRICES = 192;
-const OFFSET_ALPHA_TEST = 1728;
+const OFFSET_VIEW_PROJECTION_MATRIX = 64;
+const OFFSET_BONE_MATRICES = 128;
+const OFFSET_ALPHA_TEST = 1664;
+
+/** Pool size for per-draw-call uniform buffers */
+const UNIFORM_POOL_SIZE = 32;
 
 export class WebGPURenderer implements IRenderer {
   readonly backend = "webgpu" as const;
@@ -47,6 +48,11 @@ export class WebGPURenderer implements IRenderer {
   private _width: number;
   private _height: number;
 
+  // MSAA
+  readonly sampleCount: number;
+  private msaaTexture: GPUTexture | null = null;
+  private msaaTextureView: GPUTextureView | null = null;
+
   // Depth buffer
   private depthTexture: GPUTexture | null = null;
   private depthTextureView: GPUTextureView | null = null;
@@ -56,15 +62,18 @@ export class WebGPURenderer implements IRenderer {
   private renderPassEncoder: GPURenderPassEncoder | null = null;
   private currentTextureView: GPUTextureView | null = null;
 
-  // Uniform buffer management
-  private uniformBuffer: GPUBuffer;
+  // Uniform buffer management (pool for per-draw-call isolation)
+  private uniformBuffers: GPUBuffer[] = [];
   private uniformBindGroupLayout: GPUBindGroupLayout;
-  private uniformBindGroup: GPUBindGroup;
+  private uniformBindGroups: GPUBindGroup[] = [];
   private uniformData: ArrayBuffer;
   private uniformDataView: DataView;
 
-  // Dirty tracking for partial uniform updates (reserved for future optimization)
-  // Note: boneMatrices are always updated since animations modify the array in-place
+  // Pre-allocated typed array view to avoid per-draw allocation
+  private uniformFloat32View: Float32Array;
+
+  // Per-frame draw call index into the uniform pool
+  private currentDrawIndex = 0;
 
   // State cache
   private lastPipelineId = -1;
@@ -84,18 +93,15 @@ export class WebGPURenderer implements IRenderer {
     this.device = device;
     this.context = context;
     this.format = format;
+    this.sampleCount = (options.antialias ?? true) ? 4 : 1;
 
     this._width = this.canvas.width;
     this._height = this.canvas.height;
 
-    // Create uniform buffer
+    // Create uniform staging area (CPU-side)
     this.uniformData = new ArrayBuffer(UNIFORM_BUFFER_SIZE);
     this.uniformDataView = new DataView(this.uniformData);
-
-    this.uniformBuffer = device.createBuffer({
-      size: UNIFORM_BUFFER_SIZE,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
+    this.uniformFloat32View = new Float32Array(this.uniformData);
 
     // Create uniform bind group layout (group 0)
     this.uniformBindGroupLayout = device.createBindGroupLayout({
@@ -108,16 +114,21 @@ export class WebGPURenderer implements IRenderer {
       ],
     });
 
-    // Create uniform bind group
-    this.uniformBindGroup = device.createBindGroup({
-      layout: this.uniformBindGroupLayout,
-      entries: [
-        {
-          binding: 0,
-          resource: { buffer: this.uniformBuffer },
-        },
-      ],
-    });
+    // Create pool of uniform buffers + bind groups (one per draw call)
+    // Each draw call gets its own buffer so writeBuffer doesn't conflict
+    for (let i = 0; i < UNIFORM_POOL_SIZE; i++) {
+      const buffer = device.createBuffer({
+        size: UNIFORM_BUFFER_SIZE,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+      this.uniformBuffers.push(buffer);
+      this.uniformBindGroups.push(
+        device.createBindGroup({
+          layout: this.uniformBindGroupLayout,
+          entries: [{ binding: 0, resource: { buffer } }],
+        }),
+      );
+    }
 
     // Create depth texture
     this.createDepthTexture();
@@ -167,19 +178,32 @@ export class WebGPURenderer implements IRenderer {
     return this._height;
   }
 
-  /** Create or recreate depth texture */
+  /** Create or recreate depth texture and MSAA texture */
   private createDepthTexture(): void {
     if (this.depthTexture) {
       this.depthTexture.destroy();
+    }
+    if (this.msaaTexture) {
+      this.msaaTexture.destroy();
     }
 
     this.depthTexture = this.device.createTexture({
       size: { width: this._width, height: this._height },
       format: "depth24plus",
+      sampleCount: this.sampleCount,
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
     });
-
     this.depthTextureView = this.depthTexture.createView();
+
+    if (this.sampleCount > 1) {
+      this.msaaTexture = this.device.createTexture({
+        size: { width: this._width, height: this._height },
+        format: this.format,
+        sampleCount: this.sampleCount,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+      });
+      this.msaaTextureView = this.msaaTexture.createView();
+    }
   }
 
   /** Get the uniform bind group layout for pipeline creation */
@@ -204,13 +228,20 @@ export class WebGPURenderer implements IRenderer {
 
   /** Create a pipeline */
   createPipeline(config: PipelineConfig): IPipeline {
-    return new WebGPUPipeline(this.device, config, this.format, this.uniformBindGroupLayout);
+    return new WebGPUPipeline(
+      this.device,
+      config,
+      this.format,
+      this.uniformBindGroupLayout,
+      this.sampleCount,
+    );
   }
 
   /** Begin a new frame */
   beginFrame(): void {
     // Reset state cache
     this.lastPipelineId = -1;
+    this.currentDrawIndex = 0;
 
     // Get current texture
     this.currentTextureView = this.context.getCurrentTexture().createView();
@@ -226,15 +257,24 @@ export class WebGPURenderer implements IRenderer {
     }
 
     // Start render pass with clear color
-    const renderPassDescriptor: GPURenderPassDescriptor = {
-      colorAttachments: [
-        {
+    // When MSAA is enabled, render to msaaTextureView and resolve to canvas texture
+    const colorAttachment: GPURenderPassColorAttachment = this.msaaTextureView
+      ? {
+          view: this.msaaTextureView,
+          resolveTarget: this.currentTextureView,
+          clearValue: { r, g, b, a },
+          loadOp: "clear",
+          storeOp: "discard",
+        }
+      : {
           view: this.currentTextureView,
           clearValue: { r, g, b, a },
           loadOp: "clear",
           storeOp: "store",
-        },
-      ],
+        };
+
+    const renderPassDescriptor: GPURenderPassDescriptor = {
+      colorAttachments: [colorAttachment],
       depthStencilAttachment: {
         view: this.depthTextureView,
         depthClearValue: 1.0,
@@ -258,45 +298,35 @@ export class WebGPURenderer implements IRenderer {
       this.lastPipelineId = pipeline.id;
     }
 
-    // Update uniform buffer with bind group data (using partial updates when possible)
+    // Update uniform buffer with bind group data (using partial updates)
     const { uniforms } = params.bindGroup;
-    const float32View = new Float32Array(this.uniformData);
+    const float32View = this.uniformFloat32View;
 
-    // Track what needs to be uploaded (for future partial update optimization)
+    // Track dirty range for partial upload
     let minOffset = UNIFORM_BUFFER_SIZE;
     let maxOffset = 0;
 
-    // Model matrix (offset 0) - typically constant, check if changed
+    // Model matrix (offset 0)
     if (uniforms.u_modelMatrix) {
-      const mat = uniforms.u_modelMatrix as Float32Array;
-      float32View.set(mat, OFFSET_MODEL_MATRIX / 4);
+      float32View.set(uniforms.u_modelMatrix as Float32Array, OFFSET_MODEL_MATRIX / 4);
       minOffset = Math.min(minOffset, OFFSET_MODEL_MATRIX);
       maxOffset = Math.max(maxOffset, OFFSET_MODEL_MATRIX + 64);
     }
 
-    // View matrix (offset 64) - changes with camera
-    if (uniforms.u_viewMatrix) {
-      const mat = uniforms.u_viewMatrix as Float32Array;
-      float32View.set(mat, OFFSET_VIEW_MATRIX / 4);
-      minOffset = Math.min(minOffset, OFFSET_VIEW_MATRIX);
-      maxOffset = Math.max(maxOffset, OFFSET_VIEW_MATRIX + 64);
-    }
-
-    // Projection matrix (offset 128) - changes with resize
-    if (uniforms.u_projectionMatrix) {
-      const mat = uniforms.u_projectionMatrix as Float32Array;
-      float32View.set(mat, OFFSET_PROJECTION_MATRIX / 4);
-      minOffset = Math.min(minOffset, OFFSET_PROJECTION_MATRIX);
-      maxOffset = Math.max(maxOffset, OFFSET_PROJECTION_MATRIX + 64);
+    // ViewProjection matrix (offset 64) - precomputed on CPU
+    if (uniforms.u_viewProjectionMatrix) {
+      float32View.set(
+        uniforms.u_viewProjectionMatrix as Float32Array,
+        OFFSET_VIEW_PROJECTION_MATRIX / 4,
+      );
+      minOffset = Math.min(minOffset, OFFSET_VIEW_PROJECTION_MATRIX);
+      maxOffset = Math.max(maxOffset, OFFSET_VIEW_PROJECTION_MATRIX + 64);
     }
 
     // Bone matrices (offset 192) - always update since content may change in-place
     const boneMatrices = uniforms["u_boneMatrices[0]"] || uniforms.u_boneMatrices;
     if (boneMatrices) {
-      const mat = boneMatrices as Float32Array;
-      // Always update bone matrices - the caller may update the same Float32Array in-place
-      // for animations, so we cannot rely on reference comparison
-      float32View.set(mat, OFFSET_BONE_MATRICES / 4);
+      float32View.set(boneMatrices as Float32Array, OFFSET_BONE_MATRICES / 4);
       minOffset = Math.min(minOffset, OFFSET_BONE_MATRICES);
       maxOffset = Math.max(maxOffset, OFFSET_BONE_MATRICES + 1536);
     }
@@ -308,21 +338,26 @@ export class WebGPURenderer implements IRenderer {
       maxOffset = Math.max(maxOffset, OFFSET_ALPHA_TEST + 16); // Aligned to 16 bytes
     }
 
-    // Upload uniform buffer (full upload for now, partial optimization can be added later)
-    // Note: For skin rendering, bone matrices change frequently so partial update has limited benefit
-    if (maxOffset > minOffset) {
-      this.device.queue.writeBuffer(this.uniformBuffer, 0, this.uniformData);
+    // Upload full uniform data to this draw call's dedicated buffer
+    // Each draw call uses its own buffer to avoid writeBuffer race conditions
+    const drawIdx = this.currentDrawIndex;
+    if (drawIdx < UNIFORM_POOL_SIZE && maxOffset > minOffset) {
+      this.device.queue.writeBuffer(
+        this.uniformBuffers[drawIdx],
+        0,
+        this.uniformData,
+        0,
+        UNIFORM_BUFFER_SIZE,
+      );
+      this.renderPassEncoder.setBindGroup(0, this.uniformBindGroups[drawIdx]);
+      this.currentDrawIndex++;
     }
-
-    // Set uniform bind group (group 0)
-    this.renderPassEncoder.setBindGroup(0, this.uniformBindGroup);
 
     // Create and set texture bind group (group 1) with caching
     const { textures } = params.bindGroup;
-    const textureEntries = Object.entries(textures);
-    if (textureEntries.length > 0) {
-      const [, texture] = textureEntries[0];
-      const tex = texture as WebGPUTextureImpl;
+    const firstTextureKey = Object.keys(textures)[0];
+    if (firstTextureKey) {
+      const tex = textures[firstTextureKey] as WebGPUTextureImpl;
 
       // Check cache for existing bind group
       const cacheKey = tex.id;
@@ -393,7 +428,7 @@ export class WebGPURenderer implements IRenderer {
     this.canvas.width = this._width;
     this.canvas.height = this._height;
 
-    // Recreate depth texture
+    // Recreate depth texture and MSAA texture
     this.createDepthTexture();
   }
 
@@ -425,6 +460,13 @@ export class WebGPURenderer implements IRenderer {
     // Clear bind group cache (GPUBindGroup objects are not explicitly destroyed)
     this.textureBindGroupCache.clear();
 
+    // Clean up MSAA texture
+    this.msaaTextureView = null;
+    if (this.msaaTexture) {
+      this.msaaTexture.destroy();
+      this.msaaTexture = null;
+    }
+
     // Clean up depth texture and view
     this.depthTextureView = null;
     if (this.depthTexture) {
@@ -435,8 +477,12 @@ export class WebGPURenderer implements IRenderer {
     // Clean up current texture view reference
     this.currentTextureView = null;
 
-    // Destroy uniform buffer
-    this.uniformBuffer.destroy();
+    // Destroy uniform buffer pool
+    for (const buffer of this.uniformBuffers) {
+      buffer.destroy();
+    }
+    this.uniformBuffers.length = 0;
+    this.uniformBindGroups.length = 0;
 
     // Note: uniformBindGroupLayout and uniformBindGroup are managed by the device
     // and will be cleaned up when the device is lost/destroyed

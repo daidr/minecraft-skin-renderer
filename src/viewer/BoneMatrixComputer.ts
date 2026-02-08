@@ -34,7 +34,7 @@ const BONE_ORDER = [
 export const BONE_COUNT = 24;
 
 /** Size of bone matrix data in floats */
-export const BONE_MATRICES_SIZE = BONE_COUNT * 16;
+export const BONE_MATRICES_SIZE: number = BONE_COUNT * 16;
 
 /**
  * Bone matrix cache for efficient updates.

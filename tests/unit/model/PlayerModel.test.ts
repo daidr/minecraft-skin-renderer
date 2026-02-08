@@ -168,5 +168,31 @@ describe("PlayerModel", () => {
 
       expect(cloned.variant).toBe("slim");
     });
+
+    it("should deep copy all vector properties independently", () => {
+      const original = createPlayerSkeleton("classic");
+      setBonePositionOffset(original, BoneIndex.Head, [10, 20, 30]);
+
+      const cloned = cloneSkeleton(original);
+
+      // Verify cloned values match
+      const clonedHead = cloned.bones.get(BoneIndex.Head)!;
+      expect(clonedHead.positionOffset).toEqual([10, 20, 30]);
+
+      // Mutate cloned positionOffset — original should not change
+      clonedHead.positionOffset[0] = 999;
+      const originalHead = original.bones.get(BoneIndex.Head)!;
+      expect(originalHead.positionOffset[0]).toBe(10);
+
+      // Mutate cloned position — original should not change
+      const origPos = [...originalHead.position];
+      clonedHead.position[0] = 888;
+      expect(originalHead.position).toEqual(origPos);
+
+      // Mutate cloned size — original should not change
+      const origSize = [...originalHead.size];
+      clonedHead.size[0] = 777;
+      expect(originalHead.size).toEqual(origSize);
+    });
   });
 });

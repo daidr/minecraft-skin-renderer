@@ -60,7 +60,7 @@ export interface AnimationController {
 }
 
 /** Registered animations */
-export const animations = new Map<string, Animation>();
+export const animations: Map<string, Animation> = new Map();
 
 /** Register an animation */
 export function registerAnimation(animation: Animation): void {

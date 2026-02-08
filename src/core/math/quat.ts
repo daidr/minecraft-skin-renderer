@@ -53,74 +53,35 @@ export function quatFromEuler(x: number, y: number, z: number): Quat {
 
 /** Multiply two quaternions */
 export function quatMultiply(a: Quat, b: Quat): Quat {
-  const ax = a[0],
-    ay = a[1],
-    az = a[2],
-    aw = a[3];
-  const bx = b[0],
-    by = b[1],
-    bz = b[2],
-    bw = b[3];
-  return [
-    ax * bw + aw * bx + ay * bz - az * by,
-    ay * bw + aw * by + az * bx - ax * bz,
-    az * bw + aw * bz + ax * by - ay * bx,
-    aw * bw - ax * bx - ay * by - az * bz,
-  ];
+  return quatMultiplyMut([0, 0, 0, 0], a, b);
 }
 
 /** Rotate quaternion around X axis */
 export function quatRotateX(q: Quat, rad: number): Quat {
-  const halfAngle = rad / 2;
-  const bx = Math.sin(halfAngle);
-  const bw = Math.cos(halfAngle);
-
-  return [
-    q[0] * bw + q[3] * bx,
-    q[1] * bw + q[2] * bx,
-    q[2] * bw - q[1] * bx,
-    q[3] * bw - q[0] * bx,
-  ];
+  const h = rad / 2;
+  return quatMultiply(q, [Math.sin(h), 0, 0, Math.cos(h)]);
 }
 
 /** Rotate quaternion around Y axis */
 export function quatRotateY(q: Quat, rad: number): Quat {
-  const halfAngle = rad / 2;
-  const by = Math.sin(halfAngle);
-  const bw = Math.cos(halfAngle);
-
-  return [
-    q[0] * bw - q[2] * by,
-    q[1] * bw + q[3] * by,
-    q[2] * bw + q[0] * by,
-    q[3] * bw - q[1] * by,
-  ];
+  const h = rad / 2;
+  return quatMultiply(q, [0, Math.sin(h), 0, Math.cos(h)]);
 }
 
 /** Rotate quaternion around Z axis */
 export function quatRotateZ(q: Quat, rad: number): Quat {
-  const halfAngle = rad / 2;
-  const bz = Math.sin(halfAngle);
-  const bw = Math.cos(halfAngle);
-
-  return [
-    q[0] * bw + q[1] * bz,
-    q[1] * bw - q[0] * bz,
-    q[2] * bw + q[3] * bz,
-    q[3] * bw - q[2] * bz,
-  ];
+  const h = rad / 2;
+  return quatMultiply(q, [0, 0, Math.sin(h), Math.cos(h)]);
 }
 
 /** Normalize a quaternion */
 export function quatNormalize(q: Quat): Quat {
-  const len = Math.sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
-  if (len === 0) return [0, 0, 0, 1];
-  return [q[0] / len, q[1] / len, q[2] / len, q[3] / len];
+  return quatNormalizeMut([0, 0, 0, 0], q);
 }
 
 /** Invert (conjugate) a quaternion */
 export function quatInvert(q: Quat): Quat {
-  const dot = q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3];
+  const dot = quatDot(q, q);
   if (dot === 0) return [0, 0, 0, 0];
   const invDot = 1.0 / dot;
   return [-q[0] * invDot, -q[1] * invDot, -q[2] * invDot, q[3] * invDot];
@@ -128,77 +89,12 @@ export function quatInvert(q: Quat): Quat {
 
 /** Spherical linear interpolation between two quaternions */
 export function quatSlerp(a: Quat, b: Quat, t: number): Quat {
-  const ax = a[0],
-    ay = a[1],
-    az = a[2],
-    aw = a[3];
-  let bx = b[0],
-    by = b[1],
-    bz = b[2],
-    bw = b[3];
-
-  let cosom = ax * bx + ay * by + az * bz + aw * bw;
-
-  // Adjust signs (if necessary)
-  if (cosom < 0) {
-    cosom = -cosom;
-    bx = -bx;
-    by = -by;
-    bz = -bz;
-    bw = -bw;
-  }
-
-  let scale0: number;
-  let scale1: number;
-
-  if (1 - cosom > 0.000_001) {
-    // Standard case (slerp)
-    const omega = Math.acos(cosom);
-    const sinom = Math.sin(omega);
-    scale0 = Math.sin((1 - t) * omega) / sinom;
-    scale1 = Math.sin(t * omega) / sinom;
-  } else {
-    // "from" and "to" quaternions are very close, do linear interpolation
-    scale0 = 1 - t;
-    scale1 = t;
-  }
-
-  return [
-    scale0 * ax + scale1 * bx,
-    scale0 * ay + scale1 * by,
-    scale0 * az + scale1 * bz,
-    scale0 * aw + scale1 * bw,
-  ];
+  return quatSlerpMut([0, 0, 0, 0], a, b, t);
 }
 
 /** Convert quaternion to 4x4 rotation matrix */
 export function quatToMat4(q: Quat): Mat4 {
-  const x = q[0],
-    y = q[1],
-    z = q[2],
-    w = q[3];
-
-  const x2 = x + x;
-  const y2 = y + y;
-  const z2 = z + z;
-
-  const xx = x * x2;
-  const yx = y * x2;
-  const yy = y * y2;
-  const zx = z * x2;
-  const zy = z * y2;
-  const zz = z * z2;
-  const wx = w * x2;
-  const wy = w * y2;
-  const wz = w * z2;
-
-  // prettier-ignore
-  return new Float32Array([
-    1 - yy - zz, yx + wz, zx - wy, 0,
-    yx - wz, 1 - xx - zz, zy + wx, 0,
-    zx + wy, zy - wx, 1 - xx - yy, 0,
-    0, 0, 0, 1,
-  ])
+  return quatToMat4Mut(new Float32Array(16), q);
 }
 
 /** Rotate a vector by a quaternion */
@@ -261,7 +157,7 @@ export function quatDot(a: Quat, b: Quat): number {
 
 /** Length (magnitude) of a quaternion */
 export function quatLength(q: Quat): number {
-  return Math.sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
+  return Math.sqrt(quatDot(q, q));
 }
 
 /** Convert quaternion to Float32Array */
@@ -313,18 +209,15 @@ export function quatMultiplyMut(out: Quat, a: Quat, b: Quat): Quat {
 
 /** Normalize a quaternion (mutable) */
 export function quatNormalizeMut(out: Quat, q: Quat): Quat {
-  const len = Math.sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
+  const len = quatLength(q);
   if (len === 0) {
-    out[0] = 0;
-    out[1] = 0;
-    out[2] = 0;
-    out[3] = 1;
-  } else {
-    out[0] = q[0] / len;
-    out[1] = q[1] / len;
-    out[2] = q[2] / len;
-    out[3] = q[3] / len;
+    return quatIdentityMut(out);
   }
+  const invLen = 1 / len;
+  out[0] = q[0] * invLen;
+  out[1] = q[1] * invLen;
+  out[2] = q[2] * invLen;
+  out[3] = q[3] * invLen;
   return out;
 }
 
@@ -379,36 +272,29 @@ export function quatToMat4Mut(out: Mat4, q: Quat): Mat4 {
     y = q[1],
     z = q[2],
     w = q[3];
+  const x2 = x + x,
+    y2 = y + y,
+    z2 = z + z;
+  const xx = x * x2,
+    yx = y * x2,
+    yy = y * y2;
+  const zx = z * x2,
+    zy = z * y2,
+    zz = z * z2;
+  const wx = w * x2,
+    wy = w * y2,
+    wz = w * z2;
 
-  const x2 = x + x;
-  const y2 = y + y;
-  const z2 = z + z;
-
-  const xx = x * x2;
-  const yx = y * x2;
-  const yy = y * y2;
-  const zx = z * x2;
-  const zy = z * y2;
-  const zz = z * z2;
-  const wx = w * x2;
-  const wy = w * y2;
-  const wz = w * z2;
-
+  out.fill(0);
   out[0] = 1 - yy - zz;
   out[1] = yx + wz;
   out[2] = zx - wy;
-  out[3] = 0;
   out[4] = yx - wz;
   out[5] = 1 - xx - zz;
   out[6] = zy + wx;
-  out[7] = 0;
   out[8] = zx + wy;
   out[9] = zy - wx;
   out[10] = 1 - xx - yy;
-  out[11] = 0;
-  out[12] = 0;
-  out[13] = 0;
-  out[14] = 0;
   out[15] = 1;
 
   return out;

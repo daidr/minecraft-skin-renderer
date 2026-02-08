@@ -1,0 +1,13 @@
+{
+  "name": "@daidr/minecraft-skin-renderer-native-playground",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {},
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.90"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.2"
+  }
+}

@@ -36,161 +36,71 @@ export function mat4Copy(out: Mat4, a: Mat4): Mat4 {
 
 /** Multiply two matrices: out = a * b */
 export function mat4Multiply(a: Mat4, b: Mat4): Mat4 {
-  const out = new Float32Array(16);
-
-  const a00 = a[0],
-    a01 = a[1],
-    a02 = a[2],
-    a03 = a[3];
-  const a10 = a[4],
-    a11 = a[5],
-    a12 = a[6],
-    a13 = a[7];
-  const a20 = a[8],
-    a21 = a[9],
-    a22 = a[10],
-    a23 = a[11];
-  const a30 = a[12],
-    a31 = a[13],
-    a32 = a[14],
-    a33 = a[15];
-
-  let b0 = b[0],
-    b1 = b[1],
-    b2 = b[2],
-    b3 = b[3];
-  out[0] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-  out[1] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-  out[2] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-  out[3] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
-
-  b0 = b[4];
-  b1 = b[5];
-  b2 = b[6];
-  b3 = b[7];
-  out[4] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-  out[5] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-  out[6] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-  out[7] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
-
-  b0 = b[8];
-  b1 = b[9];
-  b2 = b[10];
-  b3 = b[11];
-  out[8] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-  out[9] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-  out[10] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-  out[11] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
-
-  b0 = b[12];
-  b1 = b[13];
-  b2 = b[14];
-  b3 = b[15];
-  out[12] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-  out[13] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-  out[14] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-  out[15] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
-
-  return out;
+  return mat4MultiplyMut(new Float32Array(16), a, b);
 }
 
 /** Create a translation matrix */
 export function mat4FromTranslation(v: Vec3): Mat4 {
-  // prettier-ignore
-  return new Float32Array([
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    v[0], v[1], v[2], 1,
-  ])
+  return mat4FromTranslationMut(new Float32Array(16), v);
 }
 
 /** Create a scaling matrix */
 export function mat4FromScaling(v: Vec3): Mat4 {
-  // prettier-ignore
-  return new Float32Array([
-    v[0], 0, 0, 0,
-    0, v[1], 0, 0,
-    0, 0, v[2], 0,
-    0, 0, 0, 1,
-  ])
+  const out = new Float32Array(16);
+  out[0] = v[0];
+  out[5] = v[1];
+  out[10] = v[2];
+  out[15] = 1;
+  return out;
 }
 
 /** Create a rotation matrix around X axis */
 export function mat4FromRotationX(rad: number): Mat4 {
-  const s = Math.sin(rad);
-  const c = Math.cos(rad);
-  // prettier-ignore
-  return new Float32Array([
-    1, 0, 0, 0,
-    0, c, s, 0,
-    0, -s, c, 0,
-    0, 0, 0, 1,
-  ])
+  const s = Math.sin(rad),
+    c = Math.cos(rad);
+  const out = new Float32Array(16);
+  out[0] = out[15] = 1;
+  out[5] = c;
+  out[6] = s;
+  out[9] = -s;
+  out[10] = c;
+  return out;
 }
 
 /** Create a rotation matrix around Y axis */
 export function mat4FromRotationY(rad: number): Mat4 {
-  const s = Math.sin(rad);
-  const c = Math.cos(rad);
-  // prettier-ignore
-  return new Float32Array([
-    c, 0, -s, 0,
-    0, 1, 0, 0,
-    s, 0, c, 0,
-    0, 0, 0, 1,
-  ])
+  const s = Math.sin(rad),
+    c = Math.cos(rad);
+  const out = new Float32Array(16);
+  out[0] = c;
+  out[2] = -s;
+  out[5] = out[15] = 1;
+  out[8] = s;
+  out[10] = c;
+  return out;
 }
 
 /** Create a rotation matrix around Z axis */
 export function mat4FromRotationZ(rad: number): Mat4 {
-  const s = Math.sin(rad);
-  const c = Math.cos(rad);
-  // prettier-ignore
-  return new Float32Array([
-    c, s, 0, 0,
-    -s, c, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1,
-  ])
+  const s = Math.sin(rad),
+    c = Math.cos(rad);
+  const out = new Float32Array(16);
+  out[0] = c;
+  out[1] = s;
+  out[4] = -s;
+  out[5] = c;
+  out[10] = out[15] = 1;
+  return out;
 }
 
 /** Translate a matrix by vector */
 export function mat4Translate(m: Mat4, v: Vec3): Mat4 {
-  const out = mat4Clone(m);
-  const x = v[0],
-    y = v[1],
-    z = v[2];
-  out[12] = m[0] * x + m[4] * y + m[8] * z + m[12];
-  out[13] = m[1] * x + m[5] * y + m[9] * z + m[13];
-  out[14] = m[2] * x + m[6] * y + m[10] * z + m[14];
-  out[15] = m[3] * x + m[7] * y + m[11] * z + m[15];
-  return out;
+  return mat4TranslateMut(new Float32Array(16), m, v);
 }
 
 /** Scale a matrix by vector */
 export function mat4Scale(m: Mat4, v: Vec3): Mat4 {
-  const out = new Float32Array(16);
-  const x = v[0],
-    y = v[1],
-    z = v[2];
-  out[0] = m[0] * x;
-  out[1] = m[1] * x;
-  out[2] = m[2] * x;
-  out[3] = m[3] * x;
-  out[4] = m[4] * y;
-  out[5] = m[5] * y;
-  out[6] = m[6] * y;
-  out[7] = m[7] * y;
-  out[8] = m[8] * z;
-  out[9] = m[9] * z;
-  out[10] = m[10] * z;
-  out[11] = m[11] * z;
-  out[12] = m[12];
-  out[13] = m[13];
-  out[14] = m[14];
-  out[15] = m[15];
-  return out;
+  return mat4ScaleMut(new Float32Array(16), m, v);
 }
 
 /** Rotate a matrix around X axis */
@@ -386,80 +296,23 @@ export function mat4GetScaling(m: Mat4): Vec3 {
 
 /** Set matrix to identity (mutable) */
 export function mat4IdentityMut(out: Mat4): Mat4 {
-  out[0] = 1;
-  out[1] = 0;
-  out[2] = 0;
-  out[3] = 0;
-  out[4] = 0;
-  out[5] = 1;
-  out[6] = 0;
-  out[7] = 0;
-  out[8] = 0;
-  out[9] = 0;
-  out[10] = 1;
-  out[11] = 0;
-  out[12] = 0;
-  out[13] = 0;
-  out[14] = 0;
-  out[15] = 1;
+  out.fill(0);
+  out[0] = out[5] = out[10] = out[15] = 1;
   return out;
 }
 
 /** Multiply two matrices (mutable): out = a * b */
 export function mat4MultiplyMut(out: Mat4, a: Mat4, b: Mat4): Mat4 {
-  const a00 = a[0],
-    a01 = a[1],
-    a02 = a[2],
-    a03 = a[3];
-  const a10 = a[4],
-    a11 = a[5],
-    a12 = a[6],
-    a13 = a[7];
-  const a20 = a[8],
-    a21 = a[9],
-    a22 = a[10],
-    a23 = a[11];
-  const a30 = a[12],
-    a31 = a[13],
-    a32 = a[14],
-    a33 = a[15];
-
-  let b0 = b[0],
-    b1 = b[1],
-    b2 = b[2],
-    b3 = b[3];
-  out[0] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-  out[1] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-  out[2] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-  out[3] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
-
-  b0 = b[4];
-  b1 = b[5];
-  b2 = b[6];
-  b3 = b[7];
-  out[4] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-  out[5] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-  out[6] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-  out[7] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
-
-  b0 = b[8];
-  b1 = b[9];
-  b2 = b[10];
-  b3 = b[11];
-  out[8] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-  out[9] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-  out[10] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-  out[11] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
-
-  b0 = b[12];
-  b1 = b[13];
-  b2 = b[14];
-  b3 = b[15];
-  out[12] = b0 * a00 + b1 * a10 + b2 * a20 + b3 * a30;
-  out[13] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
-  out[14] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
-  out[15] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
-
+  for (let i = 0; i < 16; i += 4) {
+    const b0 = b[i],
+      b1 = b[i + 1],
+      b2 = b[i + 2],
+      b3 = b[i + 3];
+    out[i] = b0 * a[0] + b1 * a[4] + b2 * a[8] + b3 * a[12];
+    out[i + 1] = b0 * a[1] + b1 * a[5] + b2 * a[9] + b3 * a[13];
+    out[i + 2] = b0 * a[2] + b1 * a[6] + b2 * a[10] + b3 * a[14];
+    out[i + 3] = b0 * a[3] + b1 * a[7] + b2 * a[11] + b3 * a[15];
+  }
   return out;
 }
 
@@ -468,73 +321,33 @@ export function mat4TranslateMut(out: Mat4, m: Mat4, v: Vec3): Mat4 {
   const x = v[0],
     y = v[1],
     z = v[2];
-
-  if (out !== m) {
-    out[0] = m[0];
-    out[1] = m[1];
-    out[2] = m[2];
-    out[3] = m[3];
-    out[4] = m[4];
-    out[5] = m[5];
-    out[6] = m[6];
-    out[7] = m[7];
-    out[8] = m[8];
-    out[9] = m[9];
-    out[10] = m[10];
-    out[11] = m[11];
+  if (out !== m) out.set(m.subarray(0, 12));
+  for (let i = 0; i < 4; i++) {
+    out[12 + i] = m[i] * x + m[4 + i] * y + m[8 + i] * z + m[12 + i];
   }
-
-  out[12] = m[0] * x + m[4] * y + m[8] * z + m[12];
-  out[13] = m[1] * x + m[5] * y + m[9] * z + m[13];
-  out[14] = m[2] * x + m[6] * y + m[10] * z + m[14];
-  out[15] = m[3] * x + m[7] * y + m[11] * z + m[15];
-
   return out;
 }
 
 /** Scale a matrix by vector (mutable) */
 export function mat4ScaleMut(out: Mat4, m: Mat4, v: Vec3): Mat4 {
-  const x = v[0],
-    y = v[1],
-    z = v[2];
-
-  out[0] = m[0] * x;
-  out[1] = m[1] * x;
-  out[2] = m[2] * x;
-  out[3] = m[3] * x;
-  out[4] = m[4] * y;
-  out[5] = m[5] * y;
-  out[6] = m[6] * y;
-  out[7] = m[7] * y;
-  out[8] = m[8] * z;
-  out[9] = m[9] * z;
-  out[10] = m[10] * z;
-  out[11] = m[11] * z;
-  out[12] = m[12];
-  out[13] = m[13];
-  out[14] = m[14];
-  out[15] = m[15];
-
+  const sx = v[0],
+    sy = v[1],
+    sz = v[2];
+  for (let i = 0; i < 4; i++) {
+    out[i] = m[i] * sx;
+    out[4 + i] = m[4 + i] * sy;
+    out[8 + i] = m[8 + i] * sz;
+    out[12 + i] = m[12 + i];
+  }
   return out;
 }
 
 /** Create a translation matrix (mutable) */
 export function mat4FromTranslationMut(out: Mat4, v: Vec3): Mat4 {
-  out[0] = 1;
-  out[1] = 0;
-  out[2] = 0;
-  out[3] = 0;
-  out[4] = 0;
-  out[5] = 1;
-  out[6] = 0;
-  out[7] = 0;
-  out[8] = 0;
-  out[9] = 0;
-  out[10] = 1;
-  out[11] = 0;
+  out.fill(0);
+  out[0] = out[5] = out[10] = out[15] = 1;
   out[12] = v[0];
   out[13] = v[1];
   out[14] = v[2];
-  out[15] = 1;
   return out;
 }

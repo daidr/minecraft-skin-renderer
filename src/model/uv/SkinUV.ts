@@ -86,45 +86,71 @@ export function getSkinUV(variant: ModelVariant): SkinUVMap {
 }
 
 /**
- * Check if skin is old format (64x32) or new format (64x64)
+ * Check if skin is old format (2:1 ratio, e.g. 64x32, 128x64)
  */
 export function isOldSkinFormat(width: number, height: number): boolean {
-  return width === 64 && height === 32;
+  return width === height * 2;
 }
 
 /**
- * Convert old 64x32 skin to 64x64 format
- * The old format only has right arm/leg textures, which are mirrored for left
+ * Convert old format skin (2:1 ratio) to square format.
+ * Supports any resolution (64x32, 128x64, 256x128, etc.)
+ * The old format only has right arm/leg textures, which are mirrored for left.
  */
 export function convertOldSkinFormat(imageData: ImageData): ImageData {
-  if (imageData.height === 64) {
-    return imageData; // Already new format
+  const width = imageData.width;
+  const height = imageData.height;
+
+  if (width === height) {
+    return imageData; // Already square (new format)
   }
 
-  // Create new 64x64 image
-  const newData = new ImageData(64, 64);
+  const scale = width / 64;
+
+  // Create new square image (width × width)
+  const newData = new ImageData(width, width);
   const src = imageData.data;
   const dst = newData.data;
 
-  // Copy top half (0-31) as-is
-  for (let y = 0; y < 32; y++) {
-    for (let x = 0; x < 64; x++) {
-      const srcIdx = (y * 64 + x) * 4;
-      const dstIdx = (y * 64 + x) * 4;
-      dst[dstIdx] = src[srcIdx];
-      dst[dstIdx + 1] = src[srcIdx + 1];
-      dst[dstIdx + 2] = src[srcIdx + 2];
-      dst[dstIdx + 3] = src[srcIdx + 3];
+  // Copy top half (original data) as-is
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      dst[idx] = src[idx];
+      dst[idx + 1] = src[idx + 1];
+      dst[idx + 2] = src[idx + 2];
+      dst[idx + 3] = src[idx + 3];
     }
   }
 
-  // Mirror right arm to left arm position (32, 48)
-  // Right arm is at (40, 16) with size 4x12x4
-  copyAndMirror(src, dst, 64, 40, 16, 32, 48, 16, 16);
+  // Mirror right arm to left arm position (32, 48) in 64x64 space
+  // Right arm is at (40, 16) with region size 16x16
+  const s = scale;
+  copyAndMirror(
+    src,
+    dst,
+    width,
+    Math.round(40 * s),
+    Math.round(16 * s),
+    Math.round(32 * s),
+    Math.round(48 * s),
+    Math.round(16 * s),
+    Math.round(16 * s),
+  );
 
-  // Mirror right leg to left leg position (16, 48)
-  // Right leg is at (0, 16) with size 4x12x4
-  copyAndMirror(src, dst, 64, 0, 16, 16, 48, 16, 16);
+  // Mirror right leg to left leg position (16, 48) in 64x64 space
+  // Right leg is at (0, 16) with region size 16x16
+  copyAndMirror(
+    src,
+    dst,
+    width,
+    Math.round(0),
+    Math.round(16 * s),
+    Math.round(16 * s),
+    Math.round(48 * s),
+    Math.round(16 * s),
+    Math.round(16 * s),
+  );
 
   return newData;
 }

@@ -7,11 +7,21 @@ import { isOldSkinFormat, convertOldSkinFormat } from "../model/uv/SkinUV";
 /** Texture source types */
 export type TextureSource = string | Blob | HTMLImageElement | ImageBitmap;
 
+function isImageElement(obj: any): obj is HTMLImageElement {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    "width" in obj &&
+    "height" in obj &&
+    "complete" in obj
+  );
+}
+
 /**
  * Load an image from various sources
  */
 export async function loadImage(source: TextureSource): Promise<HTMLImageElement> {
-  if (source instanceof HTMLImageElement) {
+  if (isImageElement(source)) {
     if (source.complete) {
       return source;
     }
@@ -77,7 +87,7 @@ export async function loadImageBitmap(source: TextureSource): Promise<ImageBitma
 /**
  * Generic texture loader (alias for loadImageBitmap)
  */
-export const loadTexture = loadImageBitmap;
+export const loadTexture: (source: TextureSource) => Promise<ImageBitmap> = loadImageBitmap;
 
 /**
  * Get image data from an image source
@@ -112,10 +122,10 @@ export async function loadSkinTexture(source: TextureSource): Promise<ImageBitma
     const imageData = getImageData(image);
     const convertedData = convertOldSkinFormat(imageData);
 
-    // Create canvas with converted data
+    // Create square canvas with converted data
     const canvas = document.createElement("canvas");
-    canvas.width = 64;
-    canvas.height = 64;
+    canvas.width = width;
+    canvas.height = width;
     const ctx = canvas.getContext("2d")!;
     ctx.putImageData(convertedData, 0, 0);
 
@@ -147,11 +157,16 @@ export function detectSlimModel(imageData: ImageData): boolean {
   // Check the rightmost column of the right arm area
   // If it's fully transparent, it's likely a slim skin
   const data = imageData.data;
+  const scale = imageData.width / 64;
 
-  // Check pixels at x=46, y=52 (right arm overlay area)
+  // Check pixels at x=46, y=52 (right arm overlay area) scaled to actual resolution
   // In classic skins, this would have content; in slim, it's transparent
-  for (let y = 52; y < 64; y++) {
-    const idx = (y * 64 + 46) * 4;
+  const startY = Math.round(52 * scale);
+  const endY = Math.round(64 * scale);
+  const checkX = Math.round(46 * scale);
+
+  for (let y = startY; y < endY; y++) {
+    const idx = (y * imageData.width + checkX) * 4;
     if (data[idx + 3] > 0) {
       return false; // Has content, likely classic
     }

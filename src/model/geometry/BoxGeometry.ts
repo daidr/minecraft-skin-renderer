@@ -13,28 +13,28 @@ import {
   UV_EDGE_INSET,
 } from "../constants";
 
-/** Face indices for a cube */
-enum Face {
-  Front = 0, // +Z
-  Back = 1, // -Z
-  Left = 2, // -X
-  Right = 3, // +X
-  Top = 4, // +Y
-  Bottom = 5, // -Y
-}
-
-/** Normal vectors for each face */
-const FACE_NORMALS: Vec3[] = [
-  [0, 0, 1], // Front
-  [0, 0, -1], // Back
-  [-1, 0, 0], // Left
-  [1, 0, 0], // Right
-  [0, 1, 0], // Top
-  [0, -1, 0], // Bottom
+/**
+ * Face vertex position signs (6 faces × 4 vertices × 3 components)
+ * Each vertex: [sx, sy, sz] where position = offset + sign * halfSize
+ * Faces: Front(+Z), Back(-Z), Left(-X), Right(+X), Top(+Y), Bottom(-Y)
+ */
+// prettier-ignore
+const FP = [
+  -1,-1,1, 1,-1,1, 1,1,1, -1,1,1,       // Front (+Z)
+  1,-1,-1, -1,-1,-1, -1,1,-1, 1,1,-1,    // Back (-Z)
+  -1,-1,-1, -1,-1,1, -1,1,1, -1,1,-1,    // Left (-X)
+  1,-1,1, 1,-1,-1, 1,1,-1, 1,1,1,        // Right (+X)
+  -1,1,1, 1,1,1, 1,1,-1, -1,1,-1,        // Top (+Y)
+  -1,-1,-1, 1,-1,-1, 1,-1,1, -1,-1,1,    // Bottom (-Y)
 ];
 
-/** UV inset constant (imported from constants) */
-const UV_INSET = UV_EDGE_INSET;
+/** Face normals (6 faces × 3 components) */
+// prettier-ignore
+const FN = [0,0,1, 0,0,-1, -1,0,0, 1,0,0, 0,1,0, 0,-1,0];
+
+/** UV face key order: skin mode swaps left/right geometry faces */
+const UV_SKIN: (keyof BoxUV)[] = ["front", "back", "right", "left", "top", "bottom"];
+const UV_CAPE: (keyof BoxUV)[] = ["front", "back", "left", "right", "top", "bottom"];
 
 /** Options for box geometry creation */
 interface BoxGeometryOptions {
@@ -71,244 +71,89 @@ function createBoxGeometryCore(
   const hw = size[0] / 2 + inflate;
   const hh = size[1] / 2 + inflate;
   const hd = size[2] / 2 + inflate;
-
-  const ox = offset[0];
-  const oy = offset[1];
-  const oz = offset[2];
-
-  // 6 faces, 4 vertices each
-  const vertexCount = 24;
-  const indexCount = 36;
-
-  const vertices = new Float32Array(vertexCount * VERTEX_STRIDE);
-  const indices = new Uint16Array(indexCount);
-
-  let vertexOffset = 0;
-  let indexOffset = 0;
-  let baseVertex = 0;
-
-  // Mirror factor for X coordinates
+  const ox = offset[0],
+    oy = offset[1],
+    oz = offset[2];
   const mx = mirrorX ? -1 : 1;
 
-  const addVertex = (
-    x: number,
-    y: number,
-    z: number,
-    u: number,
-    v: number,
-    nx: number,
-    ny: number,
-    nz: number,
-  ) => {
-    vertices[vertexOffset++] = x * mx;
-    vertices[vertexOffset++] = y;
-    vertices[vertexOffset++] = z;
-    vertices[vertexOffset++] = u;
-    vertices[vertexOffset++] = v;
-    vertices[vertexOffset++] = nx * mx;
-    vertices[vertexOffset++] = ny;
-    vertices[vertexOffset++] = nz;
-    vertices[vertexOffset++] = boneIndex;
-    vertices[vertexOffset++] = 0; // padding
-  };
+  // 6 faces, 4 vertices each
+  const vertices = new Float32Array(24 * VERTEX_STRIDE);
+  const indices = new Uint16Array(36);
+  let vi = 0,
+    ii = 0;
 
-  // When mirrored, reverse winding order to maintain correct face culling
-  const addFaceIndices = () => {
-    if (mirrorX) {
-      indices[indexOffset++] = baseVertex + 2;
-      indices[indexOffset++] = baseVertex + 1;
-      indices[indexOffset++] = baseVertex;
-      indices[indexOffset++] = baseVertex;
-      indices[indexOffset++] = baseVertex + 3;
-      indices[indexOffset++] = baseVertex + 2;
-    } else {
-      indices[indexOffset++] = baseVertex;
-      indices[indexOffset++] = baseVertex + 1;
-      indices[indexOffset++] = baseVertex + 2;
-      indices[indexOffset++] = baseVertex + 2;
-      indices[indexOffset++] = baseVertex + 3;
-      indices[indexOffset++] = baseVertex;
-    }
-    baseVertex += 4;
-  };
+  const uvKeys = capeUVMode ? UV_CAPE : UV_SKIN;
 
-  // Convert UV from pixel coordinates to 0-1 range
-  // Applies UV_INSET towards the center to prevent edge bleeding
-  const normalizeUV = (faceUV: {
-    u1: number;
-    v1: number;
-    u2: number;
-    v2: number;
-  }): [number, number, number, number] => {
+  for (let f = 0; f < 6; f++) {
+    const faceUV = uv[uvKeys[f]];
     let u1 = faceUV.u1 / textureWidth;
     let u2 = faceUV.u2 / textureWidth;
     let v1 = faceUV.v1 / textureHeight;
     let v2 = faceUV.v2 / textureHeight;
 
-    // Inset towards the center of the UV region
-    // When u1 < u2 (normal), shrink inward: u1 increases, u2 decreases
-    // When u1 > u2 (flipped), shrink inward: u1 decreases, u2 increases
+    // Inset UVs towards center to prevent edge bleeding
     if (u1 < u2) {
-      u1 += UV_INSET;
-      u2 -= UV_INSET;
+      u1 += UV_EDGE_INSET;
+      u2 -= UV_EDGE_INSET;
     } else {
-      u1 -= UV_INSET;
-      u2 += UV_INSET;
+      u1 -= UV_EDGE_INSET;
+      u2 += UV_EDGE_INSET;
     }
-
     if (v1 < v2) {
-      v1 += UV_INSET;
-      v2 -= UV_INSET;
+      v1 += UV_EDGE_INSET;
+      v2 -= UV_EDGE_INSET;
     } else {
-      v1 -= UV_INSET;
-      v2 += UV_INSET;
+      v1 -= UV_EDGE_INSET;
+      v2 += UV_EDGE_INSET;
     }
 
-    return [u1, v1, u2, v2];
-  };
+    // Cape mode swaps u1/u2 for front/back/left/right; bottom always swaps v1/v2
+    const su = capeUVMode && f < 4;
+    const ua = su ? u2 : u1,
+      ub = su ? u1 : u2;
+    const va = f === 5 ? v1 : v2,
+      vb = f === 5 ? v2 : v1;
 
-  if (capeUVMode) {
-    // Cape/Elytra UV mapping mode
-    // Front face (+Z)
-    {
-      const [u1, v1, u2, v2] = normalizeUV(uv.front);
-      const [nx, ny, nz] = FACE_NORMALS[Face.Front];
-      addVertex(ox - hw, oy - hh, oz + hd, u2, v2, nx, ny, nz);
-      addVertex(ox + hw, oy - hh, oz + hd, u1, v2, nx, ny, nz);
-      addVertex(ox + hw, oy + hh, oz + hd, u1, v1, nx, ny, nz);
-      addVertex(ox - hw, oy + hh, oz + hd, u2, v1, nx, ny, nz);
-      addFaceIndices();
+    const ni = f * 3;
+    const nx = FN[ni],
+      ny = FN[ni + 1],
+      nz = FN[ni + 2];
+    const bv = f * 4;
+
+    // Write 4 vertices: position, UV (ua/ub,va/vb pattern), normal, bone index
+    for (let v = 0; v < 4; v++) {
+      const pi = f * 12 + v * 3;
+      vertices[vi++] = (ox + FP[pi] * hw) * mx;
+      vertices[vi++] = oy + FP[pi + 1] * hh;
+      vertices[vi++] = oz + FP[pi + 2] * hd;
+      vertices[vi++] = v === 0 || v === 3 ? ua : ub;
+      vertices[vi++] = v < 2 ? va : vb;
+      vertices[vi++] = nx * mx;
+      vertices[vi++] = ny;
+      vertices[vi++] = nz;
+      vertices[vi++] = boneIndex;
+      vertices[vi++] = 0; // padding
     }
 
-    // Back face (-Z)
-    {
-      const [u1, v1, u2, v2] = normalizeUV(uv.back);
-      const [nx, ny, nz] = FACE_NORMALS[Face.Back];
-      addVertex(ox + hw, oy - hh, oz - hd, u2, v2, nx, ny, nz);
-      addVertex(ox - hw, oy - hh, oz - hd, u1, v2, nx, ny, nz);
-      addVertex(ox - hw, oy + hh, oz - hd, u1, v1, nx, ny, nz);
-      addVertex(ox + hw, oy + hh, oz - hd, u2, v1, nx, ny, nz);
-      addFaceIndices();
-    }
-
-    // Left face (-X)
-    {
-      const [u1, v1, u2, v2] = normalizeUV(uv.left);
-      const [nx, ny, nz] = FACE_NORMALS[Face.Left];
-      addVertex(ox - hw, oy - hh, oz - hd, u2, v2, nx, ny, nz);
-      addVertex(ox - hw, oy - hh, oz + hd, u1, v2, nx, ny, nz);
-      addVertex(ox - hw, oy + hh, oz + hd, u1, v1, nx, ny, nz);
-      addVertex(ox - hw, oy + hh, oz - hd, u2, v1, nx, ny, nz);
-      addFaceIndices();
-    }
-
-    // Right face (+X)
-    {
-      const [u1, v1, u2, v2] = normalizeUV(uv.right);
-      const [nx, ny, nz] = FACE_NORMALS[Face.Right];
-      addVertex(ox + hw, oy - hh, oz + hd, u2, v2, nx, ny, nz);
-      addVertex(ox + hw, oy - hh, oz - hd, u1, v2, nx, ny, nz);
-      addVertex(ox + hw, oy + hh, oz - hd, u1, v1, nx, ny, nz);
-      addVertex(ox + hw, oy + hh, oz + hd, u2, v1, nx, ny, nz);
-      addFaceIndices();
-    }
-
-    // Top face (+Y)
-    {
-      const [u1, v1, u2, v2] = normalizeUV(uv.top);
-      const [nx, ny, nz] = FACE_NORMALS[Face.Top];
-      addVertex(ox - hw, oy + hh, oz + hd, u1, v2, nx, ny, nz);
-      addVertex(ox + hw, oy + hh, oz + hd, u2, v2, nx, ny, nz);
-      addVertex(ox + hw, oy + hh, oz - hd, u2, v1, nx, ny, nz);
-      addVertex(ox - hw, oy + hh, oz - hd, u1, v1, nx, ny, nz);
-      addFaceIndices();
-    }
-
-    // Bottom face (-Y)
-    {
-      const [u1, v1, u2, v2] = normalizeUV(uv.bottom);
-      const [nx, ny, nz] = FACE_NORMALS[Face.Bottom];
-      addVertex(ox - hw, oy - hh, oz - hd, u1, v1, nx, ny, nz);
-      addVertex(ox + hw, oy - hh, oz - hd, u2, v1, nx, ny, nz);
-      addVertex(ox + hw, oy - hh, oz + hd, u2, v2, nx, ny, nz);
-      addVertex(ox - hw, oy - hh, oz + hd, u1, v2, nx, ny, nz);
-      addFaceIndices();
-    }
-  } else {
-    // Standard skin UV mapping mode
-    // Front face (+Z)
-    {
-      const [u1, v1, u2, v2] = normalizeUV(uv.front);
-      const [nx, ny, nz] = FACE_NORMALS[Face.Front];
-      addVertex(ox - hw, oy - hh, oz + hd, u1, v2, nx, ny, nz);
-      addVertex(ox + hw, oy - hh, oz + hd, u2, v2, nx, ny, nz);
-      addVertex(ox + hw, oy + hh, oz + hd, u2, v1, nx, ny, nz);
-      addVertex(ox - hw, oy + hh, oz + hd, u1, v1, nx, ny, nz);
-      addFaceIndices();
-    }
-
-    // Back face (-Z)
-    {
-      const [u1, v1, u2, v2] = normalizeUV(uv.back);
-      const [nx, ny, nz] = FACE_NORMALS[Face.Back];
-      addVertex(ox + hw, oy - hh, oz - hd, u1, v2, nx, ny, nz);
-      addVertex(ox - hw, oy - hh, oz - hd, u2, v2, nx, ny, nz);
-      addVertex(ox - hw, oy + hh, oz - hd, u2, v1, nx, ny, nz);
-      addVertex(ox + hw, oy + hh, oz - hd, u1, v1, nx, ny, nz);
-      addFaceIndices();
-    }
-
-    // Left face (-X) - uses uv.right (character's right side)
-    {
-      const [u1, v1, u2, v2] = normalizeUV(uv.right);
-      const [nx, ny, nz] = FACE_NORMALS[Face.Left];
-      addVertex(ox - hw, oy - hh, oz - hd, u1, v2, nx, ny, nz);
-      addVertex(ox - hw, oy - hh, oz + hd, u2, v2, nx, ny, nz);
-      addVertex(ox - hw, oy + hh, oz + hd, u2, v1, nx, ny, nz);
-      addVertex(ox - hw, oy + hh, oz - hd, u1, v1, nx, ny, nz);
-      addFaceIndices();
-    }
-
-    // Right face (+X) - uses uv.left (character's left side)
-    {
-      const [u1, v1, u2, v2] = normalizeUV(uv.left);
-      const [nx, ny, nz] = FACE_NORMALS[Face.Right];
-      addVertex(ox + hw, oy - hh, oz + hd, u1, v2, nx, ny, nz);
-      addVertex(ox + hw, oy - hh, oz - hd, u2, v2, nx, ny, nz);
-      addVertex(ox + hw, oy + hh, oz - hd, u2, v1, nx, ny, nz);
-      addVertex(ox + hw, oy + hh, oz + hd, u1, v1, nx, ny, nz);
-      addFaceIndices();
-    }
-
-    // Top face (+Y)
-    {
-      const [u1, v1, u2, v2] = normalizeUV(uv.top);
-      const [nx, ny, nz] = FACE_NORMALS[Face.Top];
-      addVertex(ox - hw, oy + hh, oz + hd, u1, v2, nx, ny, nz);
-      addVertex(ox + hw, oy + hh, oz + hd, u2, v2, nx, ny, nz);
-      addVertex(ox + hw, oy + hh, oz - hd, u2, v1, nx, ny, nz);
-      addVertex(ox - hw, oy + hh, oz - hd, u1, v1, nx, ny, nz);
-      addFaceIndices();
-    }
-
-    // Bottom face (-Y)
-    {
-      const [u1, v1, u2, v2] = normalizeUV(uv.bottom);
-      const [nx, ny, nz] = FACE_NORMALS[Face.Bottom];
-      addVertex(ox - hw, oy - hh, oz - hd, u1, v1, nx, ny, nz);
-      addVertex(ox + hw, oy - hh, oz - hd, u2, v1, nx, ny, nz);
-      addVertex(ox + hw, oy - hh, oz + hd, u2, v2, nx, ny, nz);
-      addVertex(ox - hw, oy - hh, oz + hd, u1, v2, nx, ny, nz);
-      addFaceIndices();
+    // When mirrored, reverse winding order to maintain correct face culling
+    if (mirrorX) {
+      indices[ii++] = bv + 2;
+      indices[ii++] = bv + 1;
+      indices[ii++] = bv;
+      indices[ii++] = bv;
+      indices[ii++] = bv + 3;
+      indices[ii++] = bv + 2;
+    } else {
+      indices[ii++] = bv;
+      indices[ii++] = bv + 1;
+      indices[ii++] = bv + 2;
+      indices[ii++] = bv + 2;
+      indices[ii++] = bv + 3;
+      indices[ii++] = bv;
     }
   }
 
-  return {
-    vertices,
-    indices,
-    vertexCount,
-    indexCount,
-  };
+  return { vertices, indices, vertexCount: 24, indexCount: 36 };
 }
 
 /**
