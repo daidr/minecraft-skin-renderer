@@ -49,6 +49,7 @@
     "docs:dev": "bun run --cwd docs dev",
     "docs:build": "bun run --cwd docs build",
     "docs:preview": "bun run --cwd docs preview",
+    "build:deploy": "bun run docs:build && bun run build:playground && mkdir -p docs/.vitepress/dist/playground && cp -r dist-playground/* docs/.vitepress/dist/playground/",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",

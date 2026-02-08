@@ -10,6 +10,7 @@ export default defineConfig({
       { text: "指南", link: "/guide/", activeMatch: "/guide/" },
       { text: "API 参考", link: "/api/", activeMatch: "/api/" },
       { text: "示例", link: "/examples/", activeMatch: "/examples/" },
+      { text: "Playground", link: "/playground/" },
     ],
 
     sidebar: {
