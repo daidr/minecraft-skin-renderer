@@ -22,6 +22,9 @@
     "type": "git",
     "url": "git+https://github.com/daidr/minecraft-skin-renderer.git"
   },
+  "workspaces": [
+    "playground"
+  ],
   "files": [
     "dist"
   ],
@@ -29,6 +32,7 @@
   "types": "./dist/index.d.mts",
   "exports": {
     ".": "./dist/index.js",
+    "./canvas2d": "./dist/canvas2d.js",
     "./panorama": "./dist/panorama.js",
     "./webgl": "./dist/webgl.js",
     "./webgpu": "./dist/webgpu.js",
@@ -37,9 +41,9 @@
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
-    "dev:playground": "vite playground",
-    "build:playground": "vite build playground",
-    "preview:playground": "vite preview playground",
+    "dev:playground": "bun run --cwd playground dev",
+    "build:playground": "bun run --cwd playground build",
+    "preview:playground": "bun run --cwd playground preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
@@ -57,7 +61,6 @@
   "devDependencies": {
     "@commitlint/cli": "^20.4.1",
     "@commitlint/config-conventional": "^20.4.1",
-    "@types/stats.js": "^0.17.4",
     "@vitest/coverage-v8": "^4.0.18",
     "@vitest/ui": "^4.0.18",
     "@webgpu/types": "^0.1.69",
@@ -68,10 +71,8 @@
     "oxfmt": "^0.28.0",
     "oxlint": "^1.43.0",
     "oxlint-tsgolint": "^0.11.3",
-    "stats.js": "^0.17.0",
     "tsdown": "^0.20.1",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1",
     "vitest": "^4.0.18",
     "vitest-webgl-canvas-mock": "^1.1.0"
   },

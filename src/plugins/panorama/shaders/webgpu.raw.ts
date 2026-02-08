@@ -3,14 +3,13 @@
  */
 
 export const PANORAMA_WGSL_SHADER_RAW = `
-// Uniform buffer matching the WebGPU renderer's layout
-// We only use viewMatrix and projectionMatrix
+// Uniform buffer matching the WebGPU renderer's layout (1680 bytes)
+// viewProjectionMatrix is precomputed on CPU (projection * viewRotationOnly)
 struct Uniforms {
-    modelMatrix: mat4x4<f32>,       // offset 0
-    viewMatrix: mat4x4<f32>,        // offset 64
-    projectionMatrix: mat4x4<f32>,  // offset 128
-    boneMatrices: array<mat4x4<f32>, 24>, // offset 192
-    alphaTest: f32,                 // offset 1728
+    modelMatrix: mat4x4<f32>,
+    viewProjectionMatrix: mat4x4<f32>,
+    boneMatrices: array<mat4x4<f32>, 24>,
+    alphaTest: f32,
 }
 
 // Group 0: Uniforms (matches WebGPU renderer)
@@ -37,11 +36,8 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 
     output.direction = input.position;
 
-    // Remove translation from view matrix (only rotation)
-    var viewRotation = uniforms.viewMatrix;
-    viewRotation[3] = vec4<f32>(0.0, 0.0, 0.0, 1.0);
-
-    let pos = uniforms.projectionMatrix * viewRotation * vec4<f32>(input.position, 1.0);
+    // viewProjectionMatrix = projection * viewRotation (translation already stripped on CPU)
+    let pos = uniforms.viewProjectionMatrix * vec4<f32>(input.position, 1.0);
 
     // Set z = w so depth is always at far plane
     output.position = vec4<f32>(pos.xy, pos.w, pos.w);

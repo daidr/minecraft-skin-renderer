@@ -32,6 +32,9 @@ const OFFSET_VIEW_PROJECTION_MATRIX = 64;
 const OFFSET_BONE_MATRICES = 128;
 const OFFSET_ALPHA_TEST = 1664;
 
+/** Pool size for per-draw-call uniform buffers */
+const UNIFORM_POOL_SIZE = 32;
+
 export class WebGPURenderer implements IRenderer {
   readonly backend = "webgpu" as const;
   readonly canvas: HTMLCanvasElement;
@@ -59,19 +62,21 @@ export class WebGPURenderer implements IRenderer {
   private renderPassEncoder: GPURenderPassEncoder | null = null;
   private currentTextureView: GPUTextureView | null = null;
 
-  // Uniform buffer management
-  private uniformBuffer: GPUBuffer;
+  // Uniform buffer management (pool for per-draw-call isolation)
+  private uniformBuffers: GPUBuffer[] = [];
   private uniformBindGroupLayout: GPUBindGroupLayout;
-  private uniformBindGroup: GPUBindGroup;
+  private uniformBindGroups: GPUBindGroup[] = [];
   private uniformData: ArrayBuffer;
   private uniformDataView: DataView;
 
   // Pre-allocated typed array view to avoid per-draw allocation
   private uniformFloat32View: Float32Array;
 
+  // Per-frame draw call index into the uniform pool
+  private currentDrawIndex = 0;
+
   // State cache
   private lastPipelineId = -1;
-  private uniformBindGroupBound = false;
 
   // Texture BindGroup cache: Map<textureId, { bindGroup, pipelineId }>
   private textureBindGroupCache: Map<number, { bindGroup: GPUBindGroup; pipelineId: number }> =
@@ -93,15 +98,10 @@ export class WebGPURenderer implements IRenderer {
     this._width = this.canvas.width;
     this._height = this.canvas.height;
 
-    // Create uniform buffer
+    // Create uniform staging area (CPU-side)
     this.uniformData = new ArrayBuffer(UNIFORM_BUFFER_SIZE);
     this.uniformDataView = new DataView(this.uniformData);
     this.uniformFloat32View = new Float32Array(this.uniformData);
-
-    this.uniformBuffer = device.createBuffer({
-      size: UNIFORM_BUFFER_SIZE,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
 
     // Create uniform bind group layout (group 0)
     this.uniformBindGroupLayout = device.createBindGroupLayout({
@@ -114,16 +114,21 @@ export class WebGPURenderer implements IRenderer {
       ],
     });
 
-    // Create uniform bind group
-    this.uniformBindGroup = device.createBindGroup({
-      layout: this.uniformBindGroupLayout,
-      entries: [
-        {
-          binding: 0,
-          resource: { buffer: this.uniformBuffer },
-        },
-      ],
-    });
+    // Create pool of uniform buffers + bind groups (one per draw call)
+    // Each draw call gets its own buffer so writeBuffer doesn't conflict
+    for (let i = 0; i < UNIFORM_POOL_SIZE; i++) {
+      const buffer = device.createBuffer({
+        size: UNIFORM_BUFFER_SIZE,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+      this.uniformBuffers.push(buffer);
+      this.uniformBindGroups.push(
+        device.createBindGroup({
+          layout: this.uniformBindGroupLayout,
+          entries: [{ binding: 0, resource: { buffer } }],
+        }),
+      );
+    }
 
     // Create depth texture
     this.createDepthTexture();
@@ -236,7 +241,7 @@ export class WebGPURenderer implements IRenderer {
   beginFrame(): void {
     // Reset state cache
     this.lastPipelineId = -1;
-    this.uniformBindGroupBound = false;
+    this.currentDrawIndex = 0;
 
     // Get current texture
     this.currentTextureView = this.context.getCurrentTexture().createView();
@@ -253,21 +258,20 @@ export class WebGPURenderer implements IRenderer {
 
     // Start render pass with clear color
     // When MSAA is enabled, render to msaaTextureView and resolve to canvas texture
-    const colorAttachment: GPURenderPassColorAttachment =
-      this.msaaTextureView
-        ? {
-            view: this.msaaTextureView,
-            resolveTarget: this.currentTextureView,
-            clearValue: { r, g, b, a },
-            loadOp: "clear",
-            storeOp: "discard",
-          }
-        : {
-            view: this.currentTextureView,
-            clearValue: { r, g, b, a },
-            loadOp: "clear",
-            storeOp: "store",
-          };
+    const colorAttachment: GPURenderPassColorAttachment = this.msaaTextureView
+      ? {
+          view: this.msaaTextureView,
+          resolveTarget: this.currentTextureView,
+          clearValue: { r, g, b, a },
+          loadOp: "clear",
+          storeOp: "discard",
+        }
+      : {
+          view: this.currentTextureView,
+          clearValue: { r, g, b, a },
+          loadOp: "clear",
+          storeOp: "store",
+        };
 
     const renderPassDescriptor: GPURenderPassDescriptor = {
       colorAttachments: [colorAttachment],
@@ -311,7 +315,10 @@ export class WebGPURenderer implements IRenderer {
 
     // ViewProjection matrix (offset 64) - precomputed on CPU
     if (uniforms.u_viewProjectionMatrix) {
-      float32View.set(uniforms.u_viewProjectionMatrix as Float32Array, OFFSET_VIEW_PROJECTION_MATRIX / 4);
+      float32View.set(
+        uniforms.u_viewProjectionMatrix as Float32Array,
+        OFFSET_VIEW_PROJECTION_MATRIX / 4,
+      );
       minOffset = Math.min(minOffset, OFFSET_VIEW_PROJECTION_MATRIX);
       maxOffset = Math.max(maxOffset, OFFSET_VIEW_PROJECTION_MATRIX + 64);
     }
@@ -331,19 +338,19 @@ export class WebGPURenderer implements IRenderer {
       maxOffset = Math.max(maxOffset, OFFSET_ALPHA_TEST + 16); // Aligned to 16 bytes
     }
 
-    // Partial upload: only send the dirty range to GPU
-    if (maxOffset > minOffset) {
+    // Upload full uniform data to this draw call's dedicated buffer
+    // Each draw call uses its own buffer to avoid writeBuffer race conditions
+    const drawIdx = this.currentDrawIndex;
+    if (drawIdx < UNIFORM_POOL_SIZE && maxOffset > minOffset) {
       this.device.queue.writeBuffer(
-        this.uniformBuffer, minOffset,
-        this.uniformData, minOffset,
-        maxOffset - minOffset,
+        this.uniformBuffers[drawIdx],
+        0,
+        this.uniformData,
+        0,
+        UNIFORM_BUFFER_SIZE,
       );
-    }
-
-    // Set uniform bind group (group 0) - only once per frame
-    if (!this.uniformBindGroupBound) {
-      this.renderPassEncoder.setBindGroup(0, this.uniformBindGroup);
-      this.uniformBindGroupBound = true;
+      this.renderPassEncoder.setBindGroup(0, this.uniformBindGroups[drawIdx]);
+      this.currentDrawIndex++;
     }
 
     // Create and set texture bind group (group 1) with caching
@@ -470,8 +477,12 @@ export class WebGPURenderer implements IRenderer {
     // Clean up current texture view reference
     this.currentTextureView = null;
 
-    // Destroy uniform buffer
-    this.uniformBuffer.destroy();
+    // Destroy uniform buffer pool
+    for (const buffer of this.uniformBuffers) {
+      buffer.destroy();
+    }
+    this.uniformBuffers.length = 0;
+    this.uniformBindGroups.length = 0;
 
     // Note: uniformBindGroupLayout and uniformBindGroup are managed by the device
     // and will be cleaned up when the device is lost/destroyed

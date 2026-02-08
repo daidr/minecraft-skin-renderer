@@ -71,13 +71,16 @@ function createBoxGeometryCore(
   const hw = size[0] / 2 + inflate;
   const hh = size[1] / 2 + inflate;
   const hd = size[2] / 2 + inflate;
-  const ox = offset[0], oy = offset[1], oz = offset[2];
+  const ox = offset[0],
+    oy = offset[1],
+    oz = offset[2];
   const mx = mirrorX ? -1 : 1;
 
   // 6 faces, 4 vertices each
   const vertices = new Float32Array(24 * VERTEX_STRIDE);
   const indices = new Uint16Array(36);
-  let vi = 0, ii = 0;
+  let vi = 0,
+    ii = 0;
 
   const uvKeys = capeUVMode ? UV_CAPE : UV_SKIN;
 
@@ -89,18 +92,32 @@ function createBoxGeometryCore(
     let v2 = faceUV.v2 / textureHeight;
 
     // Inset UVs towards center to prevent edge bleeding
-    if (u1 < u2) { u1 += UV_EDGE_INSET; u2 -= UV_EDGE_INSET; }
-    else { u1 -= UV_EDGE_INSET; u2 += UV_EDGE_INSET; }
-    if (v1 < v2) { v1 += UV_EDGE_INSET; v2 -= UV_EDGE_INSET; }
-    else { v1 -= UV_EDGE_INSET; v2 += UV_EDGE_INSET; }
+    if (u1 < u2) {
+      u1 += UV_EDGE_INSET;
+      u2 -= UV_EDGE_INSET;
+    } else {
+      u1 -= UV_EDGE_INSET;
+      u2 += UV_EDGE_INSET;
+    }
+    if (v1 < v2) {
+      v1 += UV_EDGE_INSET;
+      v2 -= UV_EDGE_INSET;
+    } else {
+      v1 -= UV_EDGE_INSET;
+      v2 += UV_EDGE_INSET;
+    }
 
     // Cape mode swaps u1/u2 for front/back/left/right; bottom always swaps v1/v2
     const su = capeUVMode && f < 4;
-    const ua = su ? u2 : u1, ub = su ? u1 : u2;
-    const va = f === 5 ? v1 : v2, vb = f === 5 ? v2 : v1;
+    const ua = su ? u2 : u1,
+      ub = su ? u1 : u2;
+    const va = f === 5 ? v1 : v2,
+      vb = f === 5 ? v2 : v1;
 
     const ni = f * 3;
-    const nx = FN[ni], ny = FN[ni + 1], nz = FN[ni + 2];
+    const nx = FN[ni],
+      ny = FN[ni + 1],
+      nz = FN[ni + 2];
     const bv = f * 4;
 
     // Write 4 vertices: position, UV (ua/ub,va/vb pattern), normal, bone index
@@ -109,7 +126,7 @@ function createBoxGeometryCore(
       vertices[vi++] = (ox + FP[pi] * hw) * mx;
       vertices[vi++] = oy + FP[pi + 1] * hh;
       vertices[vi++] = oz + FP[pi + 2] * hd;
-      vertices[vi++] = (v === 0 || v === 3) ? ua : ub;
+      vertices[vi++] = v === 0 || v === 3 ? ua : ub;
       vertices[vi++] = v < 2 ? va : vb;
       vertices[vi++] = nx * mx;
       vertices[vi++] = ny;
@@ -120,11 +137,19 @@ function createBoxGeometryCore(
 
     // When mirrored, reverse winding order to maintain correct face culling
     if (mirrorX) {
-      indices[ii++] = bv + 2; indices[ii++] = bv + 1; indices[ii++] = bv;
-      indices[ii++] = bv; indices[ii++] = bv + 3; indices[ii++] = bv + 2;
+      indices[ii++] = bv + 2;
+      indices[ii++] = bv + 1;
+      indices[ii++] = bv;
+      indices[ii++] = bv;
+      indices[ii++] = bv + 3;
+      indices[ii++] = bv + 2;
     } else {
-      indices[ii++] = bv; indices[ii++] = bv + 1; indices[ii++] = bv + 2;
-      indices[ii++] = bv + 2; indices[ii++] = bv + 3; indices[ii++] = bv;
+      indices[ii++] = bv;
+      indices[ii++] = bv + 1;
+      indices[ii++] = bv + 2;
+      indices[ii++] = bv + 2;
+      indices[ii++] = bv + 3;
+      indices[ii++] = bv;
     }
   }
 

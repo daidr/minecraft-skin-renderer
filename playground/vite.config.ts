@@ -1,11 +1,16 @@
 import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
 import { resolve } from "node:path";
 
 export default defineConfig({
-  root: resolve(__dirname),
+  plugins: [vue()],
   resolve: {
     alias: {
-      "@": resolve(__dirname, "../src"),
+      "@daidr/minecraft-skin-renderer/canvas2d": resolve(__dirname, "../src/canvas2d.ts"),
+      "@daidr/minecraft-skin-renderer/webgl": resolve(__dirname, "../src/webgl.ts"),
+      "@daidr/minecraft-skin-renderer/webgpu": resolve(__dirname, "../src/webgpu.ts"),
+      "@daidr/minecraft-skin-renderer/panorama": resolve(__dirname, "../src/panorama.ts"),
+      "@daidr/minecraft-skin-renderer": resolve(__dirname, "../src/index.ts"),
     },
   },
   server: {
@@ -15,10 +20,5 @@ export default defineConfig({
   build: {
     outDir: resolve(__dirname, "../dist-playground"),
     emptyOutDir: true,
-    rollupOptions: {
-      input: {
-        main: resolve(__dirname, "index.html"),
-      },
-    },
   },
 });

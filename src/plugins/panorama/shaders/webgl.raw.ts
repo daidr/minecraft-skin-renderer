@@ -8,19 +8,15 @@ precision highp float;
 
 layout(location = 0) in vec3 a_position;
 
-uniform mat4 u_viewMatrix;
-uniform mat4 u_projectionMatrix;
+uniform mat4 u_viewProjectionMatrix;
 
 out vec3 v_direction;
 
 void main() {
     v_direction = a_position;
 
-    // Remove translation from view matrix (only rotation)
-    mat4 viewRotation = u_viewMatrix;
-    viewRotation[3] = vec4(0.0, 0.0, 0.0, 1.0);
-
-    vec4 pos = u_projectionMatrix * viewRotation * vec4(a_position, 1.0);
+    // viewProjectionMatrix = projection * viewRotation (translation already stripped on CPU)
+    vec4 pos = u_viewProjectionMatrix * vec4(a_position, 1.0);
 
     // Set z = w so depth is always at far plane
     gl_Position = pos.xyww;

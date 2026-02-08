@@ -21,7 +21,14 @@ import {
 } from "../core/camera/OrbitControls";
 import type { OrbitControls } from "../core/camera/OrbitControls";
 import { BufferUsage, TextureFilter, isWebGPUSupported } from "../core/renderer/types";
-import type { BackendType, BindGroup, IBuffer, IPipeline, IRenderer, ITexture } from "../core/renderer/types";
+import type {
+  BackendType,
+  BindGroup,
+  IBuffer,
+  IPipeline,
+  IRenderer,
+  ITexture,
+} from "../core/renderer/types";
 import { getRendererPlugin, getRegisteredBackends } from "../core/renderer/registry";
 import { PART_NAMES, createDefaultVisibility } from "../model/types";
 import type {
@@ -449,7 +456,13 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
       // Helper to issue a draw call
       const draw = (pl: IPipeline, vb: IBuffer, ib: IBuffer, ic: number, bg: BindGroup) => {
-        renderer.draw({ pipeline: pl, vertexBuffers: [vb], indexBuffer: ib, indexCount: ic, bindGroup: bg });
+        renderer.draw({
+          pipeline: pl,
+          vertexBuffers: [vb],
+          indexBuffer: ib,
+          indexCount: ic,
+          bindGroup: bg,
+        });
       };
 
       // Draw each part based on visibility settings
@@ -458,11 +471,23 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
         const buffers = partBuffers[partName];
         if (visibility.inner) {
           renderBindGroups.uniforms.u_alphaTest = 0.0; // Inner layer: force opaque
-          draw(skinPipeline, buffers.innerVertexBuffer, buffers.innerIndexBuffer, buffers.innerIndexCount, renderBindGroups.skinBindGroup);
+          draw(
+            skinPipeline,
+            buffers.innerVertexBuffer,
+            buffers.innerIndexBuffer,
+            buffers.innerIndexCount,
+            renderBindGroups.skinBindGroup,
+          );
         }
         if (visibility.outer) {
           renderBindGroups.uniforms.u_alphaTest = 0.01; // Outer layer: alpha test
-          draw(overlayPipeline, buffers.outerVertexBuffer, buffers.outerIndexBuffer, buffers.outerIndexCount, renderBindGroups.skinBindGroup);
+          draw(
+            overlayPipeline,
+            buffers.outerVertexBuffer,
+            buffers.outerIndexBuffer,
+            buffers.outerIndexCount,
+            renderBindGroups.skinBindGroup,
+          );
         }
       }
 
@@ -717,11 +742,18 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
       // Dispose pipelines, buffers, textures, and background
       for (const r of [
-        state.skinPipeline, state.overlayPipeline, state.capePipeline,
-        state.capeVertexBuffer, state.capeIndexBuffer,
-        state.elytraVertexBuffer, state.elytraIndexBuffer,
-        state.skinTexture, state.capeTexture, state.backgroundRenderer,
-      ]) r?.dispose();
+        state.skinPipeline,
+        state.overlayPipeline,
+        state.capePipeline,
+        state.capeVertexBuffer,
+        state.capeIndexBuffer,
+        state.elytraVertexBuffer,
+        state.elytraIndexBuffer,
+        state.skinTexture,
+        state.capeTexture,
+        state.backgroundRenderer,
+      ])
+        r?.dispose();
 
       state.renderer.dispose();
     },

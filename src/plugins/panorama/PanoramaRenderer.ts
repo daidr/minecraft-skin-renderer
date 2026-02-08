@@ -21,6 +21,7 @@ import type { BackgroundRenderer } from "../../core/plugins/types";
 import { createSkyboxGeometry } from "./SkyboxGeometry";
 import { PANORAMA_VERTEX_SHADER, PANORAMA_FRAGMENT_SHADER } from "./shaders/webgl";
 import { PANORAMA_WGSL_SHADER } from "./shaders/webgpu";
+import { mat4MultiplyMut } from "../../core/math";
 
 /**
  * Get the appropriate shaders based on the renderer backend
@@ -68,7 +69,7 @@ export function createPanoramaRenderer(renderer: IRenderer): BackgroundRenderer 
     vertexShader: shaders.vertexShader,
     fragmentShader: shaders.fragmentShader,
     vertexLayout,
-    cullMode: CullMode.Front, // Render inside of cube
+    cullMode: CullMode.None, // Skybox rendered from inside — no culling needed
     depthWrite: false, // Don't write to depth buffer
     depthCompare: DepthCompare.LessEqual, // Always pass at far plane
     blendMode: BlendMode.None,
@@ -76,6 +77,10 @@ export function createPanoramaRenderer(renderer: IRenderer): BackgroundRenderer 
 
   let panoramaTexture: ITexture | null = null;
   const indexCount = skybox.indexCount;
+
+  // Pre-allocated buffers to avoid per-frame GC
+  const viewRotation = new Float32Array(16);
+  const viewProjection = new Float32Array(16);
 
   return {
     async setSource(source: TextureSource): Promise<void> {
@@ -99,6 +104,15 @@ export function createPanoramaRenderer(renderer: IRenderer): BackgroundRenderer 
     render(camera: Camera): void {
       if (!panoramaTexture) return;
 
+      // Copy view matrix and strip translation (keep rotation only)
+      viewRotation.set(camera.viewMatrix);
+      viewRotation[12] = 0;
+      viewRotation[13] = 0;
+      viewRotation[14] = 0;
+
+      // Precompute projection * viewRotation on CPU
+      mat4MultiplyMut(viewProjection, camera.projectionMatrix, viewRotation);
+
       renderer.draw({
         pipeline,
         vertexBuffers: [vertexBuffer],
@@ -106,8 +120,7 @@ export function createPanoramaRenderer(renderer: IRenderer): BackgroundRenderer 
         indexCount,
         bindGroup: {
           uniforms: {
-            u_viewMatrix: camera.viewMatrix,
-            u_projectionMatrix: camera.projectionMatrix,
+            u_viewProjectionMatrix: viewProjection,
           },
           textures: {
             u_panorama: panoramaTexture,

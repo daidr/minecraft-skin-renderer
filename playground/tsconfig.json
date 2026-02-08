@@ -11,19 +11,17 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": false,
-    "exactOptionalPropertyTypes": false,
     "forceConsistentCasingInFileNames": true,
     "allowImportingTsExtensions": true,
+    "jsx": "preserve",
     "paths": {
-      "@/*": ["./src/*"]
+      "@daidr/minecraft-skin-renderer": ["../src/index.ts"],
+      "@daidr/minecraft-skin-renderer/*": ["../src/*.ts"]
     }
   },
-  "include": ["src", "tests"],
+  "include": ["src/**/*.ts", "src/**/*.vue", "env.d.ts"],
   "exclude": ["node_modules", "dist"]
 }
