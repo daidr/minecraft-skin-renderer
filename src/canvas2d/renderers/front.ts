@@ -50,7 +50,7 @@ export async function renderSkinFront(
 
   const bodyX = armWidth;
 
-  drawBody(ctx, skin, bodyX, showOverlay, scale, inflated, pad);
+  drawBody(ctx, skin, bodyX, showOverlay, scale, inflated, pad, skin.textureScale);
 }
 
 function drawBody(
@@ -61,6 +61,7 @@ function drawBody(
   scale: number,
   inflated: boolean,
   pad: number,
+  textureScale: number,
 ): void {
   const overlay = showOverlay;
 
@@ -75,6 +76,7 @@ function drawBody(
     pad + 20 * scale,
     scale,
     inflated,
+    textureScale,
   );
 
   // Right Leg (front face) - player's right leg, on the left side of front view
@@ -86,6 +88,7 @@ function drawBody(
     pad + 20 * scale,
     scale,
     inflated,
+    textureScale,
   );
 
   // Body
@@ -97,6 +100,7 @@ function drawBody(
     pad + 8 * scale,
     scale,
     inflated,
+    textureScale,
   );
 
   // Right Arm (front face) - player's right arm, on the left side of front view
@@ -108,6 +112,7 @@ function drawBody(
     pad + 8 * scale,
     scale,
     inflated,
+    textureScale,
   );
 
   // Left Arm (front face) - player's left arm, on the right side of front view
@@ -119,6 +124,7 @@ function drawBody(
     pad + 8 * scale,
     scale,
     inflated,
+    textureScale,
   );
 
   // Head
@@ -130,5 +136,6 @@ function drawBody(
     pad,
     scale,
     inflated,
+    textureScale,
   );
 }

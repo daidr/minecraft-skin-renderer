@@ -64,6 +64,8 @@ export interface PartFaces {
 /** Fully parsed skin with all body parts */
 export interface ParsedSkin {
   variant: ModelVariant;
+  /** Texture scale factor (1 for 64x64, 2 for 128x128, etc.) */
+  textureScale: number;
   head: PartFaces;
   body: PartFaces;
   leftArm: PartFaces;

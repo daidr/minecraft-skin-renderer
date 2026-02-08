@@ -46,6 +46,7 @@ export async function renderHalfBody(
 
   const bodyX = armWidth;
   const overlay = showOverlay;
+  const ts = skin.textureScale;
 
   // Body
   drawFaceWithOverlay(
@@ -56,6 +57,7 @@ export async function renderHalfBody(
     pad + 8 * scale,
     scale,
     inflated,
+    ts,
   );
 
   // Right Arm (player's right, left side of front view)
@@ -67,6 +69,7 @@ export async function renderHalfBody(
     pad + 8 * scale,
     scale,
     inflated,
+    ts,
   );
 
   // Left Arm (player's left, right side of front view)
@@ -78,6 +81,7 @@ export async function renderHalfBody(
     pad + 8 * scale,
     scale,
     inflated,
+    ts,
   );
 
   // Head
@@ -89,5 +93,6 @@ export async function renderHalfBody(
     pad,
     scale,
     inflated,
+    ts,
   );
 }

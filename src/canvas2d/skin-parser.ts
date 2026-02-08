@@ -1,5 +1,6 @@
 /**
- * Skin texture parser - extracts face textures from a 64x64 Minecraft skin
+ * Skin texture parser - extracts face textures from Minecraft skin textures.
+ * Supports standard (64x64) and high-resolution skins (128x128, 256x256, etc.)
  */
 
 import { loadImage, getImageData } from "../texture/TextureLoader";
@@ -25,6 +26,7 @@ export async function parseSkin(source: TextureSource, slim?: boolean): Promise<
 
   return {
     variant,
+    textureScale: scale,
     head: extractPartFaces(imageData, uvMap.head.inner, uvMap.head.outer, scale),
     body: extractPartFaces(imageData, uvMap.body.inner, uvMap.body.outer, scale),
     leftArm: extractPartFaces(imageData, uvMap.leftArm.inner, uvMap.leftArm.outer, scale),
@@ -64,7 +66,8 @@ function extractSixFaces(imageData: ImageData, uv: BoxUV, scale: number): SixFac
 }
 
 /**
- * Extract a single face from the skin texture using UV coordinates
+ * Extract a single face from the skin texture using UV coordinates.
+ * Output preserves the full resolution of the source texture.
  */
 function extractFace(imageData: ImageData, faceUV: FaceUV, scale: number): ImageData {
   const { u1, v1, u2, v2 } = faceUV;
@@ -75,22 +78,16 @@ function extractFace(imageData: ImageData, faceUV: FaceUV, scale: number): Image
   const sw = Math.round((u2 - u1) * scale);
   const sh = Math.round((v2 - v1) * scale);
 
-  // Output is in standard MC pixel space (no HD scaling)
-  const ow = Math.round(u2 - u1);
-  const oh = Math.round(v2 - v1);
-
-  const output = new ImageData(ow, oh);
+  // Output at full texture resolution
+  const output = new ImageData(sw, sh);
   const src = imageData.data;
   const dst = output.data;
   const srcWidth = imageData.width;
 
-  for (let y = 0; y < oh; y++) {
-    for (let x = 0; x < ow; x++) {
-      // Sample from the center of each scaled pixel
-      const srcX = sx + Math.floor((x * sw) / ow);
-      const srcY = sy + Math.floor((y * sh) / oh);
-      const srcIdx = (srcY * srcWidth + srcX) * 4;
-      const dstIdx = (y * ow + x) * 4;
+  for (let y = 0; y < sh; y++) {
+    for (let x = 0; x < sw; x++) {
+      const srcIdx = ((sy + y) * srcWidth + (sx + x)) * 4;
+      const dstIdx = (y * sw + x) * 4;
 
       dst[dstIdx] = src[srcIdx];
       dst[dstIdx + 1] = src[srcIdx + 1];

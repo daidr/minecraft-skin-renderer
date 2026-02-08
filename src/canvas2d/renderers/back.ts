@@ -35,6 +35,7 @@ export async function renderSkinBack(
 
   const bodyX = armWidth;
   const overlay = showOverlay;
+  const ts = skin.textureScale;
 
   // Back view: arms/legs are mirrored horizontally
   // Player's left arm appears on left side, right arm on right side
@@ -48,6 +49,7 @@ export async function renderSkinBack(
     pad + 20 * scale,
     scale,
     inflated,
+    ts,
   );
 
   // Left Leg (back face) - appears on left side in back view
@@ -59,6 +61,7 @@ export async function renderSkinBack(
     pad + 20 * scale,
     scale,
     inflated,
+    ts,
   );
 
   // Body
@@ -70,6 +73,7 @@ export async function renderSkinBack(
     pad + 8 * scale,
     scale,
     inflated,
+    ts,
   );
 
   // Left Arm (back face) - appears on left side in back view
@@ -81,6 +85,7 @@ export async function renderSkinBack(
     pad + 8 * scale,
     scale,
     inflated,
+    ts,
   );
 
   // Right Arm (back face) - appears on right side in back view
@@ -92,6 +97,7 @@ export async function renderSkinBack(
     pad + 8 * scale,
     scale,
     inflated,
+    ts,
   );
 
   // Head
@@ -103,5 +109,6 @@ export async function renderSkinBack(
     pad,
     scale,
     inflated,
+    ts,
   );
 }

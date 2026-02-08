@@ -34,6 +34,7 @@ export function drawScaledFace(
 /**
  * Draw a face with overlay support.
  * When inflated=true, the overlay is rendered 0.5 MC pixels larger on each side.
+ * textureScale accounts for HD skins (1 for 64x64, 2 for 128x128, etc.)
  */
 export function drawFaceWithOverlay(
   ctx: CanvasRenderingContext2D,
@@ -43,8 +44,10 @@ export function drawFaceWithOverlay(
   y: number,
   scale: number,
   inflated: boolean = false,
+  textureScale: number = 1,
 ): void {
-  drawScaledFace(ctx, inner, x, y, scale);
+  const renderScale = scale / textureScale;
+  drawScaledFace(ctx, inner, x, y, renderScale);
   if (outer) {
     if (inflated) {
       const inflate = scale * 0.5;
@@ -52,11 +55,11 @@ export function drawFaceWithOverlay(
       tmp.width = outer.width;
       tmp.height = outer.height;
       tmp.getContext("2d")!.putImageData(outer, 0, 0);
-      const dw = (outer.width + 1) * scale;
-      const dh = (outer.height + 1) * scale;
+      const dw = (outer.width + textureScale) * renderScale;
+      const dh = (outer.height + textureScale) * renderScale;
       ctx.drawImage(tmp, 0, 0, outer.width, outer.height, x - inflate, y - inflate, dw, dh);
     } else {
-      drawScaledFace(ctx, outer, x, y, scale);
+      drawScaledFace(ctx, outer, x, y, renderScale);
     }
   }
 }

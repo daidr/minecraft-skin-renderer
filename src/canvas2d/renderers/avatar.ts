@@ -36,5 +36,6 @@ export async function renderAvatar(
     pad,
     scale,
     inflated,
+    skin.textureScale,
   );
 }

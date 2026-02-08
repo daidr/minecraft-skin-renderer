@@ -112,10 +112,10 @@ export async function loadSkinTexture(source: TextureSource): Promise<ImageBitma
     const imageData = getImageData(image);
     const convertedData = convertOldSkinFormat(imageData);
 
-    // Create canvas with converted data
+    // Create square canvas with converted data
     const canvas = document.createElement("canvas");
-    canvas.width = 64;
-    canvas.height = 64;
+    canvas.width = width;
+    canvas.height = width;
     const ctx = canvas.getContext("2d")!;
     ctx.putImageData(convertedData, 0, 0);
 

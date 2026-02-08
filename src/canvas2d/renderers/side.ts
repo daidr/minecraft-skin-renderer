@@ -38,6 +38,7 @@ export async function renderSkinSide(
 
   const overlay = showOverlay;
   const bodyOffsetX = 2; // center body (4px wide) in head (8px wide)
+  const ts = skin.textureScale;
 
   // Right Leg (right face)
   drawFaceWithOverlay(
@@ -48,6 +49,7 @@ export async function renderSkinSide(
     pad + 20 * scale,
     scale,
     inflated,
+    ts,
   );
 
   // Left Leg (right face) - hidden behind right leg in side view, skip
@@ -61,6 +63,7 @@ export async function renderSkinSide(
     pad + 8 * scale,
     scale,
     inflated,
+    ts,
   );
 
   // Right Arm (right face) - drawn on top of body
@@ -72,6 +75,7 @@ export async function renderSkinSide(
     pad + 8 * scale,
     scale,
     inflated,
+    ts,
   );
 
   // Head (right face)
@@ -83,5 +87,6 @@ export async function renderSkinSide(
     pad,
     scale,
     inflated,
+    ts,
   );
 }
