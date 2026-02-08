@@ -24,7 +24,8 @@
   },
   "workspaces": [
     "playground",
-    "native-playground"
+    "native-playground",
+    "docs"
   ],
   "files": [
     "dist"
@@ -45,6 +46,9 @@
     "dev:playground": "bun run --cwd playground dev",
     "build:playground": "bun run --cwd playground build",
     "preview:playground": "bun run --cwd playground preview",
+    "docs:dev": "bun run --cwd docs dev",
+    "docs:build": "bun run --cwd docs build",
+    "docs:preview": "bun run --cwd docs preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
