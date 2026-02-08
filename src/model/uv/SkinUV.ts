@@ -127,19 +127,29 @@ export function convertOldSkinFormat(imageData: ImageData): ImageData {
   // Right arm is at (40, 16) with region size 16x16
   const s = scale;
   copyAndMirror(
-    src, dst, width,
-    Math.round(40 * s), Math.round(16 * s),
-    Math.round(32 * s), Math.round(48 * s),
-    Math.round(16 * s), Math.round(16 * s),
+    src,
+    dst,
+    width,
+    Math.round(40 * s),
+    Math.round(16 * s),
+    Math.round(32 * s),
+    Math.round(48 * s),
+    Math.round(16 * s),
+    Math.round(16 * s),
   );
 
   // Mirror right leg to left leg position (16, 48) in 64x64 space
   // Right leg is at (0, 16) with region size 16x16
   copyAndMirror(
-    src, dst, width,
-    Math.round(0), Math.round(16 * s),
-    Math.round(16 * s), Math.round(48 * s),
-    Math.round(16 * s), Math.round(16 * s),
+    src,
+    dst,
+    width,
+    Math.round(0),
+    Math.round(16 * s),
+    Math.round(16 * s),
+    Math.round(48 * s),
+    Math.round(16 * s),
+    Math.round(16 * s),
   );
 
   return newData;
