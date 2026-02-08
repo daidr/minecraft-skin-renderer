@@ -2,29 +2,30 @@
  * Shared Canvas 2D rendering utilities
  */
 
+import { createCanvas } from "../canvas-env";
+import type { ICanvas, ICanvasRenderingContext2D, IImageData } from "../canvas-env";
+
 /**
  * Get a 2D context with nearest-neighbor (pixelated) rendering
  */
-export function getPixelatedContext(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
+export function getPixelatedContext(canvas: ICanvas): ICanvasRenderingContext2D {
   const ctx = canvas.getContext("2d")!;
   ctx.imageSmoothingEnabled = false;
   return ctx;
 }
 
 /**
- * Draw an ImageData onto a canvas context at a specified position and scale.
+ * Draw an IImageData onto a canvas context at a specified position and scale.
  * Uses nearest-neighbor interpolation via an intermediate canvas.
  */
 export function drawScaledFace(
-  ctx: CanvasRenderingContext2D,
-  face: ImageData,
+  ctx: ICanvasRenderingContext2D,
+  face: IImageData,
   x: number,
   y: number,
   scale: number,
 ): void {
-  const tmp = document.createElement("canvas");
-  tmp.width = face.width;
-  tmp.height = face.height;
+  const tmp = createCanvas(face.width, face.height);
   const tmpCtx = tmp.getContext("2d")!;
   tmpCtx.putImageData(face, 0, 0);
 
@@ -37,9 +38,9 @@ export function drawScaledFace(
  * textureScale accounts for HD skins (1 for 64x64, 2 for 128x128, etc.)
  */
 export function drawFaceWithOverlay(
-  ctx: CanvasRenderingContext2D,
-  inner: ImageData,
-  outer: ImageData | null,
+  ctx: ICanvasRenderingContext2D,
+  inner: IImageData,
+  outer: IImageData | null,
   x: number,
   y: number,
   scale: number,
@@ -51,9 +52,7 @@ export function drawFaceWithOverlay(
   if (outer) {
     if (inflated) {
       const inflate = scale * 0.5;
-      const tmp = document.createElement("canvas");
-      tmp.width = outer.width;
-      tmp.height = outer.height;
+      const tmp = createCanvas(outer.width, outer.height);
       tmp.getContext("2d")!.putImageData(outer, 0, 0);
       const dw = (outer.width + textureScale) * renderScale;
       const dh = (outer.height + textureScale) * renderScale;

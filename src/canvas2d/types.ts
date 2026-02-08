@@ -2,8 +2,29 @@
  * Canvas 2D static rendering types
  */
 
-/** Texture source types */
-export type TextureSource = string | Blob | HTMLImageElement | ImageBitmap;
+import type { IImageData } from "./canvas-env";
+
+/**
+ * A drawable image-like object with width/height dimensions.
+ *
+ * Any object implementing this interface can be drawn onto a canvas via
+ * `ctx.drawImage()`. This covers browser types (HTMLImageElement, ImageBitmap)
+ * as well as Node.js canvas libraries (@napi-rs/canvas Image, node-canvas Image, etc.)
+ */
+export interface IImage {
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * Texture source types for canvas2d renderers.
+ *
+ * - `IImageData` — universal, works in all environments
+ * - `IImage` — any drawable image object (browser or Node.js canvas libraries)
+ * - `string` — URL (browser only)
+ * - `Blob` — binary data (browser only)
+ */
+export type TextureSource = IImageData | IImage | string | Blob;
 
 /** Model variant (arm width) */
 export type ModelVariant = "classic" | "slim";
@@ -13,7 +34,7 @@ export type FaceName = "front" | "back" | "left" | "right" | "top" | "bottom";
 
 /** Base render options shared by all renderers */
 export interface BaseRenderOptions {
-  /** Skin texture source (URL, Blob, HTMLImageElement, or ImageBitmap) */
+  /** Skin texture source (IImageData, drawable image, URL string, or Blob) */
   skin: TextureSource;
   /** Whether to use slim (3-pixel) arm model, default false */
   slim?: boolean;
@@ -47,12 +68,12 @@ export interface BigHeadOptions extends BaseRenderOptions {
 
 /** Six faces of a box part */
 export interface SixFaces {
-  front: ImageData;
-  back: ImageData;
-  left: ImageData;
-  right: ImageData;
-  top: ImageData;
-  bottom: ImageData;
+  front: IImageData;
+  back: IImageData;
+  left: IImageData;
+  right: IImageData;
+  top: IImageData;
+  bottom: IImageData;
 }
 
 /** Inner and outer layer faces for a body part */

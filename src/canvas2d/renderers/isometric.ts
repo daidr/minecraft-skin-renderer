@@ -14,6 +14,8 @@
  *            (overlay: limbs first, then body, so body overlay covers limb overlays)
  */
 
+import { createCanvas } from "../canvas-env";
+import type { ICanvas, ICanvasRenderingContext2D, IImageData } from "../canvas-env";
 import { parseSkin } from "../skin-parser";
 import type { IsometricOptions, SixFaces } from "../types";
 import { getPixelatedContext } from "./utils";
@@ -34,12 +36,10 @@ const DEPTH_RATIO = 0.5;
 const HEAD_FORWARD = 2;
 
 /**
- * Helper: create a temporary canvas from ImageData
+ * Helper: create a temporary canvas from IImageData
  */
-function imageDataToCanvas(data: ImageData): HTMLCanvasElement {
-  const c = document.createElement("canvas");
-  c.width = data.width;
-  c.height = data.height;
+function imageDataToCanvas(data: IImageData): ICanvas {
+  const c = createCanvas(data.width, data.height);
   c.getContext("2d")!.putImageData(data, 0, 0);
   return c;
 }
@@ -47,8 +47,8 @@ function imageDataToCanvas(data: ImageData): HTMLCanvasElement {
 // ── Individual face drawing ─────────────────────────────────────────
 
 function drawBackFace(
-  ctx: CanvasRenderingContext2D,
-  face: ImageData,
+  ctx: ICanvasRenderingContext2D,
+  face: IImageData,
   x: number,
   y: number,
   w: number,
@@ -65,8 +65,8 @@ function drawBackFace(
 }
 
 function drawRightFace(
-  ctx: CanvasRenderingContext2D,
-  face: ImageData,
+  ctx: ICanvasRenderingContext2D,
+  face: IImageData,
   x: number,
   y: number,
   _w: number,
@@ -87,8 +87,8 @@ function drawRightFace(
 }
 
 function drawBottomFace(
-  ctx: CanvasRenderingContext2D,
-  face: ImageData,
+  ctx: ICanvasRenderingContext2D,
+  face: IImageData,
   x: number,
   y: number,
   w: number,
@@ -110,8 +110,8 @@ function drawBottomFace(
 }
 
 function drawSideFace(
-  ctx: CanvasRenderingContext2D,
-  face: ImageData,
+  ctx: ICanvasRenderingContext2D,
+  face: IImageData,
   x: number,
   y: number,
   w: number,
@@ -132,8 +132,8 @@ function drawSideFace(
 }
 
 function drawFrontFace(
-  ctx: CanvasRenderingContext2D,
-  face: ImageData,
+  ctx: ICanvasRenderingContext2D,
+  face: IImageData,
   x: number,
   y: number,
   w: number,
@@ -147,8 +147,8 @@ function drawFrontFace(
 }
 
 function drawTopFace(
-  ctx: CanvasRenderingContext2D,
-  face: ImageData,
+  ctx: ICanvasRenderingContext2D,
+  face: IImageData,
   x: number,
   y: number,
   w: number,
@@ -184,7 +184,7 @@ interface PartDrawInfo {
  * but can be visible through transparent overlay pixels when inflated.
  */
 function drawAllHiddenFaces(
-  ctx: CanvasRenderingContext2D,
+  ctx: ICanvasRenderingContext2D,
   parts: PartDrawInfo[],
   scale: number,
   inflated: boolean,
@@ -209,7 +209,7 @@ function drawAllHiddenFaces(
  * Phase 1: Draw all side (left) faces, back to front.
  */
 function drawAllSideFaces(
-  ctx: CanvasRenderingContext2D,
+  ctx: ICanvasRenderingContext2D,
   parts: PartDrawInfo[],
   scale: number,
   inflated: boolean,
@@ -231,7 +231,7 @@ function drawAllSideFaces(
  * Phase 2: Draw all top faces, back to front.
  */
 function drawAllTopFaces(
-  ctx: CanvasRenderingContext2D,
+  ctx: ICanvasRenderingContext2D,
   parts: PartDrawInfo[],
   scale: number,
   inflated: boolean,
@@ -253,7 +253,7 @@ function drawAllTopFaces(
  * Draw inner front faces only.
  */
 function drawInnerFrontFaces(
-  ctx: CanvasRenderingContext2D,
+  ctx: ICanvasRenderingContext2D,
   parts: PartDrawInfo[],
   scale: number,
 ): void {
@@ -266,7 +266,7 @@ function drawInnerFrontFaces(
  * Draw overlay front faces only.
  */
 function drawOuterFrontFaces(
-  ctx: CanvasRenderingContext2D,
+  ctx: ICanvasRenderingContext2D,
   parts: PartDrawInfo[],
   scale: number,
   inflated: boolean,
@@ -286,13 +286,13 @@ function drawOuterFrontFaces(
 // ── Main render function ────────────────────────────────────────────
 
 /**
- * Render the player in isometric (2.5D) projection onto a canvas.
+ * Render the player in isometric (2.5D) projection.
  *
  * The view shows the front and left side of the character simultaneously,
  * with the depth extending to the upper right.
  */
 export async function renderSkinIsometric(
-  canvas: HTMLCanvasElement,
+  canvas: ICanvas,
   options: IsometricOptions,
 ): Promise<void> {
   const scale = options.scale ?? DEFAULT_SCALE;
@@ -327,11 +327,13 @@ export async function renderSkinIsometric(
   const shearHeight = (headSize - HEAD_FORWARD) * DEPTH_RATIO * 0.5 + inflate;
   const canvasHeight = Math.ceil((32 + shearHeight + inflate * 0.5) * scale);
 
-  canvas.width = Math.ceil(canvasWidth);
-  canvas.height = Math.ceil(canvasHeight);
+  const w = Math.ceil(canvasWidth);
+  const h = Math.ceil(canvasHeight);
 
+  canvas.width = w;
+  canvas.height = h;
   const ctx = getPixelatedContext(canvas);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, w, h);
 
   const baseY = Math.ceil(shearHeight * scale);
   const bodyX = armWidth * scale + padX;
@@ -429,4 +431,5 @@ export async function renderSkinIsometric(
   drawAllTopFaces(ctx, [head], scale, inflated);
   drawInnerFrontFaces(ctx, [head], scale);
   drawOuterFrontFaces(ctx, [head], scale, inflated);
+
 }

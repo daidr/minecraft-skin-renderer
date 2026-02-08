@@ -2,6 +2,7 @@
  * Half-body renderer - renders head + body + arms (upper half)
  */
 
+import type { ICanvas } from "../canvas-env";
 import { parseSkin } from "../skin-parser";
 import type { HalfBodyOptions } from "../types";
 import { getPixelatedContext, drawFaceWithOverlay } from "./utils";
@@ -9,7 +10,7 @@ import { getPixelatedContext, drawFaceWithOverlay } from "./utils";
 const DEFAULT_SCALE = 8;
 
 /**
- * Render the player's upper half (head + body + arms) front view onto a canvas.
+ * Render the player's upper half (head + body + arms) front view onto the given canvas.
  *
  * Classic layout (16×20 MC pixels):
  *   Head:     (4, 0)   8×8
@@ -24,7 +25,7 @@ const DEFAULT_SCALE = 8;
  *   RightArm: (11, 8)  3×12
  */
 export async function renderHalfBody(
-  canvas: HTMLCanvasElement,
+  canvas: ICanvas,
   options: HalfBodyOptions,
 ): Promise<void> {
   const scale = options.scale ?? DEFAULT_SCALE;
@@ -38,11 +39,13 @@ export async function renderHalfBody(
   const totalHeight = 20; // head(8) + body(12)
 
   const pad = showOverlay && inflated ? scale * 0.5 : 0;
-  canvas.width = totalWidth * scale + 2 * pad;
-  canvas.height = totalHeight * scale + 2 * pad;
+  const w = totalWidth * scale + 2 * pad;
+  const h = totalHeight * scale + 2 * pad;
 
+  canvas.width = w;
+  canvas.height = h;
   const ctx = getPixelatedContext(canvas);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, w, h);
 
   const bodyX = armWidth;
   const overlay = showOverlay;

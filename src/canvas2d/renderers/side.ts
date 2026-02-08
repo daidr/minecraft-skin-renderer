@@ -2,6 +2,7 @@
  * Side view renderer - renders the character from the right side
  */
 
+import type { ICanvas } from "../canvas-env";
 import { parseSkin } from "../skin-parser";
 import type { SkinViewOptions } from "../types";
 import { getPixelatedContext, drawFaceWithOverlay } from "./utils";
@@ -9,7 +10,7 @@ import { getPixelatedContext, drawFaceWithOverlay } from "./utils";
 const DEFAULT_SCALE = 8;
 
 /**
- * Render the player's right side view onto a canvas.
+ * Render the player's right side view onto the given canvas.
  *
  * Layout (8×32 MC pixels):
  *   Head:     (0, 0)   8×8  (head depth = 8)
@@ -18,7 +19,7 @@ const DEFAULT_SCALE = 8;
  *   RightLeg: (2, 20)  4×12
  */
 export async function renderSkinSide(
-  canvas: HTMLCanvasElement,
+  canvas: ICanvas,
   options: SkinViewOptions,
 ): Promise<void> {
   const scale = options.scale ?? DEFAULT_SCALE;
@@ -30,11 +31,13 @@ export async function renderSkinSide(
   const totalHeight = 32;
 
   const pad = showOverlay && inflated ? scale * 0.5 : 0;
-  canvas.width = totalWidth * scale + 2 * pad;
-  canvas.height = totalHeight * scale + 2 * pad;
+  const w = totalWidth * scale + 2 * pad;
+  const h = totalHeight * scale + 2 * pad;
 
+  canvas.width = w;
+  canvas.height = h;
   const ctx = getPixelatedContext(canvas);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, w, h);
 
   const overlay = showOverlay;
   const bodyOffsetX = 2; // center body (4px wide) in head (8px wide)

@@ -2,6 +2,8 @@
  * Big Head (Q-version) renderer
  */
 
+import { createCanvas, createImageData } from "../canvas-env";
+import type { ICanvas, ICanvasRenderingContext2D, IImageData } from "../canvas-env";
 import { parseSkin } from "../skin-parser";
 import type { BigHeadOptions } from "../types";
 import { getPixelatedContext } from "./utils";
@@ -9,10 +11,10 @@ import { getPixelatedContext } from "./utils";
 const DEFAULT_BORDER = 2;
 
 /**
- * Merge inner and outer face ImageData via alpha compositing
+ * Merge inner and outer face IImageData via alpha compositing
  */
-function mergeFaces(inner: ImageData, outer: ImageData): ImageData {
-  const result = new ImageData(inner.width, inner.height);
+function mergeFaces(inner: IImageData, outer: IImageData): IImageData {
+  const result = createImageData(inner.width, inner.height);
   result.data.set(inner.data);
   const src = outer.data;
   const dst = result.data;
@@ -31,12 +33,10 @@ function mergeFaces(inner: ImageData, outer: ImageData): ImageData {
 }
 
 /**
- * Create a canvas from ImageData
+ * Create a canvas from IImageData
  */
-function imageDataToCanvas(data: ImageData): HTMLCanvasElement {
-  const c = document.createElement("canvas");
-  c.width = data.width;
-  c.height = data.height;
+function imageDataToCanvas(data: IImageData): ICanvas {
+  const c = createCanvas(data.width, data.height);
   c.getContext("2d")!.putImageData(data, 0, 0);
   return c;
 }
@@ -44,10 +44,8 @@ function imageDataToCanvas(data: ImageData): HTMLCanvasElement {
 /**
  * Scale a canvas to target dimensions using nearest-neighbor
  */
-function scaleCanvas(source: HTMLCanvasElement, tw: number, th: number): HTMLCanvasElement {
-  const c = document.createElement("canvas");
-  c.width = tw;
-  c.height = th;
+function scaleCanvas(source: ICanvas, tw: number, th: number): ICanvas {
+  const c = createCanvas(tw, th);
   const ctx = c.getContext("2d")!;
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(source, 0, 0, source.width, source.height, 0, 0, tw, th);
@@ -55,10 +53,10 @@ function scaleCanvas(source: HTMLCanvasElement, tw: number, th: number): HTMLCan
 }
 
 /**
- * Find the most frequent opaque color in a sub-region of an ImageData buffer.
+ * Find the most frequent opaque color in a sub-region of an IImageData buffer.
  * Operates directly on the raw pixel array to avoid canvas API round-trips.
  *
- * @param data - The Uint8ClampedArray from ImageData
+ * @param data - The Uint8ClampedArray from IImageData
  * @param offsetX - Region start column (pixels)
  * @param offsetY - Region start row (pixels)
  * @param w - Region width (pixels)
@@ -102,7 +100,7 @@ function getDominantColorFromData(
 }
 
 /**
- * Fill opaque pixels in a sub-region of an ImageData buffer with a solid color.
+ * Fill opaque pixels in a sub-region of an IImageData buffer with a solid color.
  * Operates directly on the raw pixel array to avoid canvas API round-trips.
  */
 function fillRegionInData(
@@ -128,87 +126,90 @@ function fillRegionInData(
 }
 
 /**
- * Process torso: divide into 3x2 grid, fill each cell with its dominant color.
- * Uses a single getImageData/putImageData pair for the entire canvas.
+ * Clone an IImageData into a new mutable copy.
  */
-function processTorso(canvas: HTMLCanvasElement): HTMLCanvasElement {
-  const ctx = canvas.getContext("2d")!;
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-  const stride = canvas.width;
+function cloneImageData(source: IImageData): IImageData {
+  const result = createImageData(source.width, source.height);
+  result.data.set(source.data);
+  return result;
+}
+
+/**
+ * Process torso: divide into 3x2 grid, fill each cell with its dominant color.
+ * Works directly on IImageData pixel arrays (no canvas round-trip).
+ */
+function processTorso(source: IImageData): IImageData {
+  const result = cloneImageData(source);
+  const data = result.data;
+  const stride = result.width;
 
   const rowCount = 3;
   const colCount = 2;
-  const partW = Math.floor(canvas.width / colCount);
-  const partH = Math.floor(canvas.height / rowCount);
+  const partW = Math.floor(result.width / colCount);
+  const partH = Math.floor(result.height / rowCount);
   for (let row = 0; row < rowCount; row++) {
     for (let col = 0; col < colCount; col++) {
       const x = col * partW;
       const y = row * partH;
-      const w = col === colCount - 1 ? canvas.width - partW : partW;
-      const h = row === rowCount - 1 ? canvas.height - 2 * partH : partH;
+      const w = col === colCount - 1 ? result.width - partW : partW;
+      const h = row === rowCount - 1 ? result.height - 2 * partH : partH;
       const color = getDominantColorFromData(data, x, y, w, h, stride);
       fillRegionInData(data, color, x, y, w, h, stride);
     }
   }
 
-  ctx.putImageData(imageData, 0, 0);
-  return canvas;
+  return result;
 }
 
 /**
  * Process arm: upper half filled with dominant color of top 75%,
  * lower half filled with dominant color of bottom 25%.
- * Uses a single getImageData/putImageData pair.
+ * Works directly on IImageData pixel arrays (no canvas round-trip).
  */
-function processArm(canvas: HTMLCanvasElement): HTMLCanvasElement {
-  const ctx = canvas.getContext("2d")!;
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-  const stride = canvas.width;
-  const h = canvas.height;
+function processArm(source: IImageData): IImageData {
+  const result = cloneImageData(source);
+  const data = result.data;
+  const stride = result.width;
+  const h = result.height;
 
   const upperExtractH = Math.floor(h * 0.75);
   const lowerExtractH = h - upperExtractH;
   const halfH = Math.floor(h * 0.5);
-  const upperColor = getDominantColorFromData(data, 0, 0, canvas.width, upperExtractH, stride);
+  const upperColor = getDominantColorFromData(data, 0, 0, result.width, upperExtractH, stride);
   const lowerColor = getDominantColorFromData(
     data,
     0,
     upperExtractH,
-    canvas.width,
+    result.width,
     lowerExtractH,
     stride,
   );
-  fillRegionInData(data, upperColor, 0, 0, canvas.width, halfH, stride);
-  fillRegionInData(data, lowerColor, 0, halfH, canvas.width, h - halfH, stride);
+  fillRegionInData(data, upperColor, 0, 0, result.width, halfH, stride);
+  fillRegionInData(data, lowerColor, 0, halfH, result.width, h - halfH, stride);
 
-  ctx.putImageData(imageData, 0, 0);
-  return canvas;
+  return result;
 }
 
 /**
  * Process leg: fill entirely with dominant color.
- * Uses a single getImageData/putImageData pair.
+ * Works directly on IImageData pixel arrays (no canvas round-trip).
  */
-function processLeg(canvas: HTMLCanvasElement): HTMLCanvasElement {
-  const ctx = canvas.getContext("2d")!;
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-  const stride = canvas.width;
+function processLeg(source: IImageData): IImageData {
+  const result = cloneImageData(source);
+  const data = result.data;
+  const stride = result.width;
 
-  const color = getDominantColorFromData(data, 0, 0, canvas.width, canvas.height, stride);
-  fillRegionInData(data, color, 0, 0, canvas.width, canvas.height, stride);
+  const color = getDominantColorFromData(data, 0, 0, result.width, result.height, stride);
+  fillRegionInData(data, color, 0, 0, result.width, result.height, stride);
 
-  ctx.putImageData(imageData, 0, 0);
-  return canvas;
+  return result;
 }
 
 /**
  * Draw a border around a rectangular region
  */
 function drawBorder(
-  ctx: CanvasRenderingContext2D,
+  ctx: ICanvasRenderingContext2D,
   x: number,
   y: number,
   w: number,
@@ -231,10 +232,10 @@ function drawBorder(
 /**
  * Render a big head (Q-version) character.
  *
- * Canvas size = character size + border, no background.
+ * Output size = (character size + border) * scale.
  */
 export async function renderBigHead(
-  canvas: HTMLCanvasElement,
+  canvas: ICanvas,
   options: BigHeadOptions,
 ): Promise<void> {
   const border = options.border ?? DEFAULT_BORDER;
@@ -268,30 +269,14 @@ export async function renderBigHead(
   const headScaled = scaleCanvas(imageDataToCanvas(headFace), 16, 16);
 
   // 3. Process body parts with dominant color sampling, then scale
-  const torsoCanvas = imageDataToCanvas(torsoFace);
-  processTorso(torsoCanvas);
-  const torso = scaleCanvas(torsoCanvas, 4, 6);
-
-  const leftArmCanvas = imageDataToCanvas(leftArmFace);
-  processArm(leftArmCanvas);
-  const leftArm = scaleCanvas(leftArmCanvas, 2, 4);
-
-  const rightArmCanvas = imageDataToCanvas(rightArmFace);
-  processArm(rightArmCanvas);
-  const rightArm = scaleCanvas(rightArmCanvas, 2, 4);
-
-  const leftLegCanvas = imageDataToCanvas(leftLegFace);
-  processLeg(leftLegCanvas);
-  const leftLeg = scaleCanvas(leftLegCanvas, 2, 2);
-
-  const rightLegCanvas = imageDataToCanvas(rightLegFace);
-  processLeg(rightLegCanvas);
-  const rightLeg = scaleCanvas(rightLegCanvas, 2, 2);
+  const torso = scaleCanvas(imageDataToCanvas(processTorso(torsoFace)), 4, 6);
+  const leftArm = scaleCanvas(imageDataToCanvas(processArm(leftArmFace)), 2, 4);
+  const rightArm = scaleCanvas(imageDataToCanvas(processArm(rightArmFace)), 2, 4);
+  const leftLeg = scaleCanvas(imageDataToCanvas(processLeg(leftLegFace)), 2, 2);
+  const rightLeg = scaleCanvas(imageDataToCanvas(processLeg(rightLegFace)), 2, 2);
 
   // 4. Combine legs into one canvas (4x2)
-  const legs = document.createElement("canvas");
-  legs.width = 4;
-  legs.height = 2;
+  const legs = createCanvas(4, 2);
   const legsCtx = legs.getContext("2d")!;
   legsCtx.imageSmoothingEnabled = false;
   legsCtx.drawImage(leftLeg, 0, 0);
@@ -313,16 +298,16 @@ export async function renderBigHead(
   );
   const totalHeight = headHeight + Math.max(torsoHeight, armHeight) + legsHeight + 4 * border;
 
-  // 6. Set canvas size = character + border, scaled up
-  canvas.width = totalWidth * scale;
-  canvas.height = totalHeight * scale;
+  // 6. Set output canvas size = character + border, scaled up
+  const w = totalWidth * scale;
+  const h = totalHeight * scale;
+  canvas.width = w;
+  canvas.height = h;
   const ctx = getPixelatedContext(canvas);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, w, h);
 
   // 7. Draw character onto a temp canvas at virtual pixel size, then scale to output
-  const tempCanvas = document.createElement("canvas");
-  tempCanvas.width = totalWidth;
-  tempCanvas.height = totalHeight;
+  const tempCanvas = createCanvas(totalWidth, totalHeight);
   const tempCtx = tempCanvas.getContext("2d")!;
   tempCtx.imageSmoothingEnabled = false;
 
@@ -359,5 +344,5 @@ export async function renderBigHead(
   tempCtx.drawImage(legs, legsX, currentY);
 
   // 8. Scale temp canvas to output
-  ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
+  ctx.drawImage(tempCanvas, 0, 0, w, h);
 }

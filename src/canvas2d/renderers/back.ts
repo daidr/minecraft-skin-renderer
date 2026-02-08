@@ -2,6 +2,7 @@
  * Back view renderer - renders the full character from behind
  */
 
+import type { ICanvas } from "../canvas-env";
 import { parseSkin } from "../skin-parser";
 import type { SkinViewOptions } from "../types";
 import { getPixelatedContext, drawFaceWithOverlay } from "./utils";
@@ -9,11 +10,11 @@ import { getPixelatedContext, drawFaceWithOverlay } from "./utils";
 const DEFAULT_SCALE = 8;
 
 /**
- * Render the player's full body back view onto a canvas.
+ * Render the player's full body back view onto the given canvas.
  * Mirror of front view: left/right arms and legs swap positions.
  */
 export async function renderSkinBack(
-  canvas: HTMLCanvasElement,
+  canvas: ICanvas,
   options: SkinViewOptions,
 ): Promise<void> {
   const scale = options.scale ?? DEFAULT_SCALE;
@@ -27,11 +28,13 @@ export async function renderSkinBack(
   const totalHeight = 32;
 
   const pad = showOverlay && inflated ? scale * 0.5 : 0;
-  canvas.width = totalWidth * scale + 2 * pad;
-  canvas.height = totalHeight * scale + 2 * pad;
+  const w = totalWidth * scale + 2 * pad;
+  const h = totalHeight * scale + 2 * pad;
 
+  canvas.width = w;
+  canvas.height = h;
   const ctx = getPixelatedContext(canvas);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, w, h);
 
   const bodyX = armWidth;
   const overlay = showOverlay;

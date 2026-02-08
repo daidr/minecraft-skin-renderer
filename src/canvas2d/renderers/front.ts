@@ -2,6 +2,7 @@
  * Front view renderer - renders the full character from the front
  */
 
+import type { ICanvas, ICanvasRenderingContext2D } from "../canvas-env";
 import { parseSkin } from "../skin-parser";
 import type { SkinViewOptions, ParsedSkin } from "../types";
 import { getPixelatedContext, drawFaceWithOverlay } from "./utils";
@@ -9,7 +10,7 @@ import { getPixelatedContext, drawFaceWithOverlay } from "./utils";
 const DEFAULT_SCALE = 8;
 
 /**
- * Render the player's full body front view onto a canvas.
+ * Render the player's full body front view onto the given canvas.
  *
  * Classic layout (16×32 MC pixels):
  *   Head:     (4, 0)   8×8
@@ -28,7 +29,7 @@ const DEFAULT_SCALE = 8;
  *   RightLeg: (7, 20)  4×12
  */
 export async function renderSkinFront(
-  canvas: HTMLCanvasElement,
+  canvas: ICanvas,
   options: SkinViewOptions,
 ): Promise<void> {
   const scale = options.scale ?? DEFAULT_SCALE;
@@ -42,11 +43,13 @@ export async function renderSkinFront(
   const totalHeight = 32;
 
   const pad = showOverlay && inflated ? scale * 0.5 : 0;
-  canvas.width = totalWidth * scale + 2 * pad;
-  canvas.height = totalHeight * scale + 2 * pad;
+  const w = totalWidth * scale + 2 * pad;
+  const h = totalHeight * scale + 2 * pad;
 
+  canvas.width = w;
+  canvas.height = h;
   const ctx = getPixelatedContext(canvas);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, w, h);
 
   const bodyX = armWidth;
 
@@ -54,7 +57,7 @@ export async function renderSkinFront(
 }
 
 function drawBody(
-  ctx: CanvasRenderingContext2D,
+  ctx: ICanvasRenderingContext2D,
   skin: ParsedSkin,
   bodyX: number,
   showOverlay: boolean,

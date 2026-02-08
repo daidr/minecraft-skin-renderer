@@ -26,72 +26,37 @@ export function useRender2D(canvasRef: Ref<HTMLCanvasElement | null>) {
     const slim = settingsStore.settings.slimModel;
     const { showOverlay, overlayInflated, scale, renderType } = render2d;
 
+    const baseOpts = { skin: skinSource, slim, showOverlay, scale, overlayInflated };
+
     try {
       switch (renderType) {
         case "avatar":
-          await renderAvatar(canvas, {
-            skin: skinSource,
-            slim,
-            showOverlay,
-            scale,
-            overlayInflated,
-          });
+          await renderAvatar(canvas, baseOpts);
           break;
         case "front":
-          await renderSkinFront(canvas, {
-            skin: skinSource,
-            slim,
-            showOverlay,
-            scale,
-            overlayInflated,
-          });
+          await renderSkinFront(canvas, baseOpts);
           break;
         case "back":
-          await renderSkinBack(canvas, {
-            skin: skinSource,
-            slim,
-            showOverlay,
-            scale,
-            overlayInflated,
-          });
+          await renderSkinBack(canvas, baseOpts);
           break;
         case "side":
-          await renderSkinSide(canvas, {
-            skin: skinSource,
-            slim,
-            showOverlay,
-            scale,
-            overlayInflated,
-          });
+          await renderSkinSide(canvas, baseOpts);
           break;
         case "isometric":
-          await renderSkinIsometric(canvas, {
-            skin: skinSource,
-            slim,
-            showOverlay,
-            scale,
-            overlayInflated,
-          });
+          await renderSkinIsometric(canvas, baseOpts);
           break;
         case "halfBody":
-          await renderHalfBody(canvas, {
-            skin: skinSource,
-            slim,
-            showOverlay,
-            scale,
-            overlayInflated,
-          });
+          await renderHalfBody(canvas, baseOpts);
           break;
         case "bigHead":
           await renderBigHead(canvas, {
-            skin: skinSource,
-            slim,
-            showOverlay,
-            scale,
+            ...baseOpts,
             border: render2d.bigHeadBorderWidth,
             borderColor: render2d.bigHeadBorderColor,
           });
           break;
+        default:
+          return;
       }
     } catch (error) {
       console.error("Failed to render 2D:", error);

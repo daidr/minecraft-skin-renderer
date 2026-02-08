@@ -7,11 +7,15 @@ import { isOldSkinFormat, convertOldSkinFormat } from "../model/uv/SkinUV";
 /** Texture source types */
 export type TextureSource = string | Blob | HTMLImageElement | ImageBitmap;
 
+function isImageElement(obj: any): obj is HTMLImageElement {
+  return typeof obj === 'object' && obj !== null && 'width' in obj && 'height' in obj && 'complete' in obj;
+}
+
 /**
  * Load an image from various sources
  */
 export async function loadImage(source: TextureSource): Promise<HTMLImageElement> {
-  if (source instanceof HTMLImageElement) {
+  if (isImageElement(source)) {
     if (source.complete) {
       return source;
     }

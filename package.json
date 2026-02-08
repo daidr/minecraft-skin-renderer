@@ -23,7 +23,8 @@
     "url": "git+https://github.com/daidr/minecraft-skin-renderer.git"
   },
   "workspaces": [
-    "playground"
+    "playground",
+    "native-playground"
   ],
   "files": [
     "dist"

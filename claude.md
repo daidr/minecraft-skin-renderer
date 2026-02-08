@@ -22,7 +22,7 @@ Use `bun` for all commands (not npm/yarn/pnpm):
 ## Conventions
 
 - **Commits**: Conventional Commits enforced via commitlint (`feat:`, `fix:`, `refactor:`, etc.)
-- **Git hooks**: pre-commit runs lint-staged (oxlint on staged files), commit-msg validates format
+- **Git hooks**: bun-git-hooks (`git-hooks.config.ts`) — pre-commit runs lint-staged (oxlint on staged files), commit-msg validates format via commitlint
 - **Path alias**: `@/*` maps to `./src/*` in both tsconfig and vitest
 - **Formatting**: oxfmt with 2-space indent, LF line endings, max 100 chars
 
@@ -68,6 +68,8 @@ Shader composition (`src/core/renderer/shader-composer.ts`) supports injection m
 
 Standalone 2D rendering system at `src/canvas2d/` — no WebGL/WebGPU required. Provides 7 render functions: `renderAvatar`, `renderSkinFront`, `renderSkinBack`, `renderSkinSide`, `renderSkinIsometric`, `renderHalfBody`, `renderBigHead`. Each supports classic/slim variants and optional overlay layers.
 
+**Node.js portability**: The module works in Node.js via `canvas-env.ts`. In non-browser environments, call `setCreateCanvas()` with a canvas factory (e.g., `@napi-rs/canvas`) before any render function. In the browser, it auto-detects `document.createElement("canvas")`.
+
 ### Core Modules
 
 - **src/core/renderer/** - Renderer abstraction layer with `webgl/` and `webgpu/` backends implementing identical interfaces
@@ -103,9 +105,14 @@ Animations are keyframe-based tracks per bone, registered globally via `register
 - Cape and Elytra share the same texture format (64x32)
 - All rotations use quaternions; conversions via `quatFromEuler()`
 
+## Workspaces
+
+- **playground/** - Vue 3 + Pinia + Vite interactive demo. Imports the library via Vite aliases (not `workspace:*`). Run with `bun dev:playground`.
+- **native-playground/** - Node.js/Bun environment for testing Canvas2D rendering with `@napi-rs/canvas`. Validates that the Canvas2D module works outside the browser.
+
 ## Testing
 
-Tests use Vitest with happy-dom environment. WebGL is mocked via `vitest-webgl-canvas-mock`.
+Tests use Vitest with happy-dom environment and `globals: true` (no need to import `describe`/`it`/`expect`). WebGL is mocked via `vitest-webgl-canvas-mock`.
 
 Test setup (`tests/setup.ts`) mocks: `requestAnimationFrame`, `performance.now()`, `createImageBitmap()` (returns 64×64 dummy), `HTMLCanvasElement.transferToImageBitmap()`.
 
