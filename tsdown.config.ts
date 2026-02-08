@@ -27,4 +27,16 @@ export default defineConfig([
     sourcemap: true,
     treeshake: true,
   },
+  {
+    platform: "browser",
+    entry: { "minecraft-skin-renderer-2d": "src/canvas2d.ts" },
+    format: ["iife"],
+    globalName: "MSR2D",
+    outputOptions: { entryFileNames: "[name].min.js" },
+    dts: false,
+    clean: false,
+    minify: true,
+    sourcemap: true,
+    treeshake: true,
+  },
 ]);
