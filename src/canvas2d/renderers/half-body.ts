@@ -24,10 +24,7 @@ const DEFAULT_SCALE = 8;
  *   LeftArm:  (0, 8)   3×12
  *   RightArm: (11, 8)  3×12
  */
-export async function renderHalfBody(
-  canvas: ICanvas,
-  options: HalfBodyOptions,
-): Promise<void> {
+export async function renderHalfBody(canvas: ICanvas, options: HalfBodyOptions): Promise<void> {
   const scale = options.scale ?? DEFAULT_SCALE;
   const showOverlay = options.showOverlay ?? true;
   const inflated = options.overlayInflated ?? false;

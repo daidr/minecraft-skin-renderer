@@ -28,10 +28,7 @@ const DEFAULT_SCALE = 8;
  *   LeftLeg:  (3, 20)  4×12
  *   RightLeg: (7, 20)  4×12
  */
-export async function renderSkinFront(
-  canvas: ICanvas,
-  options: SkinViewOptions,
-): Promise<void> {
+export async function renderSkinFront(canvas: ICanvas, options: SkinViewOptions): Promise<void> {
   const scale = options.scale ?? DEFAULT_SCALE;
   const showOverlay = options.showOverlay ?? true;
   const inflated = options.overlayInflated ?? false;

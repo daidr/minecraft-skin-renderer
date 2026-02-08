@@ -8,7 +8,13 @@ import { isOldSkinFormat, convertOldSkinFormat } from "../model/uv/SkinUV";
 export type TextureSource = string | Blob | HTMLImageElement | ImageBitmap;
 
 function isImageElement(obj: any): obj is HTMLImageElement {
-  return typeof obj === 'object' && obj !== null && 'width' in obj && 'height' in obj && 'complete' in obj;
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    "width" in obj &&
+    "height" in obj &&
+    "complete" in obj
+  );
 }
 
 /**

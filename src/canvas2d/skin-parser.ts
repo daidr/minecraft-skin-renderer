@@ -72,9 +72,29 @@ function convertOldSkinFormat(imageData: IImageData): IImageData {
 
   const s = scale;
   // Mirror right arm to left arm position (32, 48) in 64x64 space
-  copyAndMirror(src, dst, width, Math.round(40 * s), Math.round(16 * s), Math.round(32 * s), Math.round(48 * s), Math.round(16 * s), Math.round(16 * s));
+  copyAndMirror(
+    src,
+    dst,
+    width,
+    Math.round(40 * s),
+    Math.round(16 * s),
+    Math.round(32 * s),
+    Math.round(48 * s),
+    Math.round(16 * s),
+    Math.round(16 * s),
+  );
   // Mirror right leg to left leg position (16, 48) in 64x64 space
-  copyAndMirror(src, dst, width, 0, Math.round(16 * s), Math.round(16 * s), Math.round(48 * s), Math.round(16 * s), Math.round(16 * s));
+  copyAndMirror(
+    src,
+    dst,
+    width,
+    0,
+    Math.round(16 * s),
+    Math.round(16 * s),
+    Math.round(48 * s),
+    Math.round(16 * s),
+    Math.round(16 * s),
+  );
 
   return newData;
 }

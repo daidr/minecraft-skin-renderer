@@ -27,7 +27,7 @@ import {
 渲染玩家头部正面。
 
 ```ts
-async function renderAvatar(canvas: ICanvas, options: AvatarOptions): Promise<void>
+async function renderAvatar(canvas: ICanvas, options: AvatarOptions): Promise<void>;
 ```
 
 **输出尺寸：** `8 × scale` px（启用 `overlayInflated` 时会额外增加边距）
@@ -45,10 +45,11 @@ await renderAvatar(canvas, {
 渲染玩家全身正面视图。
 
 ```ts
-async function renderSkinFront(canvas: ICanvas, options: SkinViewOptions): Promise<void>
+async function renderSkinFront(canvas: ICanvas, options: SkinViewOptions): Promise<void>;
 ```
 
 **输出尺寸：**
+
 - 经典模型：`16 × scale` × `32 × scale` px
 - 纤细模型：`14 × scale` × `32 × scale` px
 
@@ -57,7 +58,7 @@ async function renderSkinFront(canvas: ICanvas, options: SkinViewOptions): Promi
 渲染玩家全身背面视图（正面的镜像）。
 
 ```ts
-async function renderSkinBack(canvas: ICanvas, options: SkinViewOptions): Promise<void>
+async function renderSkinBack(canvas: ICanvas, options: SkinViewOptions): Promise<void>;
 ```
 
 **输出尺寸：** 与 `renderSkinFront` 相同
@@ -67,7 +68,7 @@ async function renderSkinBack(canvas: ICanvas, options: SkinViewOptions): Promis
 渲染玩家右侧视图。
 
 ```ts
-async function renderSkinSide(canvas: ICanvas, options: SkinViewOptions): Promise<void>
+async function renderSkinSide(canvas: ICanvas, options: SkinViewOptions): Promise<void>;
 ```
 
 **输出尺寸：** `8 × scale` × `32 × scale` px
@@ -77,7 +78,7 @@ async function renderSkinSide(canvas: ICanvas, options: SkinViewOptions): Promis
 渲染等距（2.5D）投影视图，展示正面和左侧面。
 
 ```ts
-async function renderSkinIsometric(canvas: ICanvas, options: IsometricOptions): Promise<void>
+async function renderSkinIsometric(canvas: ICanvas, options: IsometricOptions): Promise<void>;
 ```
 
 深度方向向右上方延伸，深度比率为 0.5。使用画布变换实现等距投影效果。
@@ -87,10 +88,11 @@ async function renderSkinIsometric(canvas: ICanvas, options: IsometricOptions): 
 渲染上半身（头部 + 身体 + 手臂，不含腿部）。
 
 ```ts
-async function renderHalfBody(canvas: ICanvas, options: HalfBodyOptions): Promise<void>
+async function renderHalfBody(canvas: ICanvas, options: HalfBodyOptions): Promise<void>;
 ```
 
 **输出尺寸：**
+
 - 经典模型：`16 × scale` × `20 × scale` px
 - 纤细模型：`14 × scale` × `20 × scale` px
 
@@ -99,10 +101,11 @@ async function renderHalfBody(canvas: ICanvas, options: HalfBodyOptions): Promis
 渲染 Q 版大头像风格角色。头部保持原始细节，身体各部位使用主色块简化处理。
 
 ```ts
-async function renderBigHead(canvas: ICanvas, options: BigHeadOptions): Promise<void>
+async function renderBigHead(canvas: ICanvas, options: BigHeadOptions): Promise<void>;
 ```
 
 **角色比例：**
+
 - 头部：16×16 像素（保持原始细节）
 - 躯干：4×6 像素（主色块填充）
 - 手臂：每只 2×4 像素
@@ -123,13 +126,13 @@ await renderBigHead(canvas, {
 
 所有渲染函数共用的基础选项：
 
-| 属性 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `skin` | `TextureSource` | *必填* | 皮肤纹理源 |
-| `slim` | `boolean` | `false` | 使用纤细模型（3px 手臂） |
-| `showOverlay` | `boolean` | `true` | 显示外层覆盖层 |
-| `scale` | `number` | `8` | 像素缩放因子（1 MC 像素 = scale 屏幕像素） |
-| `overlayInflated` | `boolean` | `false` | 外层是否略微膨胀（类似 3D 渲染器效果） |
+| 属性              | 类型            | 默认值  | 说明                                       |
+| ----------------- | --------------- | ------- | ------------------------------------------ |
+| `skin`            | `TextureSource` | _必填_  | 皮肤纹理源                                 |
+| `slim`            | `boolean`       | `false` | 使用纤细模型（3px 手臂）                   |
+| `showOverlay`     | `boolean`       | `true`  | 显示外层覆盖层                             |
+| `scale`           | `number`        | `8`     | 像素缩放因子（1 MC 像素 = scale 屏幕像素） |
+| `overlayInflated` | `boolean`       | `false` | 外层是否略微膨胀（类似 3D 渲染器效果）     |
 
 ### AvatarOptions
 
@@ -151,10 +154,10 @@ await renderBigHead(canvas, {
 
 继承 `BaseRenderOptions`，额外属性：
 
-| 属性 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `border` | `number` | `2` | 每个身体部位周围的边框宽度（虚拟像素） |
-| `borderColor` | `string` | `"black"` | 边框颜色（CSS 颜色值） |
+| 属性          | 类型     | 默认值    | 说明                                   |
+| ------------- | -------- | --------- | -------------------------------------- |
+| `border`      | `number` | `2`       | 每个身体部位周围的边框宽度（虚拟像素） |
+| `borderColor` | `string` | `"black"` | 边框颜色（CSS 颜色值）                 |
 
 ## TextureSource
 
@@ -164,12 +167,12 @@ Canvas2D 模块的纹理源类型与主模块不同，支持更广泛的输入�
 type TextureSource = IImageData | IImage | string | Blob;
 ```
 
-| 类型 | 环境 | 说明 |
-| --- | --- | --- |
-| `IImageData` | 通用 | 像素数据对象（`{ width, height, data: Uint8ClampedArray }`） |
-| `IImage` | 通用 | 任何具有 `width`/`height` 属性的可绘制图像对象 |
-| `string` | 仅浏览器 | 图像 URL |
-| `Blob` | 仅浏览器 | 二进制图像数据 |
+| 类型         | 环境     | 说明                                                         |
+| ------------ | -------- | ------------------------------------------------------------ |
+| `IImageData` | 通用     | 像素数据对象（`{ width, height, data: Uint8ClampedArray }`） |
+| `IImage`     | 通用     | 任何具有 `width`/`height` 属性的可绘制图像对象               |
+| `string`     | 仅浏览器 | 图像 URL                                                     |
+| `Blob`       | 仅浏览器 | 二进制图像数据                                               |
 
 ## 环境配置
 
@@ -178,7 +181,7 @@ type TextureSource = IImageData | IImage | string | Blob;
 为 Node.js 环境设置画布工厂函数。**必须在调用任何渲染函数之前调用。**
 
 ```ts
-function setCreateCanvas(fn: (width: number, height: number) => ICanvas): void
+function setCreateCanvas(fn: (width: number, height: number) => ICanvas): void;
 ```
 
 浏览器环境会自动使用 `document.createElement("canvas")`，无需调用此函数。
@@ -200,7 +203,7 @@ await renderAvatar(canvas as any, { skin: skinImage });
 将 `IImageData` 绘制到 `HTMLCanvasElement` 上的辅助函数。
 
 ```ts
-function drawToCanvas(canvas: HTMLCanvasElement, data: IImageData): void
+function drawToCanvas(canvas: HTMLCanvasElement, data: IImageData): void;
 ```
 
 会自动调整画布尺寸以匹配图像数据的尺寸。

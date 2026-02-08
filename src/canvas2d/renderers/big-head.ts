@@ -234,10 +234,7 @@ function drawBorder(
  *
  * Output size = (character size + border) * scale.
  */
-export async function renderBigHead(
-  canvas: ICanvas,
-  options: BigHeadOptions,
-): Promise<void> {
+export async function renderBigHead(canvas: ICanvas, options: BigHeadOptions): Promise<void> {
   const border = options.border ?? DEFAULT_BORDER;
   const borderColor = options.borderColor ?? "black";
   const showOverlay = options.showOverlay ?? true;

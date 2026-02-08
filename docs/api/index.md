@@ -4,13 +4,13 @@
 
 ## 模块
 
-| 模块 | 导入路径 | 说明 |
-| --- | --- | --- |
-| 核心 | `@daidr/minecraft-skin-renderer` | 主 API：`use()`、`createSkinViewer()`、类型、工具函数 |
-| WebGL | `@daidr/minecraft-skin-renderer/webgl` | WebGL2 渲染器插件 |
-| WebGPU | `@daidr/minecraft-skin-renderer/webgpu` | WebGPU 渲染器插件 |
-| Panorama | `@daidr/minecraft-skin-renderer/panorama` | 全景图背景插件 |
-| Canvas2D | `@daidr/minecraft-skin-renderer/canvas2d` | 2D 静态皮肤渲染（无需 WebGL） |
+| 模块     | 导入路径                                  | 说明                                                  |
+| -------- | ----------------------------------------- | ----------------------------------------------------- |
+| 核心     | `@daidr/minecraft-skin-renderer`          | 主 API：`use()`、`createSkinViewer()`、类型、工具函数 |
+| WebGL    | `@daidr/minecraft-skin-renderer/webgl`    | WebGL2 渲染器插件                                     |
+| WebGPU   | `@daidr/minecraft-skin-renderer/webgpu`   | WebGPU 渲染器插件                                     |
+| Panorama | `@daidr/minecraft-skin-renderer/panorama` | 全景图背景插件                                        |
+| Canvas2D | `@daidr/minecraft-skin-renderer/canvas2d` | 2D 静态皮肤渲染（无需 WebGL）                         |
 
 ## 章节
 
@@ -24,17 +24,17 @@
 
 ```ts
 import {
-  use,                     // 注册插件
-  createSkinViewer,        // 创建 3D 查看器
-  registerAnimation,       // 注册自定义动画
-  getAnimation,            // 获取动画定义
-  isWebGPUSupported,       // WebGPU 支持检测
-  isWebGL2Supported,       // WebGL2 支持检测
-  detectBestBackend,       // 自动检测最佳后端
-  loadSkinTexture,         // 加载皮肤纹理
-  loadCapeTexture,         // 加载披风纹理
+  use, // 注册插件
+  createSkinViewer, // 创建 3D 查看器
+  registerAnimation, // 注册自定义动画
+  getAnimation, // 获取动画定义
+  isWebGPUSupported, // WebGPU 支持检测
+  isWebGL2Supported, // WebGL2 支持检测
+  detectBestBackend, // 自动检测最佳后端
+  loadSkinTexture, // 加载皮肤纹理
+  loadCapeTexture, // 加载披风纹理
   createDefaultVisibility, // 创建默认可见性
-  PART_NAMES,              // 部位名称常量
+  PART_NAMES, // 部位名称常量
 } from "@daidr/minecraft-skin-renderer";
 ```
 

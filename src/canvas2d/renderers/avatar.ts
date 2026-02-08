@@ -13,10 +13,7 @@ const DEFAULT_SCALE = 8;
  * Render the player's head (front face) onto the given canvas.
  * Canvas is resized to 8 * scale × 8 * scale pixels (plus padding if inflated).
  */
-export async function renderAvatar(
-  canvas: ICanvas,
-  options: AvatarOptions,
-): Promise<void> {
+export async function renderAvatar(canvas: ICanvas, options: AvatarOptions): Promise<void> {
   const scale = options.scale ?? DEFAULT_SCALE;
   const showOverlay = options.showOverlay ?? true;
   const inflated = options.overlayInflated ?? false;

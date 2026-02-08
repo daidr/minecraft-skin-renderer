@@ -15,8 +15,8 @@ use(WebGLRendererPlugin);
 
 **参数：**
 
-| 参数 | 类型 | 说明 |
-| --- | --- | --- |
+| 参数     | 类型                              | 说明                 |
+| -------- | --------------------------------- | -------------------- |
 | `plugin` | `RendererPlugin \| FeaturePlugin` | 渲染器插件或功能插件 |
 
 ## createSkinViewer()
@@ -33,23 +33,23 @@ const viewer = await createSkinViewer(options);
 
 ### SkinViewerOptions
 
-| 属性 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `canvas` | `HTMLCanvasElement` | *必填* | 渲染目标画布元素 |
-| `skin` | `TextureSource` | — | 皮肤纹理（URL、Blob 或图像对象） |
-| `cape` | `TextureSource` | — | 披风纹理（64x32 格式），同时用于鞘翅 |
-| `slim` | `boolean` | `false` | 是否使用纤细模型（3px 手臂） |
-| `backEquipment` | `BackEquipment` | `"none"` | 背部装备：`"cape"` / `"elytra"` / `"none"`。提供 cape 纹理时默认为 `"cape"` |
-| `preferredBackend` | `BackendType \| "auto"` | `"auto"` | 渲染后端：`"webgl"` / `"webgpu"` / `"auto"` |
-| `antialias` | `boolean` | `true` | 是否启用抗锯齿 |
-| `pixelRatio` | `number` | — | DPI 缩放系数 |
-| `fov` | `number` | `70` | 视场角（度） |
-| `zoom` | `number` | — | 初始缩放距离 |
-| `enableRotate` | `boolean` | `true` | 允许鼠标旋转 |
-| `enableZoom` | `boolean` | `true` | 允许鼠标缩放 |
-| `autoRotate` | `boolean` | `false` | 自动旋转模型 |
-| `autoRotateSpeed` | `number` | `30` | 自动旋转速度（度/秒） |
-| `panorama` | `TextureSource` | — | 全景图背景（需注册 PanoramaPlugin） |
+| 属性               | 类型                    | 默认值   | 说明                                                                        |
+| ------------------ | ----------------------- | -------- | --------------------------------------------------------------------------- |
+| `canvas`           | `HTMLCanvasElement`     | _必填_   | 渲染目标画布元素                                                            |
+| `skin`             | `TextureSource`         | —        | 皮肤纹理（URL、Blob 或图像对象）                                            |
+| `cape`             | `TextureSource`         | —        | 披风纹理（64x32 格式），同时用于鞘翅                                        |
+| `slim`             | `boolean`               | `false`  | 是否使用纤细模型（3px 手臂）                                                |
+| `backEquipment`    | `BackEquipment`         | `"none"` | 背部装备：`"cape"` / `"elytra"` / `"none"`。提供 cape 纹理时默认为 `"cape"` |
+| `preferredBackend` | `BackendType \| "auto"` | `"auto"` | 渲染后端：`"webgl"` / `"webgpu"` / `"auto"`                                 |
+| `antialias`        | `boolean`               | `true`   | 是否启用抗锯齿                                                              |
+| `pixelRatio`       | `number`                | —        | DPI 缩放系数                                                                |
+| `fov`              | `number`                | `70`     | 视场角（度）                                                                |
+| `zoom`             | `number`                | —        | 初始缩放距离                                                                |
+| `enableRotate`     | `boolean`               | `true`   | 允许鼠标旋转                                                                |
+| `enableZoom`       | `boolean`               | `true`   | 允许鼠标缩放                                                                |
+| `autoRotate`       | `boolean`               | `false`  | 自动旋转模型                                                                |
+| `autoRotateSpeed`  | `number`                | `30`     | 自动旋转速度（度/秒）                                                       |
+| `panorama`         | `TextureSource`         | —        | 全景图背景（需注册 PanoramaPlugin）                                         |
 
 ## SkinViewer 实例
 
@@ -150,11 +150,11 @@ viewer.setPartVisibility("body", "both", true); // 显示身体所有层
 
 **参数：**
 
-| 参数 | 类型 | 说明 |
-| --- | --- | --- |
-| `part` | `PartName` | 部位名：`"head"` / `"body"` / `"leftArm"` / `"rightArm"` / `"leftLeg"` / `"rightLeg"` |
-| `layer` | `"inner" \| "outer" \| "both"` | 目标层 |
-| `visible` | `boolean` | 是否可见 |
+| 参数      | 类型                           | 说明                                                                                  |
+| --------- | ------------------------------ | ------------------------------------------------------------------------------------- |
+| `part`    | `PartName`                     | 部位名：`"head"` / `"body"` / `"leftArm"` / `"rightArm"` / `"leftLeg"` / `"rightLeg"` |
+| `layer`   | `"inner" \| "outer" \| "both"` | 目标层                                                                                |
+| `visible` | `boolean`                      | 是否可见                                                                              |
 
 ### 动画控制
 
@@ -169,9 +169,9 @@ viewer.playAnimation("run", { speed: 1.5, amplitude: 0.8 });
 
 **参数：**
 
-| 参数 | 类型 | 说明 |
-| --- | --- | --- |
-| `name` | `string` | 动画名称 |
+| 参数     | 类型              | 说明         |
+| -------- | ----------------- | ------------ |
+| `name`   | `string`          | 动画名称     |
 | `config` | `AnimationConfig` | 可选播放配置 |
 
 #### pauseAnimation()
@@ -203,7 +203,9 @@ viewer.stopAnimation();
 动画是否正在播放。
 
 ```ts
-if (viewer.isPlaying) { /* ... */ }
+if (viewer.isPlaying) {
+  /* ... */
+}
 ```
 
 #### currentAnimation <Badge type="info" text="只读" />
@@ -226,10 +228,10 @@ viewer.setRotation(theta, phi);
 
 **参数：**
 
-| 参数 | 类型 | 说明 |
-| --- | --- | --- |
+| 参数    | 类型     | 说明             |
+| ------- | -------- | ---------------- |
 | `theta` | `number` | 水平角度（弧度） |
-| `phi` | `number` | 垂直角度（弧度） |
+| `phi`   | `number` | 垂直角度（弧度） |
 
 #### getRotation()
 
@@ -315,9 +317,9 @@ viewer.resize(800, 600);
 
 **参数：**
 
-| 参数 | 类型 | 说明 |
-| --- | --- | --- |
-| `width` | `number` | 宽度（像素） |
+| 参数     | 类型     | 说明         |
+| -------- | -------- | ------------ |
+| `width`  | `number` | 宽度（像素） |
 | `height` | `number` | 高度（像素） |
 
 #### screenshot()
@@ -331,10 +333,10 @@ const jpegUrl = viewer.screenshot("jpeg", 0.8); // JPEG, 80% 质量
 
 **参数：**
 
-| 参数 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `type` | `"png" \| "jpeg"` | `"png"` | 图像格式 |
-| `quality` | `number` | `0.92` | JPEG 质量（0–1） |
+| 参数      | 类型              | 默认值  | 说明             |
+| --------- | ----------------- | ------- | ---------------- |
+| `type`    | `"png" \| "jpeg"` | `"png"` | 图像格式         |
+| `quality` | `number`          | `0.92`  | JPEG 质量（0–1） |
 
 **返回值：** `string` — Data URL
 
@@ -432,7 +434,7 @@ interface PartsVisibility {
 
 ```ts
 interface AnimationConfig {
-  speed?: number;     // 播放速度倍率，默认 1.0
+  speed?: number; // 播放速度倍率，默认 1.0
   amplitude?: number; // 动作幅度倍率，默认 1.0
 }
 ```
@@ -448,9 +450,9 @@ import {
   detectBestBackend,
 } from "@daidr/minecraft-skin-renderer";
 
-isWebGPUSupported();    // boolean
-isWebGL2Supported();    // boolean
-detectBestBackend();    // "webgpu" | "webgl" | null
+isWebGPUSupported(); // boolean
+isWebGL2Supported(); // boolean
+detectBestBackend(); // "webgpu" | "webgl" | null
 ```
 
 ### 纹理加载
@@ -462,7 +464,7 @@ import {
   loadElytraTexture,
 } from "@daidr/minecraft-skin-renderer";
 
-const skin = await loadSkinTexture(source);   // 自动处理旧版 64x32 格式
+const skin = await loadSkinTexture(source); // 自动处理旧版 64x32 格式
 const cape = await loadCapeTexture(source);
 const elytra = await loadElytraTexture(source);
 ```
@@ -470,10 +472,7 @@ const elytra = await loadElytraTexture(source);
 ### 可见性辅助
 
 ```ts
-import {
-  createDefaultVisibility,
-  PART_NAMES,
-} from "@daidr/minecraft-skin-renderer";
+import { createDefaultVisibility, PART_NAMES } from "@daidr/minecraft-skin-renderer";
 
 const visibility = createDefaultVisibility(); // 所有部位全部可见
 PART_NAMES; // ["head", "body", "leftArm", "rightArm", "leftLeg", "rightLeg"]

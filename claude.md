@@ -51,6 +51,7 @@ const viewer = await createSkinViewer({ canvas, skin: "..." });
 ### Build Configuration
 
 tsdown produces two outputs (configured in `tsdown.config.ts`):
+
 - **ESM** (`unbundle: true`) - Preserves module structure for tree-shaking
 - **IIFE** (`minecraft-skin-renderer.min.js`) - Minified, global `MSR` namespace
 

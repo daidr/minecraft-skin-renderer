@@ -431,5 +431,4 @@ export async function renderSkinIsometric(
   drawAllTopFaces(ctx, [head], scale, inflated);
   drawInnerFrontFaces(ctx, [head], scale);
   drawOuterFrontFaces(ctx, [head], scale, inflated);
-
 }

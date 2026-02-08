@@ -18,10 +18,7 @@ const DEFAULT_SCALE = 8;
  *   RightArm: (2, 8)   4×12 (overlapping body, drawn on top)
  *   RightLeg: (2, 20)  4×12
  */
-export async function renderSkinSide(
-  canvas: ICanvas,
-  options: SkinViewOptions,
-): Promise<void> {
+export async function renderSkinSide(canvas: ICanvas, options: SkinViewOptions): Promise<void> {
   const scale = options.scale ?? DEFAULT_SCALE;
   const showOverlay = options.showOverlay ?? true;
   const inflated = options.overlayInflated ?? false;

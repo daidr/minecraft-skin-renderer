@@ -13,10 +13,7 @@ const DEFAULT_SCALE = 8;
  * Render the player's full body back view onto the given canvas.
  * Mirror of front view: left/right arms and legs swap positions.
  */
-export async function renderSkinBack(
-  canvas: ICanvas,
-  options: SkinViewOptions,
-): Promise<void> {
+export async function renderSkinBack(canvas: ICanvas, options: SkinViewOptions): Promise<void> {
   const scale = options.scale ?? DEFAULT_SCALE;
   const showOverlay = options.showOverlay ?? true;
   const inflated = options.overlayInflated ?? false;

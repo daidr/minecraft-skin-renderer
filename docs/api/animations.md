@@ -45,12 +45,12 @@ viewer.setAutoRotate(true);
 
 导入主模块时自动注册以下预设动画：
 
-| 名称 | 时长 | 循环 | 说明 |
-| --- | --- | --- | --- |
-| `"idle"` | 3.0s | 是 | 空闲待机，细微的呼吸/摇摆动作 |
-| `"walk"` | 1.2s | 是 | 行走，手臂摆动 24°，腿部摆动 40° |
-| `"run"` | 0.5s | 是 | 奔跑，增强的上下弹跳，手臂 70°，腿部 60° |
-| `"fly"` | 1.5s | 是 | 飞行姿态，身体前倾 80°，鞘翅展开 |
+| 名称     | 时长 | 循环 | 说明                                     |
+| -------- | ---- | ---- | ---------------------------------------- |
+| `"idle"` | 3.0s | 是   | 空闲待机，细微的呼吸/摇摆动作            |
+| `"walk"` | 1.2s | 是   | 行走，手臂摆动 24°，腿部摆动 40°         |
+| `"run"`  | 0.5s | 是   | 奔跑，增强的上下弹跳，手臂 70°，腿部 60° |
+| `"fly"`  | 1.5s | 是   | 飞行姿态，身体前倾 80°，鞘翅展开         |
 
 ## AnimationConfig
 
@@ -58,15 +58,15 @@ viewer.setAutoRotate(true);
 
 ```ts
 interface AnimationConfig {
-  speed?: number;     // 播放速度倍率，默认 1.0
+  speed?: number; // 播放速度倍率，默认 1.0
   amplitude?: number; // 动作幅度倍率，默认 1.0
 }
 ```
 
-| 属性 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `speed` | `number` | `1.0` | 播放速度倍率。2.0 = 双倍速，0.5 = 半速 |
-| `amplitude` | `number` | `1.0` | 动作幅度倍率。增大使动作更夸张，减小使动作更细微 |
+| 属性        | 类型     | 默认值 | 说明                                             |
+| ----------- | -------- | ------ | ------------------------------------------------ |
+| `speed`     | `number` | `1.0`  | 播放速度倍率。2.0 = 双倍速，0.5 = 半速           |
+| `amplitude` | `number` | `1.0`  | 动作幅度倍率。增大使动作更夸张，减小使动作更细微 |
 
 ## 自定义动画
 
@@ -79,7 +79,7 @@ import { registerAnimation } from "@daidr/minecraft-skin-renderer";
 ```
 
 ```ts
-function registerAnimation(animation: Animation): void
+function registerAnimation(animation: Animation): void;
 ```
 
 ### 获取动画
@@ -89,7 +89,7 @@ import { getAnimation } from "@daidr/minecraft-skin-renderer";
 ```
 
 ```ts
-function getAnimation(name: string): Animation | undefined
+function getAnimation(name: string): Animation | undefined;
 ```
 
 ### Animation
@@ -98,9 +98,9 @@ function getAnimation(name: string): Animation | undefined
 
 ```ts
 interface Animation {
-  name: string;           // 动画名称（用于 playAnimation）
-  duration: number;       // 动画时长（秒）
-  loop: boolean;          // 是否循环播放
+  name: string; // 动画名称（用于 playAnimation）
+  duration: number; // 动画时长（秒）
+  loop: boolean; // 是否循环播放
   tracks: AnimationTrack[]; // 骨骼动画轨道数组
 }
 ```
@@ -111,8 +111,8 @@ interface Animation {
 
 ```ts
 interface AnimationTrack {
-  boneIndex: BoneIndex;   // 目标骨骼索引
-  keyframes: Keyframe[];  // 关键帧数组
+  boneIndex: BoneIndex; // 目标骨骼索引
+  keyframes: Keyframe[]; // 关键帧数组
 }
 ```
 
@@ -122,10 +122,10 @@ interface AnimationTrack {
 
 ```ts
 interface Keyframe {
-  time: number;                // 归一化时间（0–1）
-  rotation?: Quat;             // 目标旋转（可选）
-  position?: Vec3;             // 目标位置偏移（可选）
-  easing?: EasingFunction;     // 缓动函数（可选）
+  time: number; // 归一化时间（0–1）
+  rotation?: Quat; // 目标旋转（可选）
+  position?: Vec3; // 目标位置偏移（可选）
+  easing?: EasingFunction; // 缓动函数（可选）
 }
 ```
 
@@ -166,22 +166,22 @@ viewer.playAnimation("nod");
 
 ```ts
 enum BoneIndex {
-  Root = 0,           // 根节点
-  Head = 1,           // 头部
-  Body = 2,           // 身体
-  LeftArm = 3,        // 左臂
-  RightArm = 4,       // 右臂
-  LeftLeg = 5,        // 左腿
-  RightLeg = 6,       // 右腿
-  HeadOverlay = 7,    // 头部外层
-  BodyOverlay = 8,    // 身体外层
+  Root = 0, // 根节点
+  Head = 1, // 头部
+  Body = 2, // 身体
+  LeftArm = 3, // 左臂
+  RightArm = 4, // 右臂
+  LeftLeg = 5, // 左腿
+  RightLeg = 6, // 右腿
+  HeadOverlay = 7, // 头部外层
+  BodyOverlay = 8, // 身体外层
   LeftArmOverlay = 9, // 左臂外层
   RightArmOverlay = 10, // 右臂外层
-  LeftLegOverlay = 11,  // 左腿外层
+  LeftLegOverlay = 11, // 左腿外层
   RightLegOverlay = 12, // 右腿外层
-  Cape = 13,          // 披风
-  LeftWing = 14,      // 左鞘翅
-  RightWing = 15,     // 右鞘翅
+  Cape = 13, // 披风
+  LeftWing = 14, // 左鞘翅
+  RightWing = 15, // 右鞘翅
 }
 ```
 
@@ -236,9 +236,15 @@ enum AnimationPlayState {
 // 从动画模块导入（高级用法）
 import {
   linear,
-  easeInQuad, easeOutQuad, easeInOutQuad,
-  easeInCubic, easeOutCubic, easeInOutCubic,
-  easeInSine, easeOutSine, easeInOutSine,
+  easeInQuad,
+  easeOutQuad,
+  easeInOutQuad,
+  easeInCubic,
+  easeOutCubic,
+  easeInOutCubic,
+  easeInSine,
+  easeOutSine,
+  easeInOutSine,
   sineWave,
   halfSine,
   bounce,
@@ -246,21 +252,21 @@ import {
 } from "@daidr/minecraft-skin-renderer";
 ```
 
-| 函数 | 说明 |
-| --- | --- |
-| `linear` | 线性（无缓动） |
-| `easeInQuad` | 二次方缓入 |
-| `easeOutQuad` | 二次方缓出 |
-| `easeInOutQuad` | 二次方缓入缓出 |
-| `easeInCubic` | 三次方缓入 |
-| `easeOutCubic` | 三次方缓出 |
-| `easeInOutCubic` | 三次方缓入缓出 |
-| `easeInSine` | 正弦缓入 |
-| `easeOutSine` | 正弦缓出 |
-| `easeInOutSine` | 正弦缓入缓出 |
-| `sineWave` | 完整正弦波振荡（适用于循环动画） |
-| `halfSine` | 半正弦波（0→1→0） |
-| `bounce` | 弹跳效果 |
-| `elastic` | 弹性效果 |
+| 函数             | 说明                             |
+| ---------------- | -------------------------------- |
+| `linear`         | 线性（无缓动）                   |
+| `easeInQuad`     | 二次方缓入                       |
+| `easeOutQuad`    | 二次方缓出                       |
+| `easeInOutQuad`  | 二次方缓入缓出                   |
+| `easeInCubic`    | 三次方缓入                       |
+| `easeOutCubic`   | 三次方缓出                       |
+| `easeInOutCubic` | 三次方缓入缓出                   |
+| `easeInSine`     | 正弦缓入                         |
+| `easeOutSine`    | 正弦缓出                         |
+| `easeInOutSine`  | 正弦缓入缓出                     |
+| `sineWave`       | 完整正弦波振荡（适用于循环动画） |
+| `halfSine`       | 半正弦波（0→1→0）                |
+| `bounce`         | 弹跳效果                         |
+| `elastic`        | 弹性效果                         |
 
 所有缓动函数签名均为 `(t: number) => number`，其中 `t` 为归一化时间（0–1）。

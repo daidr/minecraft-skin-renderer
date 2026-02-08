@@ -39,14 +39,7 @@ export interface ICanvasRenderingContext2D {
 
   save(): void;
   restore(): void;
-  setTransform(
-    a: number,
-    b: number,
-    c: number,
-    d: number,
-    e: number,
-    f: number,
-  ): void;
+  setTransform(a: number, b: number, c: number, d: number, e: number, f: number): void;
 }
 
 type CreateCanvasFn = (width: number, height: number) => ICanvas;
@@ -92,10 +85,7 @@ export function createCanvas(width: number, height: number): ICanvas {
   if (_createCanvas) {
     return _createCanvas(width, height);
   }
-  if (
-    typeof document !== "undefined" &&
-    typeof document.createElement === "function"
-  ) {
+  if (typeof document !== "undefined" && typeof document.createElement === "function") {
     const c = document.createElement("canvas");
     c.width = width;
     c.height = height;
