@@ -49,5 +49,5 @@ const viewer = await createSkinViewer({
 ```
 
 ::: tip
-更多示例将持续补充。你也可以访问 [在线 Playground](https://mcskin.daidr.me) 进行交互体验。
+更多示例将持续补充。你也可以访问 [在线 Playground](https://mcskin.daidr.me/playground/) 进行交互体验。
 :::

@@ -8,7 +8,9 @@
 
 A high-performance, browser-based 3D Minecraft skin renderer with WebGL and WebGPU support.
 
-[Online Demo](https://mcskin.daidr.me)
+[Online Documentation](https://mcskin.daidr.me)
+
+[Online Demo](https://mcskin.daidr.me/playground/)
 
 ## Features
 
@@ -231,25 +233,25 @@ await renderBigHead(canvas, {
 
 #### Render Functions
 
-| Function             | Description                            |
-| -------------------- | -------------------------------------- |
-| `renderAvatar`       | Head front face (8×8 MC pixels)        |
-| `renderSkinFront`    | Full body front view                   |
-| `renderSkinBack`     | Full body back view                    |
-| `renderSkinSide`     | Full body side view                    |
-| `renderSkinIsometric`| 2.5D isometric view                    |
-| `renderHalfBody`     | Upper body portrait                    |
-| `renderBigHead`      | Big head (Q-version) style with border |
+| Function              | Description                            |
+| --------------------- | -------------------------------------- |
+| `renderAvatar`        | Head front face (8×8 MC pixels)        |
+| `renderSkinFront`     | Full body front view                   |
+| `renderSkinBack`      | Full body back view                    |
+| `renderSkinSide`      | Full body side view                    |
+| `renderSkinIsometric` | 2.5D isometric view                    |
+| `renderHalfBody`      | Upper body portrait                    |
+| `renderBigHead`       | Big head (Q-version) style with border |
 
 #### Common Options (`BaseRenderOptions`)
 
-| Option            | Type            | Default   | Description                                  |
-| ----------------- | --------------- | --------- | -------------------------------------------- |
-| `skin`            | `TextureSource` | required  | Skin texture (URL, Blob, HTMLImageElement, or ImageBitmap) |
-| `slim`            | `boolean`       | `false`   | Use slim (3px) arm model                     |
-| `showOverlay`     | `boolean`       | `true`    | Show outer overlay layer                     |
-| `scale`           | `number`        | `8`       | Pixel scale (1 MC pixel = scale screen pixels)|
-| `overlayInflated` | `boolean`       | `false`   | Render overlay slightly larger (3D-like)     |
+| Option            | Type            | Default  | Description                                                |
+| ----------------- | --------------- | -------- | ---------------------------------------------------------- |
+| `skin`            | `TextureSource` | required | Skin texture (URL, Blob, HTMLImageElement, or ImageBitmap) |
+| `slim`            | `boolean`       | `false`  | Use slim (3px) arm model                                   |
+| `showOverlay`     | `boolean`       | `true`   | Show outer overlay layer                                   |
+| `scale`           | `number`        | `8`      | Pixel scale (1 MC pixel = scale screen pixels)             |
+| `overlayInflated` | `boolean`       | `false`  | Render overlay slightly larger (3D-like)                   |
 
 `renderBigHead` also accepts `border` (default `2`) and `borderColor` (default `'black'`).
 
