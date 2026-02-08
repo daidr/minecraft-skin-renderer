@@ -18,6 +18,7 @@ A high-performance, browser-based 3D Minecraft skin renderer with WebGL and WebG
 - **Animations** - Built-in presets (idle, walk, run, fly) with custom animation support
 - **Camera Controls** - Orbit controls with zoom, rotation, and auto-rotate
 - **Panorama Backgrounds** - Equirectangular panorama support via plugin
+- **2D Static Rendering** - Lightweight Canvas 2D renders (avatar, full body, isometric, big head)
 - **Screenshot Export** - Export renders as PNG or JPEG
 - **Tree-Shakable** - Plugin architecture for minimal bundle size
 
@@ -187,6 +188,72 @@ viewer.backEquipment; // Current back equipment (readonly)
 | WebGL    | `minecraft-skin-renderer/webgl`    | WebGL2 rendering backend    |
 | WebGPU   | `minecraft-skin-renderer/webgpu`   | WebGPU rendering backend    |
 | Panorama | `minecraft-skin-renderer/panorama` | Panorama background support |
+| Canvas2D | `minecraft-skin-renderer/canvas2d` | 2D static rendering module  |
+
+### Canvas 2D Rendering
+
+Lightweight 2D rendering module using Canvas 2D API — no WebGL/WebGPU required.
+
+```typescript
+import {
+  renderAvatar,
+  renderSkinFront,
+  renderSkinBack,
+  renderSkinSide,
+  renderSkinIsometric,
+  renderHalfBody,
+  renderBigHead,
+} from "minecraft-skin-renderer/canvas2d";
+
+const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+
+// Render head avatar
+await renderAvatar(canvas, {
+  skin: "https://example.com/skin.png",
+});
+
+// Render full body front view
+await renderSkinFront(canvas, {
+  skin: "https://example.com/skin.png",
+  slim: true, // Use slim model variant
+  scale: 8, // 1 MC pixel = 8 screen pixels (default)
+  showOverlay: true, // Show outer overlay layer (default)
+  overlayInflated: false, // Inflate overlay like 3D (default false)
+});
+
+// Render big head (Q-version) style
+await renderBigHead(canvas, {
+  skin: "https://example.com/skin.png",
+  border: 2, // Border width in virtual pixels (default 2)
+  borderColor: "black", // Border color (default 'black')
+});
+```
+
+#### Render Functions
+
+| Function             | Description                            |
+| -------------------- | -------------------------------------- |
+| `renderAvatar`       | Head front face (8×8 MC pixels)        |
+| `renderSkinFront`    | Full body front view                   |
+| `renderSkinBack`     | Full body back view                    |
+| `renderSkinSide`     | Full body side view                    |
+| `renderSkinIsometric`| 2.5D isometric view                    |
+| `renderHalfBody`     | Upper body portrait                    |
+| `renderBigHead`      | Big head (Q-version) style with border |
+
+#### Common Options (`BaseRenderOptions`)
+
+| Option            | Type            | Default   | Description                                  |
+| ----------------- | --------------- | --------- | -------------------------------------------- |
+| `skin`            | `TextureSource` | required  | Skin texture (URL, Blob, HTMLImageElement, or ImageBitmap) |
+| `slim`            | `boolean`       | `false`   | Use slim (3px) arm model                     |
+| `showOverlay`     | `boolean`       | `true`    | Show outer overlay layer                     |
+| `scale`           | `number`        | `8`       | Pixel scale (1 MC pixel = scale screen pixels)|
+| `overlayInflated` | `boolean`       | `false`   | Render overlay slightly larger (3D-like)     |
+
+`renderBigHead` also accepts `border` (default `2`) and `borderColor` (default `'black'`).
+
+All functions accept `(canvas: HTMLCanvasElement, options)` and return `Promise<void>`. The canvas is automatically resized to fit the rendered content.
 
 ### Built-in Animations
 

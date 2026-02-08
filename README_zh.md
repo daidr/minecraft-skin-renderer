@@ -18,6 +18,7 @@
 - **动画系统** - 内置预设动画（idle、walk、run、fly），支持自定义动画
 - **相机控制** - 轨道控制，支持缩放、旋转和自动旋转
 - **全景背景** - 通过插件支持等距圆柱投影全景图
+- **2D 静态渲染** - 轻量级 Canvas 2D 渲染（头像、全身、等距视角、大头版）
 - **截图导出** - 导出渲染结果为 PNG 或 JPEG
 - **按需加载** - 插件架构实现最小打包体积
 
@@ -182,11 +183,77 @@ viewer.backEquipment; // 当前背部装备（只读）
 
 ### 插件
 
-| 插件     | 导入路径                           | 描述            |
-| -------- | ---------------------------------- | --------------- |
-| WebGL    | `minecraft-skin-renderer/webgl`    | WebGL2 渲染后端 |
-| WebGPU   | `minecraft-skin-renderer/webgpu`   | WebGPU 渲染后端 |
-| Panorama | `minecraft-skin-renderer/panorama` | 全景背景支持    |
+| 插件     | 导入路径                           | 描述                |
+| -------- | ---------------------------------- | ------------------- |
+| WebGL    | `minecraft-skin-renderer/webgl`    | WebGL2 渲染后端     |
+| WebGPU   | `minecraft-skin-renderer/webgpu`   | WebGPU 渲染后端     |
+| Panorama | `minecraft-skin-renderer/panorama` | 全景背景支持        |
+| Canvas2D | `minecraft-skin-renderer/canvas2d` | 2D 静态渲染模块     |
+
+### Canvas 2D 渲染
+
+轻量级 2D 渲染模块，基于 Canvas 2D API，无需 WebGL/WebGPU。
+
+```typescript
+import {
+  renderAvatar,
+  renderSkinFront,
+  renderSkinBack,
+  renderSkinSide,
+  renderSkinIsometric,
+  renderHalfBody,
+  renderBigHead,
+} from "minecraft-skin-renderer/canvas2d";
+
+const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+
+// 渲染头像
+await renderAvatar(canvas, {
+  skin: "https://example.com/skin.png",
+});
+
+// 渲染全身正面视图
+await renderSkinFront(canvas, {
+  skin: "https://example.com/skin.png",
+  slim: true, // 使用纤细模型变体
+  scale: 8, // 1 MC 像素 = 8 屏幕像素（默认值）
+  showOverlay: true, // 显示外层覆盖层（默认值）
+  overlayInflated: false, // 膨胀覆盖层使其有 3D 效果（默认 false）
+});
+
+// 渲染大头版（Q版）
+await renderBigHead(canvas, {
+  skin: "https://example.com/skin.png",
+  border: 2, // 边框宽度，虚拟像素单位（默认 2）
+  borderColor: "black", // 边框颜色（默认 'black'）
+});
+```
+
+#### 渲染函数
+
+| 函数                 | 描述                             |
+| -------------------- | -------------------------------- |
+| `renderAvatar`       | 头部正面（8×8 MC 像素）          |
+| `renderSkinFront`    | 全身正面视图                     |
+| `renderSkinBack`     | 全身背面视图                     |
+| `renderSkinSide`     | 全身侧面视图                     |
+| `renderSkinIsometric`| 2.5D 等距视角                    |
+| `renderHalfBody`     | 上半身肖像                       |
+| `renderBigHead`      | 大头版（Q版），带边框            |
+
+#### 通用选项 (`BaseRenderOptions`)
+
+| 选项              | 类型            | 默认值    | 描述                                           |
+| ----------------- | --------------- | --------- | ---------------------------------------------- |
+| `skin`            | `TextureSource` | 必填      | 皮肤纹理（URL、Blob、HTMLImageElement 或 ImageBitmap） |
+| `slim`            | `boolean`       | `false`   | 使用纤细款（3px）手臂模型                       |
+| `showOverlay`     | `boolean`       | `true`    | 显示外层覆盖层                                  |
+| `scale`           | `number`        | `8`       | 像素缩放比（1 MC 像素 = scale 屏幕像素）        |
+| `overlayInflated` | `boolean`       | `false`   | 覆盖层略微放大渲染（类似 3D 效果）              |
+
+`renderBigHead` 额外支持 `border`（默认 `2`）和 `borderColor`（默认 `'black'`）。
+
+所有函数签名为 `(canvas: HTMLCanvasElement, options) => Promise<void>`。画布会自动调整大小以适应渲染内容。
 
 ### 内置动画
 
