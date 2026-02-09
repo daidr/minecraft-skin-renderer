@@ -9,6 +9,7 @@
   --radius: 0.5rem;
   --ring-alpha: 0.5;
   --canvas-gradient: hsl(223 47% 11%);
+  --checkerboard: hsl(0 0% 100% / 0.06);
 }
 
 @media (prefers-color-scheme: light) {
@@ -21,6 +22,7 @@
     --border: hsl(214 32% 91%);
     --ring-alpha: 0.3;
     --canvas-gradient: hsl(210 40% 96%);
+    --checkerboard: hsl(0 0% 0% / 0.06);
   }
 }
 
