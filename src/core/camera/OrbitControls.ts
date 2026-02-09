@@ -166,6 +166,11 @@ export function createOrbitControls(
     updateOrbitCamera(controls);
   };
 
+  // Prevent default touch actions (scrolling/zooming) on the element
+  // so pointer events work without triggering page scroll on mobile
+  const previousTouchAction = element.style.touchAction;
+  element.style.touchAction = "none";
+
   // Attach event listeners
   element.addEventListener("pointerdown", onPointerDown);
   element.addEventListener("pointermove", onPointerMove);
@@ -175,6 +180,7 @@ export function createOrbitControls(
 
   // Dispose function
   controls.dispose = () => {
+    element.style.touchAction = previousTouchAction;
     element.removeEventListener("pointerdown", onPointerDown);
     element.removeEventListener("pointermove", onPointerMove);
     element.removeEventListener("pointerup", onPointerUp);

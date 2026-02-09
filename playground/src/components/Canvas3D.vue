@@ -92,6 +92,7 @@ defineExpose({ recreateViewer });
 .canvas-container :deep(canvas) {
   width: 100%;
   height: 100%;
+  touch-action: none;
 }
 
 @media (max-width: 768px) {
