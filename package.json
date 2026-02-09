@@ -1,6 +1,6 @@
 {
   "name": "@daidr/minecraft-skin-renderer",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": false,
   "description": "A zero-dependency Minecraft skin renderer with WebGL and WebGPU support",
   "keywords": [
