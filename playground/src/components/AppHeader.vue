@@ -12,15 +12,8 @@ const emit = defineEmits<{
 
 <template>
   <header class="header">
-    <div class="header-left">
+    <div class="header-top">
       <h1>Minecraft Skin Renderer</h1>
-      <ModeToggle />
-    </div>
-    <div class="header-controls">
-      <BackendSelector
-        v-if="settingsStore.settings.mode === '3d'"
-        @backend-change="emit('backendChange')"
-      />
       <a
         href="https://github.com/daidr/minecraft-skin-renderer"
         target="_blank"
@@ -35,6 +28,13 @@ const emit = defineEmits<{
         </svg>
       </a>
     </div>
+    <div class="header-controls">
+      <ModeToggle />
+      <BackendSelector
+        v-if="settingsStore.settings.mode === '3d'"
+        @backend-change="emit('backendChange')"
+      />
+    </div>
   </header>
 </template>
 
@@ -47,10 +47,10 @@ const emit = defineEmits<{
   border-bottom: 1px solid var(--border);
 }
 
-.header-left {
+.header-top {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .header h1 {
@@ -83,9 +83,16 @@ const emit = defineEmits<{
   background: var(--muted);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
     padding: 0.75rem 1rem;
+  }
+
+  .header-top {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .header h1 {
