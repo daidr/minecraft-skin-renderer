@@ -19,10 +19,11 @@
     "noUncheckedIndexedAccess": false,
     "exactOptionalPropertyTypes": false,
     "forceConsistentCasingInFileNames": true,
+    "allowImportingTsExtensions": true,
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "tests", "playground"],
+  "include": ["src", "tests"],
   "exclude": ["node_modules", "dist"]
 }

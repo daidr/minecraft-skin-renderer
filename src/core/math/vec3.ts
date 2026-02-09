@@ -22,17 +22,17 @@ export function vec3Clone(v: Vec3): Vec3 {
 
 /** Add two vectors */
 export function vec3Add(a: Vec3, b: Vec3): Vec3 {
-  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+  return vec3AddMut([0, 0, 0], a, b);
 }
 
 /** Subtract two vectors */
 export function vec3Sub(a: Vec3, b: Vec3): Vec3 {
-  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  return vec3SubMut([0, 0, 0], a, b);
 }
 
 /** Multiply vector by scalar */
 export function vec3Scale(v: Vec3, s: number): Vec3 {
-  return [v[0] * s, v[1] * s, v[2] * s];
+  return vec3ScaleMut([0, 0, 0], v, s);
 }
 
 /** Multiply two vectors component-wise */
@@ -47,12 +47,12 @@ export function vec3Dot(a: Vec3, b: Vec3): number {
 
 /** Cross product of two vectors */
 export function vec3Cross(a: Vec3, b: Vec3): Vec3 {
-  return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  return vec3CrossMut([0, 0, 0], a, b);
 }
 
 /** Length (magnitude) of a vector */
 export function vec3Length(v: Vec3): number {
-  return Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+  return Math.sqrt(vec3LengthSq(v));
 }
 
 /** Squared length of a vector (avoids sqrt) */
@@ -62,9 +62,7 @@ export function vec3LengthSq(v: Vec3): number {
 
 /** Normalize a vector */
 export function vec3Normalize(v: Vec3): Vec3 {
-  const len = vec3Length(v);
-  if (len === 0) return [0, 0, 0];
-  return [v[0] / len, v[1] / len, v[2] / len];
+  return vec3NormalizeMut([0, 0, 0], v);
 }
 
 /** Negate a vector */
@@ -74,12 +72,15 @@ export function vec3Negate(v: Vec3): Vec3 {
 
 /** Linear interpolation between two vectors */
 export function vec3Lerp(a: Vec3, b: Vec3, t: number): Vec3 {
-  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  return vec3LerpMut([0, 0, 0], a, b, t);
 }
 
 /** Distance between two vectors */
 export function vec3Distance(a: Vec3, b: Vec3): number {
-  return vec3Length(vec3Sub(a, b));
+  const dx = a[0] - b[0],
+    dy = a[1] - b[1],
+    dz = a[2] - b[2];
+  return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
 
 /** Check if two vectors are equal (within epsilon) */
@@ -149,16 +150,7 @@ export function vec3LerpMut(out: Vec3, a: Vec3, b: Vec3, t: number): Vec3 {
 /** Normalize a vector (mutable) */
 export function vec3NormalizeMut(out: Vec3, v: Vec3): Vec3 {
   const len = vec3Length(v);
-  if (len === 0) {
-    out[0] = 0;
-    out[1] = 0;
-    out[2] = 0;
-  } else {
-    out[0] = v[0] / len;
-    out[1] = v[1] / len;
-    out[2] = v[2] / len;
-  }
-  return out;
+  return len === 0 ? vec3ZeroMut(out) : vec3ScaleMut(out, v, 1 / len);
 }
 
 /** Cross product of two vectors (mutable) */

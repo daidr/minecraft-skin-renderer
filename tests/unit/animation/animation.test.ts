@@ -183,6 +183,34 @@ describe("Animation", () => {
       // The rotation will be identity or the first keyframe value
       expect(controller.progress).toBe(0);
     });
+
+    it("should switch between different animations correctly", () => {
+      const controller = createAnimationController(skeleton);
+
+      // Play first animation and advance to peak rotation
+      controller.play("test");
+      updateAnimationController(controller, 0.5);
+
+      const head = skeleton.bones.get(BoneIndex.Head);
+      const rotAfterTest = [...head!.rotation] as [number, number, number, number];
+      expect(rotAfterTest).not.toEqual(quatIdentity());
+
+      // Switch to a different animation
+      controller.play("test-once");
+      expect(controller.currentAnimation).toBe("test-once");
+      expect(controller.progress).toBe(0);
+
+      // Skeleton should have been reset before new animation starts
+      // After play() with no update, bones should be in reset state
+      // Now advance the new animation
+      updateAnimationController(controller, 0.5);
+
+      // At t=0.5 of test-once: interpolating from identity to quatFromEuler(1,0,0)
+      // This should produce a different rotation than the "test" animation at t=0.5
+      const rotAfterSwitch = head!.rotation;
+      const expectedTestOnce = quatFromEuler(0.5, 0, 0); // midpoint of 0→1.0 euler
+      expect(rotAfterSwitch[0]).toBeCloseTo(expectedTestOnce[0], 2);
+    });
   });
 });
 

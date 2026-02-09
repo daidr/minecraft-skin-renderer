@@ -35,7 +35,7 @@ export function isZero(value: number, epsilon = 0.000_001): boolean {
 
 /** Check if two numbers are approximately equal */
 export function approxEquals(a: number, b: number, epsilon = 0.000_001): boolean {
-  return Math.abs(a - b) < epsilon;
+  return isZero(a - b, epsilon);
 }
 
 /** Map a value from one range to another */
@@ -62,14 +62,7 @@ export function isPowerOfTwo(value: number): boolean {
 
 /** Get the next power of two >= value */
 export function nextPowerOfTwo(value: number): number {
-  if (value <= 0) return 1;
-  value -= 1;
-  value |= value >> 1;
-  value |= value >> 2;
-  value |= value >> 4;
-  value |= value >> 8;
-  value |= value >> 16;
-  return value + 1;
+  return value <= 1 ? 1 : 1 << (32 - Math.clz32(value - 1));
 }
 
 /** Sign of a number (-1, 0, or 1) */
@@ -92,13 +85,13 @@ export function seededRandom(seed: number): () => number {
 }
 
 /** PI constant */
-export const PI = Math.PI;
+export const PI: number = Math.PI;
 
 /** Two PI (full circle) */
-export const TWO_PI = Math.PI * 2;
+export const TWO_PI: number = Math.PI * 2;
 
 /** Half PI (quarter circle) */
-export const HALF_PI = Math.PI / 2;
+export const HALF_PI: number = Math.PI / 2;
 
 /** Small number for floating point comparisons */
 export const EPSILON = 0.000_001;

@@ -5,7 +5,8 @@
  * Also handles bind group caching for efficient draw calls.
  */
 
-import { mat4Identity } from "../core/math";
+import { mat4Identity, mat4MultiplyMut } from "../core/math";
+import type { Mat4 } from "../core/math";
 import type { ITexture, UniformValue } from "../core/renderer/types";
 
 /**
@@ -14,6 +15,9 @@ import type { ITexture, UniformValue } from "../core/renderer/types";
 export interface RenderBindGroups {
   /** Pre-allocated model matrix (identity, can be modified if needed) */
   modelMatrix: Float32Array;
+
+  /** Pre-allocated viewProjection matrix to avoid per-frame allocation */
+  viewProjectionMatrix: Mat4;
 
   /** Cached uniforms object for skin rendering */
   uniforms: Record<string, UniformValue>;
@@ -43,11 +47,11 @@ export interface RenderBindGroups {
  */
 export function createRenderBindGroups(): RenderBindGroups {
   const modelMatrix = mat4Identity();
+  const viewProjectionMatrix = new Float32Array(16);
 
   const uniforms: Record<string, UniformValue> = {
     u_modelMatrix: modelMatrix,
-    u_viewMatrix: null as unknown as Float32Array,
-    u_projectionMatrix: null as unknown as Float32Array,
+    u_viewProjectionMatrix: viewProjectionMatrix,
     "u_boneMatrices[0]": null as unknown as Float32Array,
     u_alphaTest: 0.01,
   };
@@ -62,6 +66,7 @@ export function createRenderBindGroups(): RenderBindGroups {
 
   return {
     modelMatrix,
+    viewProjectionMatrix,
     uniforms,
     skinTextures,
     capeTextures,
@@ -88,9 +93,10 @@ export function updateRenderBindGroups(
   skinTexture: ITexture,
   capeTexture?: ITexture | null,
 ): void {
+  // Precompute viewProjection matrix on CPU (avoids per-vertex multiply in shader)
+  mat4MultiplyMut(bindGroups.viewProjectionMatrix, projectionMatrix, viewMatrix);
+
   // Update uniforms
-  bindGroups.uniforms.u_viewMatrix = viewMatrix;
-  bindGroups.uniforms.u_projectionMatrix = projectionMatrix;
   bindGroups.uniforms["u_boneMatrices[0]"] = boneMatrices;
 
   // Update textures
