@@ -184,9 +184,6 @@ export class WebGLRenderer implements IRenderer {
     } else if (params.vertexCount) {
       gl.drawArrays(primitive, 0, params.vertexCount);
     }
-
-    // Cleanup
-    gl.bindVertexArray(null);
   }
 
   /** End the current frame */

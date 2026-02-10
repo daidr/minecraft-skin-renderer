@@ -91,24 +91,10 @@ export function createBoneMatrixCache(): BoneMatrixCache {
  */
 export function computeBoneMatrices(skeleton: PlayerSkeleton, out: Float32Array): void {
   // Initialize all matrices to identity
+  out.fill(0);
   for (let i = 0; i < BONE_COUNT; i++) {
     const offset = i * 16;
-    out[offset] = 1;
-    out[offset + 1] = 0;
-    out[offset + 2] = 0;
-    out[offset + 3] = 0;
-    out[offset + 4] = 0;
-    out[offset + 5] = 1;
-    out[offset + 6] = 0;
-    out[offset + 7] = 0;
-    out[offset + 8] = 0;
-    out[offset + 9] = 0;
-    out[offset + 10] = 1;
-    out[offset + 11] = 0;
-    out[offset + 12] = 0;
-    out[offset + 13] = 0;
-    out[offset + 14] = 0;
-    out[offset + 15] = 1;
+    out[offset] = out[offset + 5] = out[offset + 10] = out[offset + 15] = 1;
   }
 
   // Process bones in parent-first order

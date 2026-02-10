@@ -2,7 +2,7 @@
  * Camera system for 3D rendering
  */
 
-import { mat4Identity, mat4LookAt, mat4Multiply, mat4Perspective } from "../math";
+import { mat4Identity, mat4LookAtMut, mat4MultiplyMut, mat4PerspectiveMut } from "../math";
 import type { Mat4, Vec3 } from "../math";
 
 /** Camera configuration */
@@ -69,14 +69,14 @@ export function updateCameraMatrices(camera: Camera): void {
   // Convert FOV to radians
   const fovRad = (camera.fov * Math.PI) / 180;
 
-  // Update projection matrix
-  camera.projectionMatrix = mat4Perspective(fovRad, camera.aspect, camera.near, camera.far);
+  // Update projection matrix in-place (avoids allocation)
+  mat4PerspectiveMut(camera.projectionMatrix, fovRad, camera.aspect, camera.near, camera.far);
 
-  // Update view matrix
-  camera.viewMatrix = mat4LookAt(camera.position, camera.target, camera.up);
+  // Update view matrix in-place (avoids allocation)
+  mat4LookAtMut(camera.viewMatrix, camera.position, camera.target, camera.up);
 
-  // Update combined matrix
-  camera.viewProjectionMatrix = mat4Multiply(camera.projectionMatrix, camera.viewMatrix);
+  // Update combined matrix in-place (avoids allocation)
+  mat4MultiplyMut(camera.viewProjectionMatrix, camera.projectionMatrix, camera.viewMatrix);
 }
 
 /**

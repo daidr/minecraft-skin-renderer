@@ -26,13 +26,14 @@ export interface ICanvas {
  * Minimal 2D context interface covering the subset used by canvas2d renderers.
  */
 export interface ICanvasRenderingContext2D {
-  canvas: any;
+  canvas: ICanvas;
   imageSmoothingEnabled: boolean;
-  fillStyle: any;
+  fillStyle: string | CanvasGradient | CanvasPattern;
 
   clearRect(x: number, y: number, w: number, h: number): void;
   fillRect(x: number, y: number, w: number, h: number): void;
-  drawImage(image: any, ...args: any[]): void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- drawImage accepts many source types across environments
+  drawImage(image: any, ...args: number[]): void;
   putImageData(imageData: IImageData, dx: number, dy: number): void;
   getImageData(sx: number, sy: number, sw: number, sh: number): IImageData;
   createImageData(sw: number, sh: number): IImageData;

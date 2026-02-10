@@ -71,7 +71,7 @@ export { isWebGPUSupported, isWebGL2Supported, detectBestBackend } from "./core/
 export { loadSkinTexture, loadCapeTexture, loadElytraTexture } from "./texture";
 
 // Animation presets
-export { registerAnimation, getAnimation } from "./animation/types";
+export { registerAnimation, getAnimation, getRegisteredAnimations } from "./animation/types";
 
 // Advanced: Direct access to subsystems (for custom implementations)
 export * from "./core/math";

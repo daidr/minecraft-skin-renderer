@@ -235,9 +235,9 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
   if (registeredBackends.length === 0) {
     throw new Error(
       "No renderer registered. Please register a renderer using use():\n" +
-        "  import { use } from 'minecraft-skin-renderer'\n" +
-        "  import { WebGLRendererPlugin } from 'minecraft-skin-renderer/webgl'\n" +
-        "  use(WebGLRendererPlugin)",
+      "  import { use } from 'minecraft-skin-renderer'\n" +
+      "  import { WebGLRendererPlugin } from 'minecraft-skin-renderer/webgl'\n" +
+      "  use(WebGLRendererPlugin)",
     );
   }
 
@@ -255,9 +255,9 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
   if (!plugin) {
     throw new Error(
       `Renderer "${targetBackend}" is not registered. Available: [${registeredBackends.join(", ")}]\n` +
-        `Please register it using use():\n` +
-        `  import { ${targetBackend === "webgpu" ? "WebGPURendererPlugin" : "WebGLRendererPlugin"} } from 'minecraft-skin-renderer/${targetBackend}'\n` +
-        `  use(${targetBackend === "webgpu" ? "WebGPURendererPlugin" : "WebGLRendererPlugin"})`,
+      `Please register it using use():\n` +
+      `  import { ${targetBackend === "webgpu" ? "WebGPURendererPlugin" : "WebGLRendererPlugin"} } from 'minecraft-skin-renderer/${targetBackend}'\n` +
+      `  use(${targetBackend === "webgpu" ? "WebGPURendererPlugin" : "WebGLRendererPlugin"})`,
     );
   }
 
@@ -277,7 +277,15 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     const fbPlugin = fb && getRendererPlugin(fb);
     if (!fbPlugin) throw e;
     console.warn(`${targetBackend} initialization failed, falling back to ${fb}:`, e);
-    renderer = await fbPlugin.createRenderer(rendererOptions);
+    try {
+      renderer = await fbPlugin.createRenderer(rendererOptions);
+    } catch (fallbackError) {
+      throw new Error(
+        `All renderers failed to initialize.\n` +
+        `  ${targetBackend}: ${e instanceof Error ? e.message : e as string}\n` +
+        `  ${fb}: ${fallbackError instanceof Error ? fallbackError.message : fallbackError as string}`,
+      );
+    }
   }
 
   renderer.resize(width, height);

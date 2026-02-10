@@ -351,3 +351,80 @@ export function mat4FromTranslationMut(out: Mat4, v: Vec3): Mat4 {
   out[14] = v[2];
   return out;
 }
+
+/** Create a perspective projection matrix (mutable) */
+export function mat4PerspectiveMut(
+  out: Mat4,
+  fovY: number,
+  aspect: number,
+  near: number,
+  far: number,
+): Mat4 {
+  const f = 1.0 / Math.tan(fovY / 2);
+  const nf = 1 / (near - far);
+
+  out.fill(0);
+  out[0] = f / aspect;
+  out[5] = f;
+  out[10] = (far + near) * nf;
+  out[11] = -1;
+  out[14] = 2 * far * near * nf;
+  return out;
+}
+
+/** Create a look-at view matrix (mutable) */
+export function mat4LookAtMut(out: Mat4, eye: Vec3, center: Vec3, up: Vec3): Mat4 {
+  const x0 = eye[0],
+    x1 = eye[1],
+    x2 = eye[2];
+  const u0 = up[0],
+    u1 = up[1],
+    u2 = up[2];
+  const c0 = center[0],
+    c1 = center[1],
+    c2 = center[2];
+
+  let z0 = x0 - c0;
+  let z1 = x1 - c1;
+  let z2 = x2 - c2;
+  let len = z0 * z0 + z1 * z1 + z2 * z2;
+  if (len > 0) {
+    len = 1 / Math.sqrt(len);
+    z0 *= len;
+    z1 *= len;
+    z2 *= len;
+  }
+
+  let y0 = u1 * z2 - u2 * z1;
+  let y1 = u2 * z0 - u0 * z2;
+  let y2 = u0 * z1 - u1 * z0;
+  len = y0 * y0 + y1 * y1 + y2 * y2;
+  if (len > 0) {
+    len = 1 / Math.sqrt(len);
+    y0 *= len;
+    y1 *= len;
+    y2 *= len;
+  }
+
+  const w0 = z1 * y2 - z2 * y1;
+  const w1 = z2 * y0 - z0 * y2;
+  const w2 = z0 * y1 - z1 * y0;
+
+  out[0] = y0;
+  out[1] = w0;
+  out[2] = z0;
+  out[3] = 0;
+  out[4] = y1;
+  out[5] = w1;
+  out[6] = z1;
+  out[7] = 0;
+  out[8] = y2;
+  out[9] = w2;
+  out[10] = z2;
+  out[11] = 0;
+  out[12] = -(y0 * x0 + y1 * x1 + y2 * x2);
+  out[13] = -(w0 * x0 + w1 * x1 + w2 * x2);
+  out[14] = -(z0 * x0 + z1 * x1 + z2 * x2);
+  out[15] = 1;
+  return out;
+}

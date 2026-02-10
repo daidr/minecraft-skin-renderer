@@ -75,6 +75,9 @@ export class WebGPURenderer implements IRenderer {
   // Per-frame draw call index into the uniform pool
   private currentDrawIndex = 0;
 
+  // Flag to warn once per frame when pool is exhausted
+  private poolExhaustedWarned = false;
+
   // State cache
   private lastPipelineId = -1;
 
@@ -247,6 +250,7 @@ export class WebGPURenderer implements IRenderer {
     // Reset state cache
     this.lastPipelineId = -1;
     this.currentDrawIndex = 0;
+    this.poolExhaustedWarned = false;
 
     // Get current texture
     this.currentTextureView = this.context.getCurrentTexture().createView();
@@ -346,7 +350,17 @@ export class WebGPURenderer implements IRenderer {
     // Upload full uniform data to this draw call's dedicated buffer
     // Each draw call uses its own buffer to avoid writeBuffer race conditions
     const drawIdx = this.currentDrawIndex;
-    if (drawIdx < UNIFORM_POOL_SIZE && maxOffset > minOffset) {
+    if (drawIdx >= UNIFORM_POOL_SIZE) {
+      if (!this.poolExhaustedWarned) {
+        console.warn(
+          `WebGPU uniform pool exhausted (max ${UNIFORM_POOL_SIZE} draw calls per frame). ` +
+            `Extra draw calls will be skipped.`,
+        );
+        this.poolExhaustedWarned = true;
+      }
+      return;
+    }
+    if (maxOffset > minOffset) {
       this.device.queue.writeBuffer(
         this.uniformBuffers[drawIdx],
         0,

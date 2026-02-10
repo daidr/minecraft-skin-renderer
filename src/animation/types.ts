@@ -71,3 +71,8 @@ export function registerAnimation(animation: Animation): void {
 export function getAnimation(name: string): Animation | undefined {
   return animations.get(name);
 }
+
+/** Get all registered animation names */
+export function getRegisteredAnimations(): string[] {
+  return Array.from(animations.keys());
+}
