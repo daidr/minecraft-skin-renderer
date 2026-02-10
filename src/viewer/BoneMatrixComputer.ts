@@ -5,12 +5,7 @@
  * Separated from SkinViewer for better modularity and testability.
  */
 
-import {
-  mat4IdentityMut,
-  mat4MultiplyMut,
-  mat4TranslateMut,
-  quatToMat4Mut,
-} from "../core/math";
+import { mat4IdentityMut, mat4MultiplyMut, mat4TranslateMut, quatToMat4Mut } from "../core/math";
 import type { Mat4 } from "../core/math";
 import { BoneIndex } from "../model/types";
 import type { PlayerSkeleton } from "../model/types";

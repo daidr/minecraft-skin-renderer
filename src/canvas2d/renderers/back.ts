@@ -36,12 +36,21 @@ export async function renderSkinBack(canvas: ICanvas, options: SkinViewOptions):
   const bodyX = armWidth;
 
   // Back view: arms/legs are mirrored horizontally
-  drawFlatBodyParts(ctx, skin, [
-    { partName: "rightLeg", face: "back", x: bodyX + 4, y: 20 },
-    { partName: "leftLeg", face: "back", x: bodyX, y: 20 },
-    { partName: "body", face: "back", x: bodyX, y: 8 },
-    { partName: "leftArm", face: "back", x: 0, y: 8 },
-    { partName: "rightArm", face: "back", x: bodyX + 8, y: 8 },
-    { partName: "head", face: "back", x: bodyX, y: 0 },
-  ], showOverlay, scale, inflated, pad, skin.textureScale);
+  drawFlatBodyParts(
+    ctx,
+    skin,
+    [
+      { partName: "rightLeg", face: "back", x: bodyX + 4, y: 20 },
+      { partName: "leftLeg", face: "back", x: bodyX, y: 20 },
+      { partName: "body", face: "back", x: bodyX, y: 8 },
+      { partName: "leftArm", face: "back", x: 0, y: 8 },
+      { partName: "rightArm", face: "back", x: bodyX + 8, y: 8 },
+      { partName: "head", face: "back", x: bodyX, y: 0 },
+    ],
+    showOverlay,
+    scale,
+    inflated,
+    pad,
+    skin.textureScale,
+  );
 }

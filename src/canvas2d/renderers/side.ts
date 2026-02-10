@@ -38,10 +38,19 @@ export async function renderSkinSide(canvas: ICanvas, options: SkinViewOptions):
 
   const bodyOffsetX = 2; // center body (4px wide) in head (8px wide)
 
-  drawFlatBodyParts(ctx, skin, [
-    { partName: "rightLeg", face: "right", x: bodyOffsetX, y: 20 },
-    { partName: "body", face: "right", x: bodyOffsetX, y: 8 },
-    { partName: "rightArm", face: "right", x: bodyOffsetX, y: 8 },
-    { partName: "head", face: "right", x: 0, y: 0 },
-  ], showOverlay, scale, inflated, pad, skin.textureScale);
+  drawFlatBodyParts(
+    ctx,
+    skin,
+    [
+      { partName: "rightLeg", face: "right", x: bodyOffsetX, y: 20 },
+      { partName: "body", face: "right", x: bodyOffsetX, y: 8 },
+      { partName: "rightArm", face: "right", x: bodyOffsetX, y: 8 },
+      { partName: "head", face: "right", x: 0, y: 0 },
+    ],
+    showOverlay,
+    scale,
+    inflated,
+    pad,
+    skin.textureScale,
+  );
 }

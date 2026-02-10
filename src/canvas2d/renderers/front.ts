@@ -51,12 +51,21 @@ export async function renderSkinFront(canvas: ICanvas, options: SkinViewOptions)
   const bodyX = armWidth;
 
   // Draw back-to-front for proper layering: legs, body, arms, head
-  drawFlatBodyParts(ctx, skin, [
-    { partName: "leftLeg", face: "front", x: bodyX + 4, y: 20 },
-    { partName: "rightLeg", face: "front", x: bodyX, y: 20 },
-    { partName: "body", face: "front", x: bodyX, y: 8 },
-    { partName: "rightArm", face: "front", x: 0, y: 8 },
-    { partName: "leftArm", face: "front", x: bodyX + 8, y: 8 },
-    { partName: "head", face: "front", x: bodyX, y: 0 },
-  ], showOverlay, scale, inflated, pad, skin.textureScale);
+  drawFlatBodyParts(
+    ctx,
+    skin,
+    [
+      { partName: "leftLeg", face: "front", x: bodyX + 4, y: 20 },
+      { partName: "rightLeg", face: "front", x: bodyX, y: 20 },
+      { partName: "body", face: "front", x: bodyX, y: 8 },
+      { partName: "rightArm", face: "front", x: 0, y: 8 },
+      { partName: "leftArm", face: "front", x: bodyX + 8, y: 8 },
+      { partName: "head", face: "front", x: bodyX, y: 0 },
+    ],
+    showOverlay,
+    scale,
+    inflated,
+    pad,
+    skin.textureScale,
+  );
 }

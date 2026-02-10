@@ -46,10 +46,19 @@ export async function renderHalfBody(canvas: ICanvas, options: HalfBodyOptions):
 
   const bodyX = armWidth;
 
-  drawFlatBodyParts(ctx, skin, [
-    { partName: "body", face: "front", x: bodyX, y: 8 },
-    { partName: "rightArm", face: "front", x: 0, y: 8 },
-    { partName: "leftArm", face: "front", x: bodyX + 8, y: 8 },
-    { partName: "head", face: "front", x: bodyX, y: 0 },
-  ], showOverlay, scale, inflated, pad, skin.textureScale);
+  drawFlatBodyParts(
+    ctx,
+    skin,
+    [
+      { partName: "body", face: "front", x: bodyX, y: 8 },
+      { partName: "rightArm", face: "front", x: 0, y: 8 },
+      { partName: "leftArm", face: "front", x: bodyX + 8, y: 8 },
+      { partName: "head", face: "front", x: bodyX, y: 0 },
+    ],
+    showOverlay,
+    scale,
+    inflated,
+    pad,
+    skin.textureScale,
+  );
 }

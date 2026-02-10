@@ -83,10 +83,7 @@ describe("BoneMatrixComputer", () => {
       computeBoneMatrices(skeleton, out);
 
       // Slim arms have different position offset (3.5 instead of 4)
-      const rightArmMatrix = out.subarray(
-        BoneIndex.RightArm * 16,
-        BoneIndex.RightArm * 16 + 16,
-      );
+      const rightArmMatrix = out.subarray(BoneIndex.RightArm * 16, BoneIndex.RightArm * 16 + 16);
       // Right arm X translation should be different from classic
       const classicSkeleton = createPlayerSkeleton("classic");
       const classicOut = new Float32Array(BONE_MATRICES_SIZE);

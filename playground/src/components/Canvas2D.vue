@@ -42,7 +42,11 @@ onMounted(() => {
     linear-gradient(45deg, transparent 75%, var(--checkerboard) 75%),
     linear-gradient(-45deg, transparent 75%, var(--checkerboard) 75%);
   background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  background-position:
+    0 0,
+    0 10px,
+    10px -10px,
+    -10px 0;
 }
 
 @media (max-width: 768px) {
