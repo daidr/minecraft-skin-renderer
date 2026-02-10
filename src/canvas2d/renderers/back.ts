@@ -5,7 +5,7 @@
 import type { ICanvas } from "../canvas-env";
 import { parseSkin } from "../skin-parser";
 import type { SkinViewOptions } from "../types";
-import { getPixelatedContext, drawFaceWithOverlay } from "./utils";
+import { getPixelatedContext, drawFlatBodyParts } from "./utils";
 
 const DEFAULT_SCALE = 8;
 
@@ -34,81 +34,14 @@ export async function renderSkinBack(canvas: ICanvas, options: SkinViewOptions):
   ctx.clearRect(0, 0, w, h);
 
   const bodyX = armWidth;
-  const overlay = showOverlay;
-  const ts = skin.textureScale;
 
   // Back view: arms/legs are mirrored horizontally
-  // Player's left arm appears on left side, right arm on right side
-
-  // Right Leg (back face) - appears on right side in back view
-  drawFaceWithOverlay(
-    ctx,
-    skin.rightLeg.inner.back,
-    overlay ? skin.rightLeg.outer.back : null,
-    pad + (bodyX + 4) * scale,
-    pad + 20 * scale,
-    scale,
-    inflated,
-    ts,
-  );
-
-  // Left Leg (back face) - appears on left side in back view
-  drawFaceWithOverlay(
-    ctx,
-    skin.leftLeg.inner.back,
-    overlay ? skin.leftLeg.outer.back : null,
-    pad + bodyX * scale,
-    pad + 20 * scale,
-    scale,
-    inflated,
-    ts,
-  );
-
-  // Body
-  drawFaceWithOverlay(
-    ctx,
-    skin.body.inner.back,
-    overlay ? skin.body.outer.back : null,
-    pad + bodyX * scale,
-    pad + 8 * scale,
-    scale,
-    inflated,
-    ts,
-  );
-
-  // Left Arm (back face) - appears on left side in back view
-  drawFaceWithOverlay(
-    ctx,
-    skin.leftArm.inner.back,
-    overlay ? skin.leftArm.outer.back : null,
-    pad,
-    pad + 8 * scale,
-    scale,
-    inflated,
-    ts,
-  );
-
-  // Right Arm (back face) - appears on right side in back view
-  drawFaceWithOverlay(
-    ctx,
-    skin.rightArm.inner.back,
-    overlay ? skin.rightArm.outer.back : null,
-    pad + (bodyX + 8) * scale,
-    pad + 8 * scale,
-    scale,
-    inflated,
-    ts,
-  );
-
-  // Head
-  drawFaceWithOverlay(
-    ctx,
-    skin.head.inner.back,
-    overlay ? skin.head.outer.back : null,
-    pad + bodyX * scale,
-    pad,
-    scale,
-    inflated,
-    ts,
-  );
+  drawFlatBodyParts(ctx, skin, [
+    { partName: "rightLeg", face: "back", x: bodyX + 4, y: 20 },
+    { partName: "leftLeg", face: "back", x: bodyX, y: 20 },
+    { partName: "body", face: "back", x: bodyX, y: 8 },
+    { partName: "leftArm", face: "back", x: 0, y: 8 },
+    { partName: "rightArm", face: "back", x: bodyX + 8, y: 8 },
+    { partName: "head", face: "back", x: bodyX, y: 0 },
+  ], showOverlay, scale, inflated, pad, skin.textureScale);
 }

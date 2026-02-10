@@ -332,7 +332,8 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     skinBitmap = options.skin
       ? await loadSkinTexture(options.skin)
       : await createPlaceholderTexture();
-  } catch {
+  } catch (error) {
+    console.warn("Failed to load skin texture, using placeholder:", error);
     skinBitmap = await createPlaceholderTexture();
   }
   const texOpts = { magFilter: TextureFilter.Linear, minFilter: TextureFilter.Linear };
@@ -347,8 +348,8 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     try {
       const bitmap = await loadCapeTexture(options.cape);
       capeTexture = await renderer.createTexture(bitmap, texOpts);
-    } catch {
-      // Cape texture failed to load, continue without it
+    } catch (error) {
+      console.warn("Failed to load cape texture:", error);
     }
   }
 
@@ -438,8 +439,7 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     if (skinTexture) {
       // Compute bone matrices only if dirty
       if (state.boneMatricesDirty) {
-        const newMatrices = computeBoneMatrices(state.skeleton);
-        state.boneMatricesCache.set(newMatrices);
+        computeBoneMatrices(state.skeleton, state.boneMatricesCache);
         state.boneMatricesDirty = false;
       }
 

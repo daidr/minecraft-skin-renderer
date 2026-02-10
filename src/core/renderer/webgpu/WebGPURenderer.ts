@@ -154,20 +154,25 @@ export class WebGPURenderer implements IRenderer {
       requiredLimits: {},
     });
 
-    const context = options.canvas.getContext("webgpu") as GPUCanvasContext;
-    if (!context) {
-      throw new Error("Failed to get WebGPU context");
+    try {
+      const context = options.canvas.getContext("webgpu") as GPUCanvasContext;
+      if (!context) {
+        throw new Error("Failed to get WebGPU context");
+      }
+
+      const format = navigator.gpu.getPreferredCanvasFormat();
+
+      context.configure({
+        device,
+        format,
+        alphaMode: "premultiplied",
+      });
+
+      return new WebGPURenderer(options, device, context, format);
+    } catch (error) {
+      device.destroy();
+      throw error;
     }
-
-    const format = navigator.gpu.getPreferredCanvasFormat();
-
-    context.configure({
-      device,
-      format,
-      alphaMode: "premultiplied",
-    });
-
-    return new WebGPURenderer(options, device, context, format);
   }
 
   get width(): number {

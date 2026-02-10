@@ -35,13 +35,28 @@ const DEPTH_RATIO = 0.5;
  */
 const HEAD_FORWARD = 2;
 
+// Reusable temporary canvas to avoid allocating a new canvas per face
+let _tmpCanvas: ICanvas | null = null;
+let _tmpCtx: ICanvasRenderingContext2D | null = null;
+
 /**
- * Helper: create a temporary canvas from IImageData
+ * Put IImageData into the shared temporary canvas (resized as needed).
+ * Returns the temporary canvas for use as a drawImage source.
  */
-function imageDataToCanvas(data: IImageData): ICanvas {
-  const c = createCanvas(data.width, data.height);
-  c.getContext("2d")!.putImageData(data, 0, 0);
-  return c;
+function putImageDataToTmp(data: IImageData): ICanvas {
+  if (!_tmpCanvas || _tmpCanvas.width < data.width || _tmpCanvas.height < data.height) {
+    _tmpCanvas = createCanvas(data.width, data.height);
+    _tmpCtx = _tmpCanvas.getContext("2d")!;
+  }
+  // Resize if dimensions differ (canvas API resets context state on resize)
+  if (_tmpCanvas.width !== data.width || _tmpCanvas.height !== data.height) {
+    _tmpCanvas.width = data.width;
+    _tmpCanvas.height = data.height;
+    _tmpCtx = _tmpCanvas.getContext("2d")!;
+  }
+  _tmpCtx!.clearRect(0, 0, data.width, data.height);
+  _tmpCtx!.putImageData(data, 0, 0);
+  return _tmpCanvas;
 }
 
 // ── Individual face drawing ─────────────────────────────────────────
@@ -59,7 +74,7 @@ function drawBackFace(
   const sw = w * scale;
   const sh = h * scale;
   const sd = d * scale * DEPTH_RATIO;
-  const canvas = imageDataToCanvas(face);
+  const canvas = putImageDataToTmp(face);
   // Back face is offset by depth in the isometric direction (upper-right)
   ctx.drawImage(canvas, 0, 0, face.width, face.height, x + sd, y - 0.5 * sd, sw, sh);
 }
@@ -76,7 +91,7 @@ function drawRightFace(
 ): void {
   const sh = h * scale;
   const sd = d * scale * DEPTH_RATIO;
-  const canvas = imageDataToCanvas(face);
+  const canvas = putImageDataToTmp(face);
   ctx.save();
   // Same shear as side/left face but anchored at left edge (x) instead of right edge (x + sw)
   ctx.setTransform(1, -0.5, 0, 1, x, y);
@@ -99,7 +114,7 @@ function drawBottomFace(
   const sw = w * scale;
   const sh = h * scale;
   const sd = d * scale * DEPTH_RATIO;
-  const canvas = imageDataToCanvas(face);
+  const canvas = putImageDataToTmp(face);
   ctx.save();
   // Same transform as top face but anchored at bottom edge (y + sh)
   ctx.setTransform(1, 0, -1, 0.5, x + sd, y + sh - 0.5 * sd);
@@ -122,7 +137,7 @@ function drawSideFace(
   const sw = w * scale;
   const sh = h * scale;
   const sd = d * scale * DEPTH_RATIO;
-  const canvas = imageDataToCanvas(face);
+  const canvas = putImageDataToTmp(face);
   ctx.save();
   ctx.setTransform(1, -0.5, 0, 1, x + sw, y);
   ctx.drawImage(canvas, 0, 0, face.width, face.height, 0, 0, sd, sh);
@@ -142,7 +157,7 @@ function drawFrontFace(
 ): void {
   const sw = w * scale;
   const sh = h * scale;
-  const canvas = imageDataToCanvas(face);
+  const canvas = putImageDataToTmp(face);
   ctx.drawImage(canvas, 0, 0, face.width, face.height, x, y, sw, sh);
 }
 
@@ -157,7 +172,7 @@ function drawTopFace(
 ): void {
   const sw = w * scale;
   const sd = d * scale * DEPTH_RATIO;
-  const canvas = imageDataToCanvas(face);
+  const canvas = putImageDataToTmp(face);
   ctx.save();
   ctx.setTransform(1, 0, -1, 0.5, x + sd, y - 0.5 * sd);
   ctx.drawImage(canvas, 0, 0, face.width, face.height, 0, 0, sw, sd);

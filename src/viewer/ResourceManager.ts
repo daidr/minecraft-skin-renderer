@@ -313,7 +313,8 @@ export async function initializeResources(
     try {
       const bitmap = await loadSkinTexture(skinSource);
       skinTexture = await renderer.createTexture(bitmap, texOpts);
-    } catch {
+    } catch (error) {
+      console.warn("Failed to load skin texture, using placeholder:", error);
       const placeholder = await createPlaceholderTexture();
       skinTexture = await renderer.createTexture(placeholder, texOpts);
     }
@@ -328,8 +329,8 @@ export async function initializeResources(
     try {
       const bitmap = await loadCapeTexture(capeSource);
       capeTexture = await renderer.createTexture(bitmap, texOpts);
-    } catch {
-      // Cape texture failed to load, continue without it
+    } catch (error) {
+      console.warn("Failed to load cape texture:", error);
     }
   }
 

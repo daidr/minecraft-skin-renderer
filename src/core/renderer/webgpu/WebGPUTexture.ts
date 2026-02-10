@@ -139,7 +139,9 @@ export class WebGPUTextureImpl implements ITexture {
 
     // For WebGPU, we need to handle this asynchronously
     // but the interface expects sync. We use version checking to handle race conditions
-    this.updateAsync(source, this.updateVersion).catch(console.error);
+    this.updateAsync(source, this.updateVersion).catch((error) => {
+      console.warn("WebGPU texture update failed:", error);
+    });
   }
 
   /**

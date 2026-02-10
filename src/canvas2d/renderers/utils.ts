@@ -4,6 +4,7 @@
 
 import { createCanvas } from "../canvas-env";
 import type { ICanvas, ICanvasRenderingContext2D, IImageData } from "../canvas-env";
+import type { ParsedSkin, FaceName } from "../types";
 
 /**
  * Get a 2D context with nearest-neighbor (pixelated) rendering
@@ -60,5 +61,43 @@ export function drawFaceWithOverlay(
     } else {
       drawScaledFace(ctx, outer, x, y, renderScale);
     }
+  }
+}
+
+/** Part descriptor for flat body drawing */
+interface FlatPartDraw {
+  partName: "head" | "body" | "leftArm" | "rightArm" | "leftLeg" | "rightLeg";
+  face: FaceName;
+  x: number;
+  y: number;
+}
+
+/**
+ * Draw a flat body view (front, back, or half-body) using a part list.
+ *
+ * Parts are drawn in the given order (back-to-front for proper layering).
+ */
+export function drawFlatBodyParts(
+  ctx: ICanvasRenderingContext2D,
+  skin: ParsedSkin,
+  parts: FlatPartDraw[],
+  showOverlay: boolean,
+  scale: number,
+  inflated: boolean,
+  pad: number,
+  textureScale: number,
+): void {
+  for (const p of parts) {
+    const partFaces = skin[p.partName];
+    drawFaceWithOverlay(
+      ctx,
+      partFaces.inner[p.face],
+      showOverlay ? partFaces.outer[p.face] : null,
+      pad + p.x * scale,
+      pad + p.y * scale,
+      scale,
+      inflated,
+      textureScale,
+    );
   }
 }

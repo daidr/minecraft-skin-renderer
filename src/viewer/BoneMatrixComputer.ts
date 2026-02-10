@@ -5,7 +5,12 @@
  * Separated from SkinViewer for better modularity and testability.
  */
 
-import { mat4Identity, mat4Multiply, mat4Translate, quatToMat4 } from "../core/math";
+import {
+  mat4IdentityMut,
+  mat4MultiplyMut,
+  mat4TranslateMut,
+  quatToMat4Mut,
+} from "../core/math";
 import type { Mat4 } from "../core/math";
 import { BoneIndex } from "../model/types";
 import type { PlayerSkeleton } from "../model/types";
@@ -36,6 +41,24 @@ export const BONE_COUNT = 24;
 /** Size of bone matrix data in floats */
 export const BONE_MATRICES_SIZE: number = BONE_COUNT * 16;
 
+// Pre-allocated working matrices to avoid per-frame allocations
+const _localMatrix: Mat4 = new Float32Array(16);
+const _rotMatrix: Mat4 = new Float32Array(16);
+const _tempMatrix: Mat4 = new Float32Array(16);
+const _identityMatrix: Mat4 = new Float32Array(16);
+mat4IdentityMut(_identityMatrix);
+
+// Pre-allocated world matrices for each bone in BONE_ORDER
+const _worldMatrices: Mat4[] = BONE_ORDER.map(() => new Float32Array(16));
+// Map from BoneIndex to pre-allocated world matrix
+const _worldMatrixIndex = new Map<BoneIndex, number>();
+for (let i = 0; i < BONE_ORDER.length; i++) {
+  _worldMatrixIndex.set(BONE_ORDER[i], i);
+}
+
+// Pre-allocated Vec3 to avoid temporary array creation
+const _translateVec: [number, number, number] = [0, 0, 0];
+
 /**
  * Bone matrix cache for efficient updates.
  * Maintains a dirty flag to avoid unnecessary recalculations.
@@ -58,72 +81,85 @@ export function createBoneMatrixCache(): BoneMatrixCache {
 }
 
 /**
- * Compute bone matrices for the skeleton.
+ * Compute bone matrices for the skeleton, writing directly into the output buffer.
  *
  * This computes the world-space transformation matrix for each bone,
  * taking into account the bone hierarchy (parent transforms propagate to children).
  *
  * @param skeleton - The player skeleton with bone transforms
- * @returns Float32Array containing all bone matrices (24 bones * 16 floats each)
+ * @param out - Pre-allocated Float32Array to write results into (24 bones * 16 floats)
  */
-export function computeBoneMatrices(skeleton: PlayerSkeleton): Float32Array {
-  const matrices = new Float32Array(BONE_MATRICES_SIZE);
-
-  // Helper to set matrix for bone index
-  const setMatrix = (index: number, matrix: Mat4) => {
-    matrices.set(matrix, index * 16);
-  };
-
+export function computeBoneMatrices(skeleton: PlayerSkeleton, out: Float32Array): void {
   // Initialize all matrices to identity
   for (let i = 0; i < BONE_COUNT; i++) {
-    setMatrix(i, mat4Identity());
+    const offset = i * 16;
+    out[offset] = 1;
+    out[offset + 1] = 0;
+    out[offset + 2] = 0;
+    out[offset + 3] = 0;
+    out[offset + 4] = 0;
+    out[offset + 5] = 1;
+    out[offset + 6] = 0;
+    out[offset + 7] = 0;
+    out[offset + 8] = 0;
+    out[offset + 9] = 0;
+    out[offset + 10] = 1;
+    out[offset + 11] = 0;
+    out[offset + 12] = 0;
+    out[offset + 13] = 0;
+    out[offset + 14] = 0;
+    out[offset + 15] = 1;
   }
 
-  // Compute world matrices for each bone
-  const worldMatrices = new Map<BoneIndex, Mat4>();
-
   // Process bones in parent-first order
-  for (const boneIndex of BONE_ORDER) {
+  for (let bi = 0; bi < BONE_ORDER.length; bi++) {
+    const boneIndex = BONE_ORDER[bi];
     const bone = skeleton.bones.get(boneIndex);
     if (!bone) continue;
 
-    // Get parent matrix
-    let parentMatrix = mat4Identity();
+    // Get parent world matrix (identity if root)
+    let parentMatrix: Mat4 = _identityMatrix;
     if (bone.parentIndex !== null) {
-      parentMatrix = worldMatrices.get(bone.parentIndex) ?? mat4Identity();
+      const parentIdx = _worldMatrixIndex.get(bone.parentIndex);
+      if (parentIdx !== undefined) {
+        parentMatrix = _worldMatrices[parentIdx];
+      }
     }
 
-    // Compute local matrix:
-    // 1. Translate to bone position (relative to parent) + animation offset
-    // 2. Apply rotation around pivot point
+    // Build local transform: translate to position, then rotate around pivot
     const pos = bone.position;
     const offset = bone.positionOffset;
     const pivot = bone.pivot;
 
-    // Local transform: translate to position, then rotate around pivot
-    let localMatrix = mat4Identity();
+    // Start with identity
+    mat4IdentityMut(_localMatrix);
 
     // Translate to bone position + animation offset
-    localMatrix = mat4Translate(localMatrix, [
-      pos[0] + offset[0],
-      pos[1] + offset[1],
-      pos[2] + offset[2],
-    ]);
+    _translateVec[0] = pos[0] + offset[0];
+    _translateVec[1] = pos[1] + offset[1];
+    _translateVec[2] = pos[2] + offset[2];
+    mat4TranslateMut(_localMatrix, _localMatrix, _translateVec);
 
-    // Translate to pivot, rotate, translate back
-    localMatrix = mat4Translate(localMatrix, pivot);
-    localMatrix = mat4Multiply(localMatrix, quatToMat4(bone.rotation));
-    localMatrix = mat4Translate(localMatrix, [-pivot[0], -pivot[1], -pivot[2]]);
+    // Translate to pivot
+    mat4TranslateMut(_localMatrix, _localMatrix, pivot);
 
-    // Compute world matrix
-    const worldMatrix = mat4Multiply(parentMatrix, localMatrix);
-    worldMatrices.set(boneIndex, worldMatrix);
+    // Rotate
+    quatToMat4Mut(_rotMatrix, bone.rotation);
+    mat4MultiplyMut(_tempMatrix, _localMatrix, _rotMatrix);
 
-    // Store in uniform buffer
-    setMatrix(boneIndex, worldMatrix);
+    // Translate back from pivot
+    _translateVec[0] = -pivot[0];
+    _translateVec[1] = -pivot[1];
+    _translateVec[2] = -pivot[2];
+    mat4TranslateMut(_localMatrix, _tempMatrix, _translateVec);
+
+    // Compute world matrix: parent * local
+    const worldMatrix = _worldMatrices[bi];
+    mat4MultiplyMut(worldMatrix, parentMatrix, _localMatrix);
+
+    // Store in output buffer
+    out.set(worldMatrix, boneIndex * 16);
   }
-
-  return matrices;
 }
 
 /**
@@ -138,8 +174,7 @@ export function updateBoneMatrixCache(cache: BoneMatrixCache, skeleton: PlayerSk
     return false;
   }
 
-  const newMatrices = computeBoneMatrices(skeleton);
-  cache.matrices.set(newMatrices);
+  computeBoneMatrices(skeleton, cache.matrices);
   cache.dirty = false;
 
   return true;
