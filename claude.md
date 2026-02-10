@@ -9,10 +9,10 @@ Use `bun` for all commands (not npm/yarn/pnpm):
 - `bun run build` - Build library with tsdown (ESM + IIFE)
 - `bun dev` - Build in watch mode
 - `bun dev:playground` - Run playground dev server (Vite)
-- `bun test` - Run tests (Vitest)
-- `bun test tests/unit/math/vec3.test.ts` - Run specific test file
-- `bun test -t "quaternion"` - Run tests matching pattern
-- `bun test:coverage` - Run tests with coverage
+- `bun run test` - Run tests (Vitest)
+- `bun run test tests/unit/math/vec3.test.ts` - Run specific test file
+- `bun run test -t "quaternion"` - Run tests matching pattern
+- `bun run test:coverage` - Run tests with coverage
 - `bun lint` - Lint with oxlint (type-aware)
 - `bun lint:fix` - Lint and auto-fix
 - `bun fmt` - Format with oxfmt
