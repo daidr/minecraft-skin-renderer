@@ -22,6 +22,31 @@ bun add @daidr/minecraft-skin-renderer
 
 :::
 
+::: tip 注册渲染器插件
+使用 3D 查看器前需注册至少一个渲染器插件。可以在应用入口处调用 `use()` 全局注册，或在 Vue 3 中通过 `plugins` prop 传入：
+
+```ts
+// 全局注册
+import { use } from "@daidr/minecraft-skin-renderer";
+import { WebGLRendererPlugin } from "@daidr/minecraft-skin-renderer/webgl";
+use(WebGLRendererPlugin);
+```
+
+```vue
+<!-- Vue 3：通过 plugins prop 注册 -->
+<script setup>
+import { SkinViewer } from "@daidr/minecraft-skin-renderer/vue3";
+import { WebGLRendererPlugin } from "@daidr/minecraft-skin-renderer/webgl";
+</script>
+
+<template>
+  <SkinViewer :plugins="[WebGLRendererPlugin]" :skin="skinUrl" />
+</template>
+```
+
+参考[快速上手](./getting-started)了解详情。
+:::
+
 ## JSR
 
 本库也发布在 [JSR](https://jsr.io/@daidr/minecraft-skin-renderer) 上：
