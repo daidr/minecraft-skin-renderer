@@ -31,6 +31,10 @@ export default defineConfig({
           text: "进阶",
           items: [{ text: "插件系统", link: "/guide/plugins" }],
         },
+        {
+          text: "框架集成",
+          items: [{ text: "Vue 3", link: "/guide/vue3" }],
+        },
       ],
       "/api/": [
         {

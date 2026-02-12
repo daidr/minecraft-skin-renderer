@@ -11,6 +11,7 @@
 | WebGPU   | `@daidr/minecraft-skin-renderer/webgpu`   | WebGPU 渲染器插件                                     |
 | Panorama | `@daidr/minecraft-skin-renderer/panorama` | 全景图背景插件                                        |
 | Canvas2D | `@daidr/minecraft-skin-renderer/canvas2d` | 2D 静态皮肤渲染（无需 WebGL）                         |
+| Vue 3    | `@daidr/minecraft-skin-renderer/vue3`     | Vue 3 组件和组合式函数                                |
 
 ## 章节
 
