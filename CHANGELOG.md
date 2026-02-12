@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.2](https://github.com/daidr/minecraft-skin-renderer/compare/minecraft-skin-renderer-v0.2.1...minecraft-skin-renderer-v0.2.2) (2026-02-12)
+
+
+### Features
+
+* **playground-styles:** add checkerboard pattern to canvas background ([30abe78](https://github.com/daidr/minecraft-skin-renderer/commit/30abe78e8e9ed14754f9d231d1eba083d04b3352))
+* **vue3:** add explicit type definitions for components and composables ([b44acfc](https://github.com/daidr/minecraft-skin-renderer/commit/b44acfc9db0b098801459c95828164a00ee5d093))
+* **vue3:** add Vue 3 integration with components and composables ([#5](https://github.com/daidr/minecraft-skin-renderer/issues/5)) ([daafdce](https://github.com/daidr/minecraft-skin-renderer/commit/daafdce6be487d862e5b5d128b581c94b6e9797c))
+
 ## [0.2.1](https://github.com/daidr/minecraft-skin-renderer/compare/minecraft-skin-renderer-v0.2.0...minecraft-skin-renderer-v0.2.1) (2026-02-09)
 
 
