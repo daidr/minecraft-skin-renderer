@@ -8,7 +8,8 @@
     "./webgl": "./src/webgl.ts",
     "./webgpu": "./src/webgpu.ts",
     "./panorama": "./src/panorama.ts",
-    "./canvas2d": "./src/canvas2d.ts"
+    "./canvas2d": "./src/canvas2d.ts",
+    "./vue3": "./src/vue3.ts"
   },
   "publish": {
     "include": [
@@ -18,7 +19,9 @@
     ],
     "exclude": [
       "src/**/*.test.ts",
-      "src/**/*.spec.ts"
+      "src/**/*.spec.ts",
+      "src/iife-core.ts",
+      "src/iife-vue3.ts"
     ]
   }
 }

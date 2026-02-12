@@ -36,6 +36,7 @@
     ".": "./dist/index.js",
     "./canvas2d": "./dist/canvas2d.js",
     "./panorama": "./dist/panorama.js",
+    "./vue3": "./dist/vue3.js",
     "./webgl": "./dist/webgl.js",
     "./webgpu": "./dist/webgpu.js",
     "./package.json": "./package.json"
@@ -64,7 +65,16 @@
     "bench:math:utils": "bun run benchmarks/math/utils.bench.ts",
     "postinstall": "git-hooks"
   },
+  "peerDependencies": {
+    "vue": "^3.3.0"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "vue": "^3.5.0",
     "@commitlint/cli": "^20.4.1",
     "@commitlint/config-conventional": "^20.4.1",
     "@vitest/coverage-v8": "^4.0.18",

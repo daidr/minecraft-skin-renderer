@@ -32,15 +32,18 @@ Use `bun` for all commands (not npm/yarn/pnpm). Note: `bunfig.toml` sets `bun = 
 
 ### Entry Points (Tree-Shakable)
 
-Five package entry points, each a separate file in `src/`:
+Six package entry points, each a separate file in `src/`:
 
 - `minecraft-skin-renderer` (`src/index.ts`) - Main API: `use()`, `createSkinViewer()`, types, utilities
 - `minecraft-skin-renderer/webgl` (`src/webgl.ts`) - WebGL2 renderer plugin
 - `minecraft-skin-renderer/webgpu` (`src/webgpu.ts`) - WebGPU renderer plugin
 - `minecraft-skin-renderer/panorama` (`src/panorama.ts`) - Panorama background plugin
 - `minecraft-skin-renderer/canvas2d` (`src/canvas2d.ts`) - 2D static skin rendering (no WebGL needed)
+- `minecraft-skin-renderer/vue3` (`src/vue3.ts`) - Vue 3 components and composables
 
-Plus an IIFE entry (`src/iife.ts`) that auto-registers all plugins for `<script>` tag usage under global `MSR` namespace.
+Plus two IIFE entries for `<script>` tag usage:
+- `src/iife-core.ts` — auto-registers all plugins, global `MSR` namespace
+- `src/iife-vue3.ts` — Vue 3 integration, global `MSRVue3` namespace (requires Vue 3 + MSR loaded first)
 
 ```ts
 import { use, createSkinViewer } from "minecraft-skin-renderer";
@@ -55,8 +58,8 @@ const viewer = await createSkinViewer({ canvas, skin: "..." });
 tsdown produces three outputs (configured in `tsdown.config.ts`):
 
 - **ESM** (`unbundle: true`) - Preserves module structure for tree-shaking
-- **IIFE full** (`minecraft-skin-renderer.min.js`) - Minified, global `MSR` namespace, includes all plugins
-- **IIFE canvas2d** (`minecraft-skin-renderer-2d.min.js`) - Minified, global `MSR2D` namespace, canvas2d only
+- **IIFE core** (`minecraft-skin-renderer.min.js`) - Minified, global `MSR` namespace, includes 3D viewer + all plugins + Canvas2D
+- **IIFE vue3** (`minecraft-skin-renderer-vue3.min.js`) - Minified, global `MSRVue3` namespace, Vue 3 components/composables (externals: Vue + MSR)
 
 ### Plugin System
 
