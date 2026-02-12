@@ -61,6 +61,14 @@ export interface UseSkinViewerOptions {
   panorama?: TextureSource | null;
 }
 
+/** Emits definition for the `SkinViewer` component */
+export type SkinViewerEmits = {
+  /** Fired when the viewer has been successfully initialized */
+  ready: (viewer: SkinViewer) => void;
+  /** Fired on initialization or runtime error */
+  error: (error: Error) => void;
+};
+
 /** Return type of `useSkinViewer` */
 export interface UseSkinViewerReturn {
   /** Template ref to bind on a container element */

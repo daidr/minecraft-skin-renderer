@@ -19,6 +19,12 @@ import type {
   SkinViewOptions,
 } from "../canvas2d/types";
 
+/** Type for a 2D render composable function */
+export type UseRender2DComposable<T extends BaseRenderOptions> = (
+  canvasRef: MaybeRefOrGetter<HTMLCanvasElement | null | undefined>,
+  options: MaybeRefOrGetter<T>,
+) => UseRender2DReturn;
+
 /** Return type for all 2D render composables */
 export interface UseRender2DReturn {
   /** Manually trigger a render */
@@ -37,7 +43,7 @@ export interface UseRender2DReturn {
  */
 function createUseRender<T extends BaseRenderOptions>(
   renderFn: (canvas: ICanvas, options: T) => Promise<void>,
-) {
+): UseRender2DComposable<T> {
   return function (
     canvasRef: MaybeRefOrGetter<HTMLCanvasElement | null | undefined>,
     options: MaybeRefOrGetter<T>,
@@ -82,34 +88,41 @@ function createUseRender<T extends BaseRenderOptions>(
  * }))
  * ```
  */
-export const useRenderAvatar = createUseRender<AvatarOptions>(renderAvatar);
+export const useRenderAvatar: UseRender2DComposable<AvatarOptions> =
+  createUseRender<AvatarOptions>(renderAvatar);
 
 /**
  * Render a full-body front view to a canvas element.
  */
-export const useRenderSkinFront = createUseRender<SkinViewOptions>(renderSkinFront);
+export const useRenderSkinFront: UseRender2DComposable<SkinViewOptions> =
+  createUseRender<SkinViewOptions>(renderSkinFront);
 
 /**
  * Render a full-body back view to a canvas element.
  */
-export const useRenderSkinBack = createUseRender<SkinViewOptions>(renderSkinBack);
+export const useRenderSkinBack: UseRender2DComposable<SkinViewOptions> =
+  createUseRender<SkinViewOptions>(renderSkinBack);
 
 /**
  * Render a full-body side view to a canvas element.
  */
-export const useRenderSkinSide = createUseRender<SkinViewOptions>(renderSkinSide);
+export const useRenderSkinSide: UseRender2DComposable<SkinViewOptions> =
+  createUseRender<SkinViewOptions>(renderSkinSide);
 
 /**
  * Render a 2.5D isometric view to a canvas element.
  */
-export const useRenderSkinIsometric = createUseRender<IsometricOptions>(renderSkinIsometric);
+export const useRenderSkinIsometric: UseRender2DComposable<IsometricOptions> =
+  createUseRender<IsometricOptions>(renderSkinIsometric);
 
 /**
  * Render a half-body portrait (head + torso + arms) to a canvas element.
  */
-export const useRenderHalfBody = createUseRender<HalfBodyOptions>(renderHalfBody);
+export const useRenderHalfBody: UseRender2DComposable<HalfBodyOptions> =
+  createUseRender<HalfBodyOptions>(renderHalfBody);
 
 /**
  * Render a big-head (Q-version) style view to a canvas element.
  */
-export const useRenderBigHead = createUseRender<BigHeadOptions>(renderBigHead);
+export const useRenderBigHead: UseRender2DComposable<BigHeadOptions> =
+  createUseRender<BigHeadOptions>(renderBigHead);

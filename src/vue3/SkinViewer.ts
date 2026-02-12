@@ -1,11 +1,12 @@
 import { defineComponent, h, watch } from "vue";
-import type { PropType } from "vue";
+import type { DefineComponent, PropType } from "vue";
 import type { PartsVisibility } from "../model/types";
 import type { BackendType } from "../core/renderer/types";
 import type { AnyRegistrablePlugin } from "../core/renderer/registry";
 import type { BackEquipment } from "../viewer";
 import type { TextureSource } from "../texture";
 import { useSkinViewer } from "./useSkinViewer";
+import type { SkinViewerEmits, UseSkinViewerOptions } from "./types";
 
 /**
  * Props-driven 3D skin viewer component.
@@ -20,7 +21,16 @@ import { useSkinViewer } from "./useSkinViewer";
  * // In template: <SkinViewer :skin="skinUrl" :slim="true" animation="walk" />
  * ```
  */
-export const SkinViewer = defineComponent({
+export const SkinViewer: DefineComponent<
+  UseSkinViewerOptions,
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  SkinViewerEmits
+> = defineComponent({
   name: "SkinViewer",
   props: {
     plugins: { type: Array as PropType<AnyRegistrablePlugin[]>, default: undefined },
