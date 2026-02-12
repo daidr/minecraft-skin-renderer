@@ -38,7 +38,10 @@ export const SkinViewer = defineComponent({
     animationSpeed: { type: Number, default: 1 },
     animationAmplitude: { type: Number, default: 1 },
     partsVisibility: { type: Object as PropType<PartsVisibility>, default: undefined },
-    panorama: { type: [String, Object, null] as PropType<TextureSource | null>, default: undefined },
+    panorama: {
+      type: [String, Object, null] as PropType<TextureSource | null>,
+      default: undefined,
+    },
     pixelRatio: { type: Number, default: undefined },
     antialias: { type: Boolean, default: true },
     fov: { type: Number, default: undefined },

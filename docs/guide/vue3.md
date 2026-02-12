@@ -40,34 +40,34 @@ const skinUrl = "https://example.com/skin.png";
 
 ### Props
 
-| Prop | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `plugins` | `AnyRegistrablePlugin[]` | — | 自动注册的插件列表 |
-| `skin` | `TextureSource` | — | 皮肤纹理（URL、Blob、HTMLImageElement 或 ImageBitmap） |
-| `cape` | `TextureSource \| null` | — | 披风纹理，`null` 隐藏披风 |
-| `slim` | `boolean` | `false` | 是否使用纤细（3px）手臂模型 |
-| `backEquipment` | `'none' \| 'cape' \| 'elytra'` | `'none'` | 背部装备 |
-| `preferredBackend` | `'webgl' \| 'webgpu' \| 'auto'` | `'auto'` | 首选渲染后端 |
-| `zoom` | `number` | — | 相机缩放距离 |
-| `autoRotate` | `boolean` | `false` | 启用自动旋转 |
-| `autoRotateSpeed` | `number` | — | 自动旋转速度 |
-| `enableRotate` | `boolean` | `true` | 启用鼠标旋转控制 |
-| `enableZoom` | `boolean` | `true` | 启用鼠标缩放控制 |
-| `animation` | `string \| null` | — | 播放的动画名称，`null` 停止动画 |
-| `animationSpeed` | `number` | `1` | 动画播放速度倍率 |
-| `animationAmplitude` | `number` | `1` | 动画运动幅度倍率 |
-| `partsVisibility` | `PartsVisibility` | — | 各部位图层可见性 |
-| `panorama` | `TextureSource \| null` | — | 全景图背景（需要 PanoramaPlugin） |
-| `pixelRatio` | `number` | — | 设备像素比覆盖 |
-| `antialias` | `boolean` | `true` | 启用抗锯齿 |
-| `fov` | `number` | — | 相机视场角（度） |
+| Prop                 | 类型                            | 默认值   | 说明                                                   |
+| -------------------- | ------------------------------- | -------- | ------------------------------------------------------ |
+| `plugins`            | `AnyRegistrablePlugin[]`        | —        | 自动注册的插件列表                                     |
+| `skin`               | `TextureSource`                 | —        | 皮肤纹理（URL、Blob、HTMLImageElement 或 ImageBitmap） |
+| `cape`               | `TextureSource \| null`         | —        | 披风纹理，`null` 隐藏披风                              |
+| `slim`               | `boolean`                       | `false`  | 是否使用纤细（3px）手臂模型                            |
+| `backEquipment`      | `'none' \| 'cape' \| 'elytra'`  | `'none'` | 背部装备                                               |
+| `preferredBackend`   | `'webgl' \| 'webgpu' \| 'auto'` | `'auto'` | 首选渲染后端                                           |
+| `zoom`               | `number`                        | —        | 相机缩放距离                                           |
+| `autoRotate`         | `boolean`                       | `false`  | 启用自动旋转                                           |
+| `autoRotateSpeed`    | `number`                        | —        | 自动旋转速度                                           |
+| `enableRotate`       | `boolean`                       | `true`   | 启用鼠标旋转控制                                       |
+| `enableZoom`         | `boolean`                       | `true`   | 启用鼠标缩放控制                                       |
+| `animation`          | `string \| null`                | —        | 播放的动画名称，`null` 停止动画                        |
+| `animationSpeed`     | `number`                        | `1`      | 动画播放速度倍率                                       |
+| `animationAmplitude` | `number`                        | `1`      | 动画运动幅度倍率                                       |
+| `partsVisibility`    | `PartsVisibility`               | —        | 各部位图层可见性                                       |
+| `panorama`           | `TextureSource \| null`         | —        | 全景图背景（需要 PanoramaPlugin）                      |
+| `pixelRatio`         | `number`                        | —        | 设备像素比覆盖                                         |
+| `antialias`          | `boolean`                       | `true`   | 启用抗锯齿                                             |
+| `fov`                | `number`                        | —        | 相机视场角（度）                                       |
 
 ### 事件
 
-| 事件 | 参数 | 说明 |
-| --- | --- | --- |
-| `ready` | `(viewer: SkinViewer)` | 查看器初始化完成时触发 |
-| `error` | `(error: Error)` | 初始化或运行时出错时触发 |
+| 事件    | 参数                   | 说明                     |
+| ------- | ---------------------- | ------------------------ |
+| `ready` | `(viewer: SkinViewer)` | 查看器初始化完成时触发   |
+| `error` | `(error: Error)`       | 初始化或运行时出错时触发 |
 
 ### 暴露方法
 
@@ -91,12 +91,12 @@ function takeScreenshot() {
 </template>
 ```
 
-| 方法 | 类型 | 说明 |
-| --- | --- | --- |
-| `viewer` | `ShallowRef<SkinViewer \| null>` | 查看器实例 |
-| `backend` | `ComputedRef<BackendType \| null>` | 当前渲染后端 |
-| `screenshot` | `(type?: 'png' \| 'jpeg', quality?: number) => string \| null` | 截图 |
-| `recreate` | `() => Promise<void>` | 销毁并重建查看器 |
+| 方法         | 类型                                                           | 说明             |
+| ------------ | -------------------------------------------------------------- | ---------------- |
+| `viewer`     | `ShallowRef<SkinViewer \| null>`                               | 查看器实例       |
+| `backend`    | `ComputedRef<BackendType \| null>`                             | 当前渲染后端     |
+| `screenshot` | `(type?: 'png' \| 'jpeg', quality?: number) => string \| null` | 截图             |
+| `recreate`   | `() => Promise<void>`                                          | 销毁并重建查看器 |
 
 ## useSkinViewer
 
@@ -130,15 +130,15 @@ const { containerRef, viewer, isReady, error } = useSkinViewer(() => ({
 
 ### 返回值
 
-| 属性 | 类型 | 说明 |
-| --- | --- | --- |
-| `containerRef` | `Ref<HTMLElement \| null>` | 绑定到容器元素的模板引用 |
-| `viewer` | `ShallowRef<SkinViewer \| null>` | 查看器实例 |
-| `backend` | `ComputedRef<BackendType \| null>` | 当前渲染后端 |
-| `isReady` | `Ref<boolean>` | 查看器是否已初始化 |
-| `error` | `ShallowRef<Error \| null>` | 初始化或运行时错误 |
-| `screenshot` | `(type?: 'png' \| 'jpeg', quality?: number) => string \| null` | 截图 |
-| `recreate` | `() => Promise<void>` | 销毁并重建查看器 |
+| 属性           | 类型                                                           | 说明                     |
+| -------------- | -------------------------------------------------------------- | ------------------------ |
+| `containerRef` | `Ref<HTMLElement \| null>`                                     | 绑定到容器元素的模板引用 |
+| `viewer`       | `ShallowRef<SkinViewer \| null>`                               | 查看器实例               |
+| `backend`      | `ComputedRef<BackendType \| null>`                             | 当前渲染后端             |
+| `isReady`      | `Ref<boolean>`                                                 | 查看器是否已初始化       |
+| `error`        | `ShallowRef<Error \| null>`                                    | 初始化或运行时错误       |
+| `screenshot`   | `(type?: 'png' \| 'jpeg', quality?: number) => string \| null` | 截图                     |
+| `recreate`     | `() => Promise<void>`                                          | 销毁并重建查看器         |
 
 ## 2D 渲染组合式函数
 
@@ -146,15 +146,15 @@ const { containerRef, viewer, isReady, error } = useSkinViewer(() => ({
 
 ### 可用函数
 
-| 组合式函数 | 对应渲染函数 | 说明 |
-| --- | --- | --- |
-| `useRenderAvatar` | `renderAvatar` | 头像（头部正面） |
-| `useRenderSkinFront` | `renderSkinFront` | 全身正面 |
-| `useRenderSkinBack` | `renderSkinBack` | 全身背面 |
-| `useRenderSkinSide` | `renderSkinSide` | 全身侧面 |
-| `useRenderSkinIsometric` | `renderSkinIsometric` | 2.5D 等距视图 |
-| `useRenderHalfBody` | `renderHalfBody` | 半身像 |
-| `useRenderBigHead` | `renderBigHead` | 大头（Q 版） |
+| 组合式函数               | 对应渲染函数          | 说明             |
+| ------------------------ | --------------------- | ---------------- |
+| `useRenderAvatar`        | `renderAvatar`        | 头像（头部正面） |
+| `useRenderSkinFront`     | `renderSkinFront`     | 全身正面         |
+| `useRenderSkinBack`      | `renderSkinBack`      | 全身背面         |
+| `useRenderSkinSide`      | `renderSkinSide`      | 全身侧面         |
+| `useRenderSkinIsometric` | `renderSkinIsometric` | 2.5D 等距视图    |
+| `useRenderHalfBody`      | `renderHalfBody`      | 半身像           |
+| `useRenderBigHead`       | `renderBigHead`       | 大头（Q 版）     |
 
 ### 用法
 
@@ -183,8 +183,8 @@ const { isRendering, error } = useRenderAvatar(canvasRef, () => ({
 
 所有 2D 渲染组合式函数返回相同的类型：
 
-| 属性 | 类型 | 说明 |
-| --- | --- | --- |
-| `render` | `() => Promise<void>` | 手动触发渲染 |
-| `isRendering` | `Ref<boolean>` | 是否正在渲染 |
-| `error` | `ShallowRef<Error \| null>` | 渲染错误 |
+| 属性          | 类型                        | 说明         |
+| ------------- | --------------------------- | ------------ |
+| `render`      | `() => Promise<void>`       | 手动触发渲染 |
+| `isRendering` | `Ref<boolean>`              | 是否正在渲染 |
+| `error`       | `ShallowRef<Error \| null>` | 渲染错误     |
