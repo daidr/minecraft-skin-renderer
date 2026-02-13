@@ -4,6 +4,20 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      publish-npm:
+        description: "Publish to npm"
+        type: boolean
+        default: false
+      publish-jsr:
+        description: "Publish to JSR"
+        type: boolean
+        default: false
+      publish-github-packages:
+        description: "Publish to GitHub Packages"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -12,6 +26,7 @@ permissions:
 
 jobs:
   release-please:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -23,7 +38,10 @@ jobs:
 
   publish-npm:
     needs: release-please
-    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    if: |
+      always() &&
+      (needs.release-please.outputs.release_created == 'true' ||
+       (github.event_name == 'workflow_dispatch' && inputs.publish-npm))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -44,7 +62,10 @@ jobs:
 
   publish-jsr:
     needs: release-please
-    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    if: |
+      always() &&
+      (needs.release-please.outputs.release_created == 'true' ||
+       (github.event_name == 'workflow_dispatch' && inputs.publish-jsr))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -59,7 +80,10 @@ jobs:
 
   publish-github-packages:
     needs: release-please
-    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    if: |
+      always() &&
+      (needs.release-please.outputs.release_created == 'true' ||
+       (github.event_name == 'workflow_dispatch' && inputs.publish-github-packages))
     runs-on: ubuntu-latest
     permissions:
       contents: read
