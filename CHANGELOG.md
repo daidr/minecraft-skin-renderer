@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/daidr/minecraft-skin-renderer/compare/minecraft-skin-renderer-v0.2.2...minecraft-skin-renderer-v0.2.3) (2026-02-27)
+
+
+### Bug Fixes
+
+* adjust camera and animation for better model ([8a77ad8](https://github.com/daidr/minecraft-skin-renderer/commit/8a77ad8718bc4a1e2bf8fe4af7bf7f65e0175095))
+
 ## [0.2.2](https://github.com/daidr/minecraft-skin-renderer/compare/minecraft-skin-renderer-v0.2.1...minecraft-skin-renderer-v0.2.2) (2026-02-12)
 
 
