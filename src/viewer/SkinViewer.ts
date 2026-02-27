@@ -295,7 +295,7 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
   const camera = createCamera(aspect, {
     fov: options.fov ?? 70,
     position: [0, 16, 50],
-    target: [0, 12, 0],
+    target: [0, 16, 0],
   });
 
   // Create orbit controls

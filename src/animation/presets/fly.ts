@@ -17,11 +17,22 @@ function createFlyAnimation(): Animation {
 
   const [leftWing, rightWing] = createSpreadWingTracks(20, 80);
 
+  // When body pitches forward, the model folds up (Y center shifts from 16 to ~26.5)
+  // and extends into the screen (Z center shifts from 0 to ~-6).
+  // Offset root to re-center the model at the camera orbit point.
+  const rootOffsetY = -10;
+  const rootOffsetZ = 6;
+
   return {
     name: "fly",
     duration: 1.5,
     loop: true,
     tracks: [
+      // Root offset to center the pitched model
+      {
+        boneIndex: BoneIndex.Root,
+        keyframes: [{ time: 0, position: [0, rootOffsetY, rootOffsetZ] }],
+      },
       // Body pitched forward
       {
         boneIndex: BoneIndex.Body,

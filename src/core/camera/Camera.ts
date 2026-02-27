@@ -34,8 +34,8 @@ const DEFAULT_OPTIONS: Required<CameraOptions> = {
   fov: 70,
   near: 0.1,
   far: 1000,
-  position: [0, 20, 50],
-  target: [0, 12, 0],
+  position: [0, 16, 50],
+  target: [0, 16, 0],
   up: [0, 1, 0],
 };
 
