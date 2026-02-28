@@ -153,7 +153,8 @@ const { containerRef, viewer, isReady, error } = useSkinViewer(() => ({
 | `useRenderAvatar`        | `renderAvatar`        | 头像（头部正面） |
 | `useRenderSkinFront`     | `renderSkinFront`     | 全身正面         |
 | `useRenderSkinBack`      | `renderSkinBack`      | 全身背面         |
-| `useRenderSkinSide`      | `renderSkinSide`      | 全身侧面         |
+| `useRenderSkinRightSide` | `renderSkinRightSide` | 全身右侧面       |
+| `useRenderSkinLeftSide`  | `renderSkinLeftSide`  | 全身左侧面       |
 | `useRenderSkinIsometric` | `renderSkinIsometric` | 2.5D 等距视图    |
 | `useRenderHalfBody`      | `renderHalfBody`      | 半身像           |
 | `useRenderBigHead`       | `renderBigHead`       | 大头（Q 版）     |

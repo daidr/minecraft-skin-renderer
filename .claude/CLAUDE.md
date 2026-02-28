@@ -73,7 +73,7 @@ Shader composition (`src/core/renderer/shader-composer.ts`) supports injection m
 
 ### Canvas2D Module
 
-Standalone 2D rendering system at `src/canvas2d/` — no WebGL/WebGPU required. Provides 7 render functions: `renderAvatar`, `renderSkinFront`, `renderSkinBack`, `renderSkinSide`, `renderSkinIsometric`, `renderHalfBody`, `renderBigHead`. Each supports classic/slim variants and optional overlay layers.
+Standalone 2D rendering system at `src/canvas2d/` — no WebGL/WebGPU required. Provides 8 render functions: `renderAvatar`, `renderSkinFront`, `renderSkinBack`, `renderSkinRightSide`, `renderSkinLeftSide`, `renderSkinIsometric`, `renderHalfBody`, `renderBigHead`. Each supports classic/slim variants and optional overlay layers.
 
 **Node.js portability**: The module works in Node.js via `canvas-env.ts`. In non-browser environments, call `setCreateCanvas()` with a canvas factory (e.g., `@napi-rs/canvas`) before any render function. In the browser, it auto-detects `document.createElement("canvas")`.
 

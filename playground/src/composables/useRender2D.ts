@@ -4,7 +4,8 @@ import {
   renderAvatar,
   renderSkinFront,
   renderSkinBack,
-  renderSkinSide,
+  renderSkinRightSide,
+  renderSkinLeftSide,
   renderSkinIsometric,
   renderHalfBody,
   renderBigHead,
@@ -39,8 +40,11 @@ export function useRender2D(canvasRef: Ref<HTMLCanvasElement | null>) {
         case "back":
           await renderSkinBack(canvas, baseOpts);
           break;
-        case "side":
-          await renderSkinSide(canvas, baseOpts);
+        case "rightSide":
+          await renderSkinRightSide(canvas, baseOpts);
+          break;
+        case "leftSide":
+          await renderSkinLeftSide(canvas, baseOpts);
           break;
         case "isometric":
           await renderSkinIsometric(canvas, baseOpts);

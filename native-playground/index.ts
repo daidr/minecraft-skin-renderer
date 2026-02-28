@@ -4,7 +4,8 @@ import {
   renderBigHead,
   renderSkinFront,
   renderSkinBack,
-  renderSkinSide,
+  renderSkinRightSide,
+  renderSkinLeftSide,
   renderSkinIsometric,
 } from "@daidr/minecraft-skin-renderer/canvas2d";
 import { createCanvas, loadImage } from "@napi-rs/canvas";
@@ -79,7 +80,7 @@ const skin = await loadImage("../playground/public/skin.png");
 {
   const canvas = createCanvas(1, 1);
 
-  await renderSkinSide(canvas, {
+  await renderSkinRightSide(canvas, {
     skin,
     slim: false,
     showOverlay: true,
@@ -87,8 +88,23 @@ const skin = await loadImage("../playground/public/skin.png");
     overlayInflated: true,
   });
 
-  console.log(`Rendered SkinSide: ${canvas.width}x${canvas.height}`);
-  await fs.writeFile("./result/skinside.png", canvas.toBuffer("image/png"));
+  console.log(`Rendered SkinRightSide: ${canvas.width}x${canvas.height}`);
+  await fs.writeFile("./result/skinrightside.png", canvas.toBuffer("image/png"));
+}
+
+{
+  const canvas = createCanvas(1, 1);
+
+  await renderSkinLeftSide(canvas, {
+    skin,
+    slim: false,
+    showOverlay: true,
+    scale: 10,
+    overlayInflated: true,
+  });
+
+  console.log(`Rendered SkinLeftSide: ${canvas.width}x${canvas.height}`);
+  await fs.writeFile("./result/skinleftside.png", canvas.toBuffer("image/png"));
 }
 
 {

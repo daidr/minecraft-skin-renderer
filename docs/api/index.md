@@ -16,7 +16,7 @@
 ## 章节
 
 - [SkinViewer](./skin-viewer) — 3D 皮肤查看器核心 API，包括创建选项、实例方法、相机控制、部位可见性和工具函数
-- [Canvas2D](./canvas2d) — 7 个 2D 静态渲染函数，支持浏览器和 Node.js 环境
+- [Canvas2D](./canvas2d) — 8 个 2D 静态渲染函数，支持浏览器和 Node.js 环境
 - [动画](./animations) — 动画系统、预设动画、自定义动画注册和缓动函数
 
 ## 快速入口
@@ -54,7 +54,8 @@ import {
   renderAvatar,
   renderSkinFront,
   renderSkinBack,
-  renderSkinSide,
+  renderSkinRightSide,
+  renderSkinLeftSide,
   renderSkinIsometric,
   renderHalfBody,
   renderBigHead,

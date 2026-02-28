@@ -4,7 +4,8 @@ import {
   renderAvatar,
   renderSkinFront,
   renderSkinBack,
-  renderSkinSide,
+  renderSkinRightSide,
+  renderSkinLeftSide,
   renderSkinIsometric,
   renderHalfBody,
   renderBigHead,
@@ -104,10 +105,16 @@ export const useRenderSkinBack: UseRender2DComposable<SkinViewOptions> =
   createUseRender<SkinViewOptions>(renderSkinBack);
 
 /**
- * Render a full-body side view to a canvas element.
+ * Render a full-body right side view to a canvas element.
  */
-export const useRenderSkinSide: UseRender2DComposable<SkinViewOptions> =
-  createUseRender<SkinViewOptions>(renderSkinSide);
+export const useRenderSkinRightSide: UseRender2DComposable<SkinViewOptions> =
+  createUseRender<SkinViewOptions>(renderSkinRightSide);
+
+/**
+ * Render a full-body left side view to a canvas element.
+ */
+export const useRenderSkinLeftSide: UseRender2DComposable<SkinViewOptions> =
+  createUseRender<SkinViewOptions>(renderSkinLeftSide);
 
 /**
  * Render a 2.5D isometric view to a canvas element.

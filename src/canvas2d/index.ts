@@ -26,7 +26,7 @@
 export { renderAvatar } from "./renderers/avatar";
 export { renderSkinFront } from "./renderers/front";
 export { renderSkinBack } from "./renderers/back";
-export { renderSkinSide } from "./renderers/side";
+export { renderSkinRightSide, renderSkinLeftSide } from "./renderers/side";
 export { renderSkinIsometric } from "./renderers/isometric";
 export { renderHalfBody } from "./renderers/half-body";
 export { renderBigHead } from "./renderers/big-head";

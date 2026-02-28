@@ -9,7 +9,7 @@ import { describe, it, expect } from "vitest";
 import { renderAvatar } from "@/canvas2d/renderers/avatar";
 import { renderSkinFront } from "@/canvas2d/renderers/front";
 import { renderSkinBack } from "@/canvas2d/renderers/back";
-import { renderSkinSide } from "@/canvas2d/renderers/side";
+import { renderSkinRightSide, renderSkinLeftSide } from "@/canvas2d/renderers/side";
 import { renderHalfBody } from "@/canvas2d/renderers/half-body";
 
 /**
@@ -91,10 +91,19 @@ describe("Canvas2D Renderers", () => {
     });
   });
 
-  describe("renderSkinSide", () => {
+  describe("renderSkinRightSide", () => {
     it("should set correct canvas dimensions (8 wide, 32 tall)", async () => {
       const canvas = createTestCanvas();
-      await renderSkinSide(canvas, { skin: createMockSkin(), scale: 8 });
+      await renderSkinRightSide(canvas, { skin: createMockSkin(), scale: 8 });
+      expect(canvas.width).toBe(64); // 8 * 8
+      expect(canvas.height).toBe(256); // 32 * 8
+    });
+  });
+
+  describe("renderSkinLeftSide", () => {
+    it("should set correct canvas dimensions (8 wide, 32 tall)", async () => {
+      const canvas = createTestCanvas();
+      await renderSkinLeftSide(canvas, { skin: createMockSkin(), scale: 8 });
       expect(canvas.width).toBe(64); // 8 * 8
       expect(canvas.height).toBe(256); // 32 * 8
     });

@@ -9,7 +9,8 @@ import {
   renderAvatar,
   renderSkinFront,
   renderSkinBack,
-  renderSkinSide,
+  renderSkinRightSide,
+  renderSkinLeftSide,
   renderSkinIsometric,
   renderHalfBody,
   renderBigHead,
@@ -63,12 +64,22 @@ async function renderSkinBack(canvas: ICanvas, options: SkinViewOptions): Promis
 
 **输出尺寸：** 与 `renderSkinFront` 相同
 
-### renderSkinSide()
+### renderSkinRightSide()
 
 渲染玩家右侧视图。
 
 ```ts
-async function renderSkinSide(canvas: ICanvas, options: SkinViewOptions): Promise<void>;
+async function renderSkinRightSide(canvas: ICanvas, options: SkinViewOptions): Promise<void>;
+```
+
+**输出尺寸：** `8 × scale` × `32 × scale` px
+
+### renderSkinLeftSide()
+
+渲染玩家左侧视图。
+
+```ts
+async function renderSkinLeftSide(canvas: ICanvas, options: SkinViewOptions): Promise<void>;
 ```
 
 **输出尺寸：** `8 × scale` × `32 × scale` px
@@ -140,7 +151,7 @@ await renderBigHead(canvas, {
 
 ### SkinViewOptions
 
-继承 `BaseRenderOptions`，无额外属性。用于 `renderSkinFront`、`renderSkinBack`、`renderSkinSide`。
+继承 `BaseRenderOptions`，无额外属性。用于 `renderSkinFront`、`renderSkinBack`、`renderSkinRightSide`、`renderSkinLeftSide`。
 
 ### IsometricOptions
 

@@ -20,7 +20,8 @@ export type RenderType =
   | "avatar"
   | "front"
   | "back"
-  | "side"
+  | "rightSide"
+  | "leftSide"
   | "isometric"
   | "halfBody"
   | "bigHead";
