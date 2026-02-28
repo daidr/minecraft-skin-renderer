@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0](https://github.com/daidr/minecraft-skin-renderer/compare/minecraft-skin-renderer-v0.2.3...minecraft-skin-renderer-v0.3.0) (2026-02-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **canvas2d:** `renderSkinSide` has been removed. Use `renderSkinRightSide` (same behavior as the old `renderSkinSide`) or `renderSkinLeftSide` instead. The Vue 3 composable `useRenderSkinSide` is also replaced by `useRenderSkinRightSide` and `useRenderSkinLeftSide`.
+
+### Features
+
+* **canvas2d:** replace renderSkinSide with renderSkinRightSide and renderSkinLeftSide ([dda1664](https://github.com/daidr/minecraft-skin-renderer/commit/dda1664efe4f061b8a1d1d18b7e4c46af642aa7e))
+
 ## [0.2.3](https://github.com/daidr/minecraft-skin-renderer/compare/minecraft-skin-renderer-v0.2.2...minecraft-skin-renderer-v0.2.3) (2026-02-27)
 
 
