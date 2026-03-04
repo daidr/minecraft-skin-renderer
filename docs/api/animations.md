@@ -85,12 +85,20 @@ function registerAnimation(animation: Animation): void;
 ### 获取动画
 
 ```ts
-import { getAnimation } from "@daidr/minecraft-skin-renderer";
+import { getAnimation, getRegisteredAnimations } from "@daidr/minecraft-skin-renderer";
 ```
 
 ```ts
 function getAnimation(name: string): Animation | undefined;
 ```
+
+### 获取所有已注册动画名称
+
+```ts
+function getRegisteredAnimations(): string[];
+```
+
+返回所有已注册的动画名称列表，可用于发现当前可用的动画。
 
 ### Animation
 
@@ -138,7 +146,7 @@ interface Keyframe {
 
 ```ts
 import { registerAnimation } from "@daidr/minecraft-skin-renderer";
-import { BoneIndex } from "@daidr/minecraft-skin-renderer"; // 通过 math 模块导出
+import { BoneIndex } from "@daidr/minecraft-skin-renderer";
 
 registerAnimation({
   name: "nod",

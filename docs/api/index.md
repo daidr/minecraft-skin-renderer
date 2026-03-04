@@ -29,13 +29,16 @@ import {
   createSkinViewer, // 创建 3D 查看器
   registerAnimation, // 注册自定义动画
   getAnimation, // 获取动画定义
+  getRegisteredAnimations, // 获取所有已注册动画名称
   isWebGPUSupported, // WebGPU 支持检测
   isWebGL2Supported, // WebGL2 支持检测
   detectBestBackend, // 自动检测最佳后端
   loadSkinTexture, // 加载皮肤纹理
   loadCapeTexture, // 加载披风纹理
+  loadElytraTexture, // 加载鞘翅纹理
   createDefaultVisibility, // 创建默认可见性
   PART_NAMES, // 部位名称常量
+  BoneIndex, // 骨骼索引枚举
 } from "@daidr/minecraft-skin-renderer";
 ```
 

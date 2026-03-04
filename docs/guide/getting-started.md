@@ -40,6 +40,8 @@ const viewer = await createSkinViewer({
     canvas: document.getElementById("skin-canvas"),
     skin: "https://example.com/skin.png",
   });
+
+  viewer.startRenderLoop();
 </script>
 ```
 
