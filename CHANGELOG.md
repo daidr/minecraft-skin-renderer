@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.1](https://github.com/daidr/minecraft-skin-renderer/compare/minecraft-skin-renderer-v0.3.0...minecraft-skin-renderer-v0.3.1) (2026-03-04)
+
+
+### Features
+
+* add dynamic animation/camera controls and Vue3 v-model bindings ([d828859](https://github.com/daidr/minecraft-skin-renderer/commit/d828859d4e78b0884d6217b10577adfc30813287))
+* export BoneIndex, easing functions, and add isFinished to AnimationController ([a75629c](https://github.com/daidr/minecraft-skin-renderer/commit/a75629c5e9c7ecebc7a048f274db33c55b75ff26))
+
+
+### Bug Fixes
+
+* add types conditions to subpath exports and fix build config ([d0f4ad1](https://github.com/daidr/minecraft-skin-renderer/commit/d0f4ad1d4630fe4ba9fb80f2865370cd49872902))
+* **playground:** resolve multiple UI bugs and improve type safety ([5f0d09b](https://github.com/daidr/minecraft-skin-renderer/commit/5f0d09b52d10921792514b867ed0ef25b8a1ffc4))
+* resolve resource leaks and rendering issues across renderers ([40a1b65](https://github.com/daidr/minecraft-skin-renderer/commit/40a1b652250e0bd45e5a1ed75fb6e63b2e74e1ca))
+
 ## [0.3.0](https://github.com/daidr/minecraft-skin-renderer/compare/minecraft-skin-renderer-v0.2.3...minecraft-skin-renderer-v0.3.0) (2026-02-28)
 
 
