@@ -40,7 +40,6 @@ export default defineConfig([
     unbundle: true,
     minify: false,
     sourcemap: true,
-    exports: true,
     treeshake: true,
   },
   // IIFE: All-in-one (3D + 2D + plugins)

@@ -31,14 +31,32 @@
     "dist"
   ],
   "type": "module",
-  "types": "./dist/index.d.mts",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js",
-    "./canvas2d": "./dist/canvas2d.js",
-    "./panorama": "./dist/panorama.js",
-    "./vue3": "./dist/vue3.js",
-    "./webgl": "./dist/webgl.js",
-    "./webgpu": "./dist/webgpu.js",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./canvas2d": {
+      "types": "./dist/canvas2d.d.ts",
+      "default": "./dist/canvas2d.js"
+    },
+    "./panorama": {
+      "types": "./dist/panorama.d.ts",
+      "default": "./dist/panorama.js"
+    },
+    "./vue3": {
+      "types": "./dist/vue3.d.ts",
+      "default": "./dist/vue3.js"
+    },
+    "./webgl": {
+      "types": "./dist/webgl.d.ts",
+      "default": "./dist/webgl.js"
+    },
+    "./webgpu": {
+      "types": "./dist/webgpu.d.ts",
+      "default": "./dist/webgpu.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
