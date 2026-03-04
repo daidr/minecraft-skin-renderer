@@ -1,15 +1,12 @@
 import { defineStore } from "pinia";
 import { reactive, watch } from "vue";
-import { PART_NAMES } from "@daidr/minecraft-skin-renderer";
+import { PART_NAMES, createDefaultVisibility } from "@daidr/minecraft-skin-renderer";
+import type { PartsVisibility } from "@daidr/minecraft-skin-renderer";
 import type { PlaygroundSettings, PlaygroundMode } from "../types";
 
 const STORAGE_KEY = "minecraft-skin-renderer-playground-settings";
 
 function getDefaultSettings(): PlaygroundSettings {
-  const partsVisibility: Record<string, { inner: boolean; outer: boolean }> = {};
-  for (const part of PART_NAMES) {
-    partsVisibility[part] = { inner: true, outer: true };
-  }
   return {
     mode: "3d" as PlaygroundMode,
     backend: "auto",
@@ -22,7 +19,7 @@ function getDefaultSettings(): PlaygroundSettings {
     rotationTheta: 0,
     rotationPhi: 90,
     autoRotate: false,
-    partsVisibility,
+    partsVisibility: createDefaultVisibility(),
     panoramaUrl: "",
   };
 }
@@ -32,7 +29,21 @@ function loadFromStorage(): PlaygroundSettings {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored) as Partial<PlaygroundSettings>;
-      return { ...getDefaultSettings(), ...parsed };
+      const defaults = getDefaultSettings();
+      const result = { ...defaults, ...parsed };
+
+      // Deep-merge partsVisibility: only keep valid part names from stored data
+      const defaultParts = defaults.partsVisibility;
+      const storedParts = (parsed.partsVisibility ?? {}) as Partial<PartsVisibility>;
+      const mergedParts = { ...defaultParts };
+      for (const part of PART_NAMES) {
+        if (part in storedParts) {
+          mergedParts[part] = { ...defaultParts[part], ...storedParts[part] };
+        }
+      }
+      result.partsVisibility = mergedParts;
+
+      return result;
     }
   } catch (e) {
     console.warn("Failed to load settings from localStorage:", e);
@@ -43,12 +54,9 @@ function loadFromStorage(): PlaygroundSettings {
 export const useSettingsStore = defineStore("settings", () => {
   const settings = reactive<PlaygroundSettings>(loadFromStorage());
 
-  let skipSave = false;
-
   watch(
     () => ({ ...settings, partsVisibility: { ...settings.partsVisibility } }),
     () => {
-      if (skipSave) return;
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
       } catch (e) {
@@ -59,9 +67,7 @@ export const useSettingsStore = defineStore("settings", () => {
   );
 
   function resetToDefaults() {
-    skipSave = true;
     Object.assign(settings, getDefaultSettings());
-    skipSave = false;
   }
 
   return { settings, resetToDefaults };

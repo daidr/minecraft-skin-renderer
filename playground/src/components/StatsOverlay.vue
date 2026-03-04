@@ -16,8 +16,7 @@ onMounted(() => {
   containerRef.value?.appendChild(stats.dom);
 
   const animate = () => {
-    stats!.begin();
-    stats!.end();
+    stats!.update();
     rafId = requestAnimationFrame(animate);
   };
   animate();

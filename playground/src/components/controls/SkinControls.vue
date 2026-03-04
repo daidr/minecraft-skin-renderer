@@ -16,9 +16,11 @@ function loadSkinFromUrl() {
 }
 
 function loadSkinFromFile(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0];
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
   if (!file) return;
   textures.skinSource = file;
+  input.value = "";
 }
 </script>
 

@@ -1,3 +1,5 @@
+import type { PartsVisibility } from "@daidr/minecraft-skin-renderer";
+
 export type TextureSource = string | File | Blob | null;
 
 export interface PlaygroundSettings {
@@ -12,7 +14,7 @@ export interface PlaygroundSettings {
   rotationTheta: number; // horizontal angle in degrees (-180..180)
   rotationPhi: number; // vertical angle in degrees (10..170)
   autoRotate: boolean;
-  partsVisibility: Record<string, { inner: boolean; outer: boolean }>;
+  partsVisibility: PartsVisibility;
   panoramaUrl: string;
 }
 

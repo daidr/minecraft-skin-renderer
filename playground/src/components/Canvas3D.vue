@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted } from "vue";
 import { SkinViewer as SkinViewerComponent } from "@daidr/minecraft-skin-renderer/vue3";
-import type {
-  SkinViewer,
-  BackEquipment,
-  PartsVisibility,
-  BackendType,
-} from "@daidr/minecraft-skin-renderer";
+import type { SkinViewer, BackEquipment, BackendType } from "@daidr/minecraft-skin-renderer";
 import { useViewerStore } from "../stores/viewer";
 import { useSettingsStore } from "../stores/settings";
 import { useTexturesStore } from "../stores/textures";
@@ -19,9 +14,7 @@ const skinViewerRef = ref<InstanceType<typeof SkinViewerComponent>>();
 
 const preferredBackend = computed(() => settingsStore.settings.backend as BackendType | "auto");
 const backEquipment = computed(() => settingsStore.settings.backEquipment as BackEquipment);
-const partsVisibility = computed(
-  () => settingsStore.settings.partsVisibility as unknown as PartsVisibility,
-);
+const partsVisibility = computed(() => settingsStore.settings.partsVisibility);
 
 const skinSource = computed(() => textures.skinSource ?? textures.DEFAULT_SKIN_URL);
 const capeSource = computed(() => {

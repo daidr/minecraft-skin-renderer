@@ -18,7 +18,7 @@ function screenshot3D() {
 }
 
 function screenshot2D() {
-  const canvas = document.querySelector(".canvas-container-2d canvas") as HTMLCanvasElement | null;
+  const canvas = render2d.canvasRef;
   if (!canvas) return;
 
   const dataUrl = canvas.toDataURL("image/png");

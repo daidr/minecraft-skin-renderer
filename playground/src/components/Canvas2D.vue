@@ -1,12 +1,19 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import { useRender2D } from "../composables/useRender2D";
+import { useRender2dStore } from "../stores/render2d";
 
+const render2d = useRender2dStore();
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const { render } = useRender2D(canvasRef);
 
 onMounted(() => {
+  render2d.canvasRef = canvasRef.value;
   void render();
+});
+
+onBeforeUnmount(() => {
+  render2d.canvasRef = null;
 });
 </script>
 

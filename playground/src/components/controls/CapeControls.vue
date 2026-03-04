@@ -18,12 +18,14 @@ function loadCapeFromUrl() {
 }
 
 function loadCapeFromFile(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0];
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
   if (!file) return;
   textures.capeSource = file;
   if (settingsStore.settings.backEquipment === "none") {
     settingsStore.settings.backEquipment = "cape";
   }
+  input.value = "";
 }
 
 function removeCape() {

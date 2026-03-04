@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
-import { ref, watch } from "vue";
+import { ref, shallowRef, watch } from "vue";
+import type { Ref } from "vue";
 import type { RenderType } from "../types";
 
 const STORAGE_KEY = "minecraft-skin-renderer-playground-render2d";
@@ -65,6 +66,9 @@ export const useRender2dStore = defineStore("render2d", () => {
     },
   );
 
+  // Shared canvas ref for screenshot access from sibling components
+  const canvasRef: Ref<HTMLCanvasElement | null> = shallowRef(null);
+
   return {
     renderType,
     scale,
@@ -72,5 +76,6 @@ export const useRender2dStore = defineStore("render2d", () => {
     overlayInflated,
     bigHeadBorderWidth,
     bigHeadBorderColor,
+    canvasRef,
   };
 });

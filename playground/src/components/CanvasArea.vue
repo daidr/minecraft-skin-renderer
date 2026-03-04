@@ -16,5 +16,5 @@ defineExpose({ onBackendChange });
 
 <template>
   <Canvas3D v-if="settingsStore.settings.mode === '3d'" ref="canvas3dRef" />
-  <Canvas2D v-if="settingsStore.settings.mode === '2d'" />
+  <Canvas2D v-else />
 </template>
