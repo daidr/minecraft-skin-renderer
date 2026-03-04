@@ -67,10 +67,7 @@ export async function renderSkinRightSide(
  *   LeftArm:  (2, 8)   4x12 (overlapping body, drawn on top)
  *   LeftLeg:  (2, 20)  4x12
  */
-export async function renderSkinLeftSide(
-  canvas: ICanvas,
-  options: SkinViewOptions,
-): Promise<void> {
+export async function renderSkinLeftSide(canvas: ICanvas, options: SkinViewOptions): Promise<void> {
   const scale = options.scale ?? DEFAULT_SCALE;
   const showOverlay = options.showOverlay ?? true;
   const inflated = options.overlayInflated ?? false;

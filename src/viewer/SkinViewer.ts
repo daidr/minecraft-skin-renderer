@@ -139,12 +139,18 @@ export interface SkinViewer {
   pauseAnimation(): void;
   resumeAnimation(): void;
   stopAnimation(): void;
+  setAnimationSpeed(speed: number): void;
+  setAnimationAmplitude(amplitude: number): void;
+  readonly isPaused: boolean;
 
   setRotation(theta: number, phi: number): void;
   getRotation(): { theta: number; phi: number };
   setZoom(zoom: number): void;
   getZoom(): number;
   setAutoRotate(enabled: boolean): void;
+  setAutoRotateSpeed(speed: number): void;
+  setEnableRotate(enabled: boolean): void;
+  setEnableZoom(enabled: boolean): void;
   resetCamera(): void;
 
   render(): void;
@@ -159,6 +165,11 @@ export interface SkinViewer {
    * @param source - Panorama texture source, or null to clear
    */
   setPanorama(source: TextureSource | null): Promise<void>;
+
+  /** Callback fired when zoom changes via user interaction (wheel or pinch) */
+  onZoomChange: ((zoom: number) => void) | null;
+  /** Callback fired when rotation changes via user interaction (drag) or auto-rotate */
+  onRotationChange: ((theta: number, phi: number) => void) | null;
 
   readonly isPlaying: boolean;
   readonly currentAnimation: string | null;
@@ -548,6 +559,20 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       return state.animationController.currentAnimation;
     },
 
+    get onZoomChange() {
+      return state.controls.onDistanceChange;
+    },
+    set onZoomChange(callback: ((zoom: number) => void) | null) {
+      state.controls.onDistanceChange = callback;
+    },
+
+    get onRotationChange() {
+      return state.controls.onRotationChange;
+    },
+    set onRotationChange(callback: ((theta: number, phi: number) => void) | null) {
+      state.controls.onRotationChange = callback;
+    },
+
     async setSkin(source: TextureSource | null) {
       if (state.disposed) return;
 
@@ -671,6 +696,18 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       state.boneMatricesDirty = true;
     },
 
+    setAnimationSpeed(speed: number) {
+      state.animationController.setSpeed(speed);
+    },
+
+    setAnimationAmplitude(amplitude: number) {
+      state.animationController.setAmplitude(amplitude);
+    },
+
+    get isPaused() {
+      return state.animationController.isPaused;
+    },
+
     setRotation(theta: number, phi: number) {
       setOrbitRotation(state.controls, theta, phi);
     },
@@ -689,6 +726,18 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
     setAutoRotate(enabled: boolean) {
       state.controls.autoRotate = enabled;
+    },
+
+    setAutoRotateSpeed(speed: number) {
+      state.controls.autoRotateSpeed = speed;
+    },
+
+    setEnableRotate(enabled: boolean) {
+      state.controls.enableRotate = enabled;
+    },
+
+    setEnableZoom(enabled: boolean) {
+      state.controls.enableZoom = enabled;
     },
 
     resetCamera() {

@@ -217,6 +217,18 @@ export function createAnimationController(skeleton: PlayerSkeleton): AnimationCo
       state.current = null;
       resetSkeleton(skeleton);
     },
+
+    setSpeed(speed: number) {
+      if (state.current) {
+        state.current.config.speed = speed;
+      }
+    },
+
+    setAmplitude(amplitude: number) {
+      if (state.current) {
+        state.current.config.amplitude = amplitude;
+      }
+    },
   };
 
   // Store state in WeakMap

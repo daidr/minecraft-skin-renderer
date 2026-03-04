@@ -2,6 +2,7 @@ import { computed, onMounted, onUnmounted, ref, shallowRef, toValue, watch } fro
 import type { MaybeRefOrGetter } from "vue";
 import { use, createSkinViewer, PART_NAMES } from "../index";
 import type { BackEquipment, SkinViewer } from "../viewer";
+import type { AnimationConfig } from "../animation/types";
 import type { PartName } from "../model/types";
 import type { UseSkinViewerOptions, UseSkinViewerReturn } from "./types";
 
@@ -11,9 +12,10 @@ import type { UseSkinViewerOptions, UseSkinViewerReturn } from "./types";
  * Returns a `containerRef` that should be bound to a container element in your template.
  * The composable creates a canvas inside the container and initializes the viewer on mount.
  *
- * Dynamic options (skin, cape, slim, zoom, animation, etc.) are watched and synced
+ * Dynamic options (skin, cape, slim, zoom, rotation, animation, paused, enableRotate, enableZoom,
+ * autoRotateSpeed, animationSpeed, animationAmplitude, etc.) are watched and synced
  * to the viewer automatically. Creation-time options (preferredBackend, antialias, fov,
- * enableRotate, enableZoom, autoRotateSpeed, pixelRatio) are only applied at initialization.
+ * pixelRatio) are only applied at initialization.
  * Call `recreate()` to re-initialize with updated creation-time options.
  *
  * @example
@@ -99,6 +101,10 @@ export function useSkinViewer(
         });
       }
 
+      if (opts.paused) {
+        v.pauseAnimation();
+      }
+
       v.startRenderLoop();
     } catch (e) {
       error.value = e instanceof Error ? e : new Error(String(e));
@@ -176,6 +182,16 @@ export function useSkinViewer(
   );
 
   watch(
+    () => toValue(options)?.rotation,
+    (rotation) => {
+      if (viewer.value && rotation) {
+        viewer.value.setRotation(rotation.theta, rotation.phi);
+      }
+    },
+    { deep: true },
+  );
+
+  watch(
     () => toValue(options)?.autoRotate,
     (autoRotate) => {
       if (viewer.value && autoRotate !== undefined) {
@@ -185,17 +201,74 @@ export function useSkinViewer(
   );
 
   watch(
-    () => {
-      const opts = toValue(options);
-      return [opts?.animation, opts?.animationSpeed, opts?.animationAmplitude] as const;
-    },
-    ([animation, speed, amplitude]) => {
-      if (!viewer.value) return;
-      if (animation === undefined) return;
+    () => toValue(options)?.animation,
+    (animation) => {
+      if (!viewer.value || animation === undefined) return;
       if (animation === null || animation === "") {
         viewer.value.stopAnimation();
       } else {
-        viewer.value.playAnimation(animation, { speed, amplitude });
+        const opts = toValue(options);
+        viewer.value.playAnimation(animation, {
+          speed: opts?.animationSpeed,
+          amplitude: opts?.animationAmplitude,
+        });
+      }
+    },
+  );
+
+  watch(
+    () => toValue(options)?.animationSpeed,
+    (speed) => {
+      if (viewer.value && speed !== undefined) {
+        viewer.value.setAnimationSpeed(speed);
+      }
+    },
+  );
+
+  watch(
+    () => toValue(options)?.animationAmplitude,
+    (amplitude) => {
+      if (viewer.value && amplitude !== undefined) {
+        viewer.value.setAnimationAmplitude(amplitude);
+      }
+    },
+  );
+
+  watch(
+    () => toValue(options)?.paused,
+    (paused) => {
+      if (!viewer.value || paused === undefined) return;
+      if (paused) {
+        viewer.value.pauseAnimation();
+      } else {
+        viewer.value.resumeAnimation();
+      }
+    },
+  );
+
+  watch(
+    () => toValue(options)?.enableRotate,
+    (enableRotate) => {
+      if (viewer.value && enableRotate !== undefined) {
+        viewer.value.setEnableRotate(enableRotate);
+      }
+    },
+  );
+
+  watch(
+    () => toValue(options)?.enableZoom,
+    (enableZoom) => {
+      if (viewer.value && enableZoom !== undefined) {
+        viewer.value.setEnableZoom(enableZoom);
+      }
+    },
+  );
+
+  watch(
+    () => toValue(options)?.autoRotateSpeed,
+    (autoRotateSpeed) => {
+      if (viewer.value && autoRotateSpeed !== undefined) {
+        viewer.value.setAutoRotateSpeed(autoRotateSpeed);
       }
     },
   );
@@ -254,6 +327,26 @@ export function useSkinViewer(
     dispose();
   });
 
+  function pauseAnimation(): void {
+    viewer.value?.pauseAnimation();
+  }
+
+  function resumeAnimation(): void {
+    viewer.value?.resumeAnimation();
+  }
+
+  function stopAnimation(): void {
+    viewer.value?.stopAnimation();
+  }
+
+  function playAnimation(name: string, config?: AnimationConfig): void {
+    viewer.value?.playAnimation(name, config);
+  }
+
+  function resetCamera(): void {
+    viewer.value?.resetCamera();
+  }
+
   return {
     containerRef,
     viewer,
@@ -262,5 +355,10 @@ export function useSkinViewer(
     error,
     screenshot,
     recreate,
+    pauseAnimation,
+    resumeAnimation,
+    stopAnimation,
+    playAnimation,
+    resetCamera,
   };
 }

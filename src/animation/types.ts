@@ -54,6 +54,8 @@ export interface AnimationController {
   pause(): void;
   resume(): void;
   stop(): void;
+  setSpeed(speed: number): void;
+  setAmplitude(amplitude: number): void;
 
   // Internal use
   skeleton: PlayerSkeleton;

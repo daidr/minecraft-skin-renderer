@@ -4,6 +4,7 @@ import type { AnyRegistrablePlugin } from "../core/renderer/registry";
 import type { PartsVisibility } from "../model/types";
 import type { BackEquipment, SkinViewer } from "../viewer";
 import type { TextureSource } from "../texture";
+import type { AnimationConfig } from "../animation/types";
 
 /** Options for the `useSkinViewer` composable */
 export interface UseSkinViewerOptions {
@@ -41,6 +42,8 @@ export interface UseSkinViewerOptions {
   backEquipment?: BackEquipment;
   /** Camera zoom distance */
   zoom?: number;
+  /** Camera rotation angles in radians: `{ theta, phi }` */
+  rotation?: { theta: number; phi: number };
   /** Enable mouse rotation control. Default: `true` */
   enableRotate?: boolean;
   /** Enable mouse zoom control. Default: `true` */
@@ -55,6 +58,8 @@ export interface UseSkinViewerOptions {
   animationSpeed?: number;
   /** Animation motion amplitude multiplier. Default: `1` */
   animationAmplitude?: number;
+  /** Whether to pause animation playback. Default: `false` */
+  paused?: boolean;
   /** Per-part layer visibility */
   partsVisibility?: PartsVisibility;
   /** Panorama background texture source, or `null` to clear. Requires PanoramaPlugin. */
@@ -67,6 +72,12 @@ export type SkinViewerEmits = {
   ready: (viewer: SkinViewer) => void;
   /** Fired on initialization or runtime error */
   error: (error: Error) => void;
+  /** Fired when zoom changes via user interaction (for v-model:zoom) */
+  "update:zoom": (zoom: number) => void;
+  /** Fired when rotation changes via user interaction or auto-rotate (for v-model:rotation) */
+  "update:rotation": (rotation: { theta: number; phi: number }) => void;
+  /** Fired when paused state changes via exposed methods (for v-model:paused) */
+  "update:paused": (paused: boolean) => void;
 };
 
 /** Return type of `useSkinViewer` */
@@ -85,4 +96,14 @@ export interface UseSkinViewerReturn {
   screenshot: (type?: "png" | "jpeg", quality?: number) => string | null;
   /** Destroy and recreate the viewer (e.g. after backend change) */
   recreate: () => Promise<void>;
+  /** Pause animation playback */
+  pauseAnimation: () => void;
+  /** Resume animation playback */
+  resumeAnimation: () => void;
+  /** Stop animation and reset pose */
+  stopAnimation: () => void;
+  /** Play an animation by name */
+  playAnimation: (name: string, config?: AnimationConfig) => void;
+  /** Reset camera to default position */
+  resetCamera: () => void;
 }

@@ -48,6 +48,10 @@ export interface OrbitControls {
   lastX: number;
   lastY: number;
 
+  // Callbacks
+  onDistanceChange: ((distance: number) => void) | null;
+  onRotationChange: ((theta: number, phi: number) => void) | null;
+
   // References
   camera: Camera;
   element: HTMLElement;
@@ -111,45 +115,93 @@ export function createOrbitControls(
     lastX: 0,
     lastY: 0,
 
+    onDistanceChange: null,
+    onRotationChange: null,
+
     camera,
     element,
     dispose: () => {},
   };
 
+  // Multi-touch tracking (internal to closure)
+  const activePointers = new Map<number, { x: number; y: number }>();
+  let isPinching = false;
+  let lastPinchDistance = 0;
+
+  /** Apply zoom and notify */
+  function applyZoom(newDistance: number) {
+    controls.distance = clamp(newDistance, controls.minDistance, controls.maxDistance);
+    updateOrbitCamera(controls);
+    controls.onDistanceChange?.(controls.distance);
+  }
+
   // Event handlers
   const onPointerDown = (e: PointerEvent) => {
-    if (!controls.enabled || !controls.enableRotate) return;
+    if (!controls.enabled) return;
 
-    controls.isDragging = true;
-    controls.lastX = e.clientX;
-    controls.lastY = e.clientY;
-
+    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     element.setPointerCapture(e.pointerId);
+
+    if (activePointers.size === 1 && controls.enableRotate) {
+      // Single pointer: start rotation
+      controls.isDragging = true;
+      controls.lastX = e.clientX;
+      controls.lastY = e.clientY;
+    } else if (activePointers.size === 2 && controls.enableZoom) {
+      // Two pointers: switch to pinch zoom
+      controls.isDragging = false;
+      isPinching = true;
+      const pts = Array.from(activePointers.values());
+      lastPinchDistance = Math.hypot(pts[1]!.x - pts[0]!.x, pts[1]!.y - pts[0]!.y);
+    }
   };
 
   const onPointerMove = (e: PointerEvent) => {
-    if (!controls.enabled || !controls.isDragging) return;
+    if (!controls.enabled || !activePointers.has(e.pointerId)) return;
 
-    const deltaX = e.clientX - controls.lastX;
-    const deltaY = e.clientY - controls.lastY;
+    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    controls.lastX = e.clientX;
-    controls.lastY = e.clientY;
+    if (isPinching && activePointers.size === 2) {
+      // Pinch zoom
+      const pts = Array.from(activePointers.values());
+      const newDist = Math.hypot(pts[1]!.x - pts[0]!.x, pts[1]!.y - pts[0]!.y);
+      if (lastPinchDistance > 0) {
+        const scale = lastPinchDistance / newDist;
+        applyZoom(controls.distance * scale);
+      }
+      lastPinchDistance = newDist;
+    } else if (controls.isDragging && activePointers.size === 1) {
+      // Single pointer rotation
+      const deltaX = e.clientX - controls.lastX;
+      const deltaY = e.clientY - controls.lastY;
 
-    // Update angles
-    const rotateScale = 0.005 * controls.rotateSpeed;
-    controls.theta -= deltaX * rotateScale;
-    controls.phi -= deltaY * rotateScale;
+      controls.lastX = e.clientX;
+      controls.lastY = e.clientY;
 
-    // Clamp phi
-    controls.phi = clamp(controls.phi, controls.minPolarAngle, controls.maxPolarAngle);
+      // Update angles
+      const rotateScale = 0.005 * controls.rotateSpeed;
+      controls.theta -= deltaX * rotateScale;
+      controls.phi -= deltaY * rotateScale;
 
-    updateOrbitCamera(controls);
+      // Clamp phi
+      controls.phi = clamp(controls.phi, controls.minPolarAngle, controls.maxPolarAngle);
+
+      updateOrbitCamera(controls);
+      controls.onRotationChange?.(controls.theta, controls.phi);
+    }
   };
 
   const onPointerUp = (e: PointerEvent) => {
-    controls.isDragging = false;
+    activePointers.delete(e.pointerId);
     element.releasePointerCapture(e.pointerId);
+
+    if (activePointers.size < 2) {
+      isPinching = false;
+      lastPinchDistance = 0;
+    }
+    if (activePointers.size === 0) {
+      controls.isDragging = false;
+    }
   };
 
   const onWheel = (e: WheelEvent) => {
@@ -158,12 +210,7 @@ export function createOrbitControls(
     e.preventDefault();
 
     const delta = e.deltaY > 0 ? 1.1 : 0.9;
-    controls.distance *= delta ** controls.zoomSpeed;
-
-    // Clamp distance
-    controls.distance = clamp(controls.distance, controls.minDistance, controls.maxDistance);
-
-    updateOrbitCamera(controls);
+    applyZoom(controls.distance * delta ** controls.zoomSpeed);
   };
 
   // Prevent default touch actions (scrolling/zooming) on the element
@@ -219,6 +266,7 @@ export function updateOrbitControls(controls: OrbitControls, deltaTime: number):
   if (controls.autoRotate && !controls.isDragging) {
     controls.theta += degToRad(controls.autoRotateSpeed) * deltaTime;
     updateOrbitCamera(controls);
+    controls.onRotationChange?.(controls.theta, controls.phi);
   }
 }
 
