@@ -60,7 +60,7 @@ export {
 export type { BackendType, RendererOptions } from "./core/renderer/types";
 export type { Animation, AnimationConfig, AnimationController } from "./animation/types";
 export type { ModelVariant, PartName, LayerVisibility, PartsVisibility } from "./model/types";
-export { PART_NAMES, createDefaultVisibility } from "./model/types";
+export { BoneIndex, PART_NAMES, createDefaultVisibility } from "./model/types";
 export type { TextureSource } from "./texture";
 
 // Plugin types
@@ -72,6 +72,23 @@ export { loadSkinTexture, loadCapeTexture, loadElytraTexture } from "./texture";
 
 // Animation presets
 export { registerAnimation, getAnimation, getRegisteredAnimations } from "./animation/types";
+export type { EasingFunction } from "./animation/types";
+export {
+  linear,
+  easeInQuad,
+  easeOutQuad,
+  easeInOutQuad,
+  easeInCubic,
+  easeOutCubic,
+  easeInOutCubic,
+  easeInSine,
+  easeOutSine,
+  easeInOutSine,
+  sineWave,
+  halfSine,
+  bounce,
+  elastic,
+} from "./animation/easing";
 
 // Advanced: Direct access to subsystems (for custom implementations)
 export * from "./core/math";

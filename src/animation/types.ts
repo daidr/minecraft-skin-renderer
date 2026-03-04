@@ -47,6 +47,7 @@ export interface AnimationConfig {
 export interface AnimationController {
   readonly isPlaying: boolean;
   readonly isPaused: boolean;
+  readonly isFinished: boolean;
   readonly currentAnimation: string | null;
   readonly progress: number; // 0-1
 

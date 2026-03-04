@@ -167,6 +167,10 @@ export function createAnimationController(skeleton: PlayerSkeleton): AnimationCo
       return state.current?.playState === AnimationPlayState.Paused;
     },
 
+    get isFinished() {
+      return state.current?.playState === AnimationPlayState.Stopped;
+    },
+
     get currentAnimation() {
       return state.current?.animation.name ?? null;
     },
