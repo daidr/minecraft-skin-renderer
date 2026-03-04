@@ -207,8 +207,12 @@ export class WebGLRenderer implements IRenderer {
     if (this.disposed) return;
     this.disposed = true;
 
-    // WebGL context will be garbage collected
-    // when canvas is removed from DOM
+    // Explicitly lose the WebGL context to release GPU resources.
+    // Individual textures, buffers, and pipelines are disposed by the caller (SkinViewer.dispose).
+    const loseContext = this.gl.getExtension("WEBGL_lose_context");
+    if (loseContext) {
+      loseContext.loseContext();
+    }
   }
 }
 

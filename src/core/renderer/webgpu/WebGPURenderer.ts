@@ -231,7 +231,9 @@ export class WebGPURenderer implements IRenderer {
 
   /** Create a texture */
   async createTexture(source: TexImageSource, options?: TextureOptions): Promise<ITexture> {
-    return WebGPUTextureImpl.create(this.device, source, options);
+    const texture = await WebGPUTextureImpl.create(this.device, source, options);
+    texture.setOnDispose((id) => this.invalidateTextureCache(id));
+    return texture;
   }
 
   /** Create a pipeline */

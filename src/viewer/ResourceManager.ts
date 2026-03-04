@@ -245,7 +245,7 @@ export function createPipelines(renderer: IRenderer): {
   capePipeline: IPipeline;
 } {
   const activePlugin = getRendererPlugin(renderer.backend)!;
-  const shaders = activePlugin.shaders;
+  const shaders = activePlugin.getComposedShaders?.() ?? activePlugin.shaders;
   const vertexShader = shaders.vertex;
   const fragmentShader = shaders.fragment;
 

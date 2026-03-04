@@ -61,7 +61,7 @@ import {
   createPipelines,
 } from "./ResourceManager";
 import type { PartBuffers, PartGeometry } from "./ResourceManager";
-import { computeBoneMatrices } from "./BoneMatrixComputer";
+import { computeBoneMatrices, BONE_MATRICES_SIZE } from "./BoneMatrixComputer";
 import { createRenderBindGroups, updateRenderBindGroups } from "./RenderState";
 import type { RenderBindGroups } from "./RenderState";
 
@@ -405,7 +405,7 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     partGeometries,
     partsVisibility: createDefaultVisibility(),
     backEquipment: initialBackEquipment,
-    boneMatricesCache: new Float32Array(24 * 16),
+    boneMatricesCache: new Float32Array(BONE_MATRICES_SIZE),
     boneMatricesDirty: true,
     renderBindGroups,
     backgroundRenderer: null,
@@ -583,7 +583,13 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
       if (source) {
         const bitmap = await loadSkinTexture(source);
-        state.skinTexture = await state.renderer.createTexture(bitmap, texOpts);
+        if (state.disposed) return;
+        const tex = await state.renderer.createTexture(bitmap, texOpts);
+        if (state.disposed) {
+          tex.dispose();
+          return;
+        }
+        state.skinTexture = tex;
       }
     },
 
@@ -597,7 +603,13 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
       if (source) {
         const bitmap = await loadCapeTexture(source);
-        state.capeTexture = await state.renderer.createTexture(bitmap, texOpts);
+        if (state.disposed) return;
+        const tex = await state.renderer.createTexture(bitmap, texOpts);
+        if (state.disposed) {
+          tex.dispose();
+          return;
+        }
+        state.capeTexture = tex;
         // Auto-enable cape display if not already showing something
         if (state.backEquipment === "none") {
           state.backEquipment = "cape";
@@ -785,6 +797,10 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       // Create and set up new background renderer
       state.backgroundRenderer = panoramaPlugin.createRenderer(renderer);
       await state.backgroundRenderer.setSource(source);
+      if (state.disposed) {
+        state.backgroundRenderer.dispose();
+        state.backgroundRenderer = null;
+      }
     },
 
     dispose() {

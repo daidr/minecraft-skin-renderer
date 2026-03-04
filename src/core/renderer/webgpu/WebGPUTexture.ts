@@ -20,6 +20,9 @@ export class WebGPUTextureImpl implements ITexture {
   /** Version counter for cancelling pending updates */
   private updateVersion = 0;
 
+  /** Callback invoked on dispose to clean up external caches */
+  private onDisposeCallback: ((id: number) => void) | null = null;
+
   private constructor(
     device: GPUDevice,
     texture: GPUTexture,
@@ -91,6 +94,11 @@ export class WebGPUTextureImpl implements ITexture {
     });
 
     return new WebGPUTextureImpl(device, texture, sampler, width, height);
+  }
+
+  /** Set a callback to be invoked when this texture is disposed */
+  setOnDispose(callback: (id: number) => void): void {
+    this.onDisposeCallback = callback;
   }
 
   /** Convert filter enum to GPU filter mode */
@@ -176,6 +184,8 @@ export class WebGPUTextureImpl implements ITexture {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.onDisposeCallback?.(this.id);
+    this.onDisposeCallback = null;
     this.texture.destroy();
   }
 }

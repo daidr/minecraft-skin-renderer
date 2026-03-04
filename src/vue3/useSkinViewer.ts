@@ -86,6 +86,10 @@ export function useSkinViewer(
       isReady.value = true;
       error.value = null;
 
+      if (opts.rotation) {
+        v.setRotation(opts.rotation.theta, opts.rotation.phi);
+      }
+
       if (opts.backEquipment) {
         v.setBackEquipment(opts.backEquipment);
       }

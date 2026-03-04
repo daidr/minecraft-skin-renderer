@@ -96,8 +96,8 @@ export function getImageData(
   source: HTMLImageElement | ImageBitmap | HTMLCanvasElement,
 ): ImageData {
   const canvas = document.createElement("canvas");
-  const width = source instanceof HTMLCanvasElement ? source.width : source.width;
-  const height = source instanceof HTMLCanvasElement ? source.height : source.height;
+  const width = source.width;
+  const height = source.height;
 
   canvas.width = width;
   canvas.height = height;
