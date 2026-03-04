@@ -198,6 +198,26 @@ viewer.resumeAnimation();
 viewer.stopAnimation();
 ```
 
+#### setAnimationSpeed()
+
+动态修改当前动画的播放速度，不会重启动画。
+
+```ts
+viewer.setAnimationSpeed(2.0); // 双倍速
+```
+
+**参数：** `speed: number` — 播放速度倍率
+
+#### setAnimationAmplitude()
+
+动态修改当前动画的运动幅度，不会重启动画。
+
+```ts
+viewer.setAnimationAmplitude(0.5); // 减半幅度
+```
+
+**参数：** `amplitude: number` — 动作幅度倍率
+
 #### isPlaying <Badge type="info" text="只读" />
 
 动画是否正在播放。
@@ -205,6 +225,16 @@ viewer.stopAnimation();
 ```ts
 if (viewer.isPlaying) {
   /* ... */
+}
+```
+
+#### isPaused <Badge type="info" text="只读" />
+
+动画是否处于暂停状态。
+
+```ts
+if (viewer.isPaused) {
+  viewer.resumeAnimation();
 }
 ```
 
@@ -272,6 +302,62 @@ viewer.setAutoRotate(true);
 ```
 
 **参数：** `enabled: boolean`
+
+#### setAutoRotateSpeed()
+
+设置自动旋转速度。
+
+```ts
+viewer.setAutoRotateSpeed(60); // 60 度/秒
+```
+
+**参数：** `speed: number` — 旋转速度（度/秒）
+
+#### setEnableRotate()
+
+启用或禁用鼠标/触摸旋转控制。
+
+```ts
+viewer.setEnableRotate(false); // 禁止拖拽旋转
+```
+
+**参数：** `enabled: boolean`
+
+#### setEnableZoom()
+
+启用或禁用缩放控制（滚轮和双指缩放）。
+
+```ts
+viewer.setEnableZoom(false); // 禁止缩放
+```
+
+**参数：** `enabled: boolean`
+
+#### onZoomChange
+
+当用户通过滚轮或双指缩放改变缩放距离时触发的回调。
+
+```ts
+viewer.onZoomChange = (zoom) => {
+  console.log("当前缩放距离:", zoom);
+};
+viewer.onZoomChange = null; // 移除回调
+```
+
+**类型：** `((zoom: number) => void) | null`
+
+#### onRotationChange
+
+当用户通过拖拽旋转或自动旋转改变角度时触发的回调。
+
+```ts
+viewer.onRotationChange = (theta, phi) => {
+  console.log("水平角度:", theta, "垂直角度:", phi);
+};
+viewer.onRotationChange = null; // 移除回调
+```
+
+**类型：** `((theta: number, phi: number) => void) | null`
 
 #### resetCamera()
 

@@ -215,8 +215,30 @@ interface AnimationController {
   pause(): void;
   resume(): void;
   stop(): void;
+  setSpeed(speed: number): void;
+  setAmplitude(amplitude: number): void;
 }
 ```
+
+#### setSpeed()
+
+动态修改当前动画的播放速度，不会重启动画。
+
+```ts
+animationController.setSpeed(2.0); // 双倍速
+```
+
+**参数：** `speed: number` — 播放速度倍率
+
+#### setAmplitude()
+
+动态修改当前动画的运动幅度，不会重启动画。
+
+```ts
+animationController.setAmplitude(0.5); // 减半幅度
+```
+
+**参数：** `amplitude: number` — 动作幅度倍率
 
 ### AnimationPlayState
 

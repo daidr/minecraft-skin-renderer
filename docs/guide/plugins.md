@@ -28,13 +28,13 @@ use(WebGLRendererPlugin);
 
 功能插件为 viewer 添加额外能力：
 
-- **PanoramaBackgroundPlugin** — 全景图背景
+- **PanoramaPlugin** — 全景图背景
 
 ```ts
 import { use } from "@daidr/minecraft-skin-renderer";
-import { PanoramaBackgroundPlugin } from "@daidr/minecraft-skin-renderer/panorama";
+import { PanoramaPlugin } from "@daidr/minecraft-skin-renderer/panorama";
 
-use(PanoramaBackgroundPlugin);
+use(PanoramaPlugin);
 ```
 
 ## 按需加载

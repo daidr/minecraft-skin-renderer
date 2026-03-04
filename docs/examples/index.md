@@ -25,8 +25,9 @@ const viewer = await createSkinViewer({
 ```ts
 import { renderAvatar } from "@daidr/minecraft-skin-renderer/canvas2d";
 
-const avatarCanvas = renderAvatar(skinImage, { scale: 8 });
-document.body.appendChild(avatarCanvas);
+const canvas = document.createElement("canvas");
+await renderAvatar(canvas, { skin: "https://example.com/skin.png", scale: 8 });
+document.body.appendChild(canvas);
 ```
 
 ## 全景图背景
@@ -36,10 +37,10 @@ document.body.appendChild(avatarCanvas);
 ```ts
 import { use, createSkinViewer } from "@daidr/minecraft-skin-renderer";
 import { WebGLRendererPlugin } from "@daidr/minecraft-skin-renderer/webgl";
-import { PanoramaBackgroundPlugin } from "@daidr/minecraft-skin-renderer/panorama";
+import { PanoramaPlugin } from "@daidr/minecraft-skin-renderer/panorama";
 
 use(WebGLRendererPlugin);
-use(PanoramaBackgroundPlugin);
+use(PanoramaPlugin);
 
 const viewer = await createSkinViewer({
   canvas: document.getElementById("canvas"),

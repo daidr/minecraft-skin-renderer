@@ -42,34 +42,45 @@ const skinUrl = "https://example.com/skin.png";
 
 ### Props
 
-| Prop                 | 类型                            | 默认值   | 说明                                                   |
-| -------------------- | ------------------------------- | -------- | ------------------------------------------------------ |
-| `plugins`            | `AnyRegistrablePlugin[]`        | —        | 自动注册的插件列表                                     |
-| `skin`               | `TextureSource`                 | —        | 皮肤纹理（URL、Blob、HTMLImageElement 或 ImageBitmap） |
-| `cape`               | `TextureSource \| null`         | —        | 披风纹理，`null` 隐藏披风                              |
-| `slim`               | `boolean`                       | `false`  | 是否使用纤细（3px）手臂模型                            |
-| `backEquipment`      | `'none' \| 'cape' \| 'elytra'`  | `'none'` | 背部装备                                               |
-| `preferredBackend`   | `'webgl' \| 'webgpu' \| 'auto'` | `'auto'` | 首选渲染后端                                           |
-| `zoom`               | `number`                        | —        | 相机缩放距离                                           |
-| `autoRotate`         | `boolean`                       | `false`  | 启用自动旋转                                           |
-| `autoRotateSpeed`    | `number`                        | —        | 自动旋转速度                                           |
-| `enableRotate`       | `boolean`                       | `true`   | 启用鼠标旋转控制                                       |
-| `enableZoom`         | `boolean`                       | `true`   | 启用鼠标缩放控制                                       |
-| `animation`          | `string \| null`                | —        | 播放的动画名称，`null` 停止动画                        |
-| `animationSpeed`     | `number`                        | `1`      | 动画播放速度倍率                                       |
-| `animationAmplitude` | `number`                        | `1`      | 动画运动幅度倍率                                       |
-| `partsVisibility`    | `PartsVisibility`               | —        | 各部位图层可见性                                       |
-| `panorama`           | `TextureSource \| null`         | —        | 全景图背景（需要 PanoramaPlugin）                      |
-| `pixelRatio`         | `number`                        | —        | 设备像素比覆盖                                         |
-| `antialias`          | `boolean`                       | `true`   | 启用抗锯齿                                             |
-| `fov`                | `number`                        | —        | 相机视场角（度）                                       |
+| Prop                 | 类型                             | 默认值   | 说明                                                   |
+| -------------------- | -------------------------------- | -------- | ------------------------------------------------------ |
+| `plugins`            | `AnyRegistrablePlugin[]`         | —        | 自动注册的插件列表                                     |
+| `skin`               | `TextureSource`                  | —        | 皮肤纹理（URL、Blob、HTMLImageElement 或 ImageBitmap） |
+| `cape`               | `TextureSource \| null`          | —        | 披风纹理，`null` 隐藏披风                              |
+| `slim`               | `boolean`                        | `false`  | 是否使用纤细（3px）手臂模型                            |
+| `backEquipment`      | `'none' \| 'cape' \| 'elytra'`   | `'none'` | 背部装备                                               |
+| `preferredBackend`   | `'webgl' \| 'webgpu' \| 'auto'`  | `'auto'` | 首选渲染后端                                           |
+| `zoom`               | `number`                         | —        | 相机缩放距离                                           |
+| `rotation`           | `{ theta: number; phi: number }` | —        | 相机旋转角度（弧度），支持 `v-model:rotation`          |
+| `autoRotate`         | `boolean`                        | `false`  | 启用自动旋转                                           |
+| `autoRotateSpeed`    | `number`                         | —        | 自动旋转速度                                           |
+| `enableRotate`       | `boolean`                        | `true`   | 启用鼠标旋转控制                                       |
+| `enableZoom`         | `boolean`                        | `true`   | 启用鼠标缩放控制                                       |
+| `animation`          | `string \| null`                 | —        | 播放的动画名称，`null` 停止动画                        |
+| `animationSpeed`     | `number`                         | `1`      | 动画播放速度倍率                                       |
+| `animationAmplitude` | `number`                         | `1`      | 动画运动幅度倍率                                       |
+| `paused`             | `boolean`                        | `false`  | 是否暂停动画，支持 `v-model:paused`                    |
+| `partsVisibility`    | `PartsVisibility`                | —        | 各部位图层可见性                                       |
+| `panorama`           | `TextureSource \| null`          | —        | 全景图背景（需要 PanoramaPlugin）                      |
+| `pixelRatio`         | `number`                         | —        | 设备像素比覆盖                                         |
+| `antialias`          | `boolean`                        | `true`   | 启用抗锯齿                                             |
+| `fov`                | `number`                         | —        | 相机视场角（度）                                       |
 
 ### 事件
 
-| 事件    | 参数                   | 说明                     |
-| ------- | ---------------------- | ------------------------ |
-| `ready` | `(viewer: SkinViewer)` | 查看器初始化完成时触发   |
-| `error` | `(error: Error)`       | 初始化或运行时出错时触发 |
+| 事件              | 参数                                         | 说明                                            |
+| ----------------- | -------------------------------------------- | ----------------------------------------------- |
+| `ready`           | `(viewer: SkinViewer)`                       | 查看器初始化完成时触发                          |
+| `error`           | `(error: Error)`                             | 初始化或运行时出错时触发                        |
+| `update:zoom`     | `(zoom: number)`                             | 用户通过滚轮或双指缩放改变缩放时触发（v-model） |
+| `update:rotation` | `(rotation: { theta: number; phi: number })` | 拖拽旋转或自动旋转改变角度时触发（v-model）     |
+| `update:paused`   | `(paused: boolean)`                          | 通过暴露方法改变暂停状态时触发（v-model）       |
+
+#### v-model 双向绑定
+
+```vue
+<SkinViewer v-model:zoom="zoom" v-model:rotation="rotation" v-model:paused="paused" />
+```
 
 ### 暴露方法
 
@@ -93,12 +104,17 @@ function takeScreenshot() {
 </template>
 ```
 
-| 方法         | 类型                                                           | 说明             |
-| ------------ | -------------------------------------------------------------- | ---------------- |
-| `viewer`     | `ShallowRef<SkinViewer \| null>`                               | 查看器实例       |
-| `backend`    | `ComputedRef<BackendType \| null>`                             | 当前渲染后端     |
-| `screenshot` | `(type?: 'png' \| 'jpeg', quality?: number) => string \| null` | 截图             |
-| `recreate`   | `() => Promise<void>`                                          | 销毁并重建查看器 |
+| 方法              | 类型                                                           | 说明             |
+| ----------------- | -------------------------------------------------------------- | ---------------- |
+| `viewer`          | `ShallowRef<SkinViewer \| null>`                               | 查看器实例       |
+| `backend`         | `ComputedRef<BackendType \| null>`                             | 当前渲染后端     |
+| `screenshot`      | `(type?: 'png' \| 'jpeg', quality?: number) => string \| null` | 截图             |
+| `recreate`        | `() => Promise<void>`                                          | 销毁并重建查看器 |
+| `pauseAnimation`  | `() => void`                                                   | 暂停动画         |
+| `resumeAnimation` | `() => void`                                                   | 恢复动画         |
+| `stopAnimation`   | `() => void`                                                   | 停止动画并重置   |
+| `playAnimation`   | `(name: string, config?: AnimationConfig) => void`             | 播放动画         |
+| `resetCamera`     | `() => void`                                                   | 重置相机位置     |
 
 ## useSkinViewer
 
@@ -128,19 +144,26 @@ const { containerRef, viewer, isReady, error } = useSkinViewer(() => ({
 
 ### 选项
 
-传入一个返回 `UseSkinViewerOptions` 的 getter 函数。动态选项（`skin`、`cape`、`slim`、`zoom`、`animation` 等）会被自动监听并同步到查看器。创建时选项（`preferredBackend`、`antialias`、`fov` 等）仅在初始化时应用，修改后需调用 `recreate()` 重新初始化。
+传入一个返回 `UseSkinViewerOptions` 的 getter 函数。动态选项（`skin`、`cape`、`slim`、`zoom`、`rotation`、`animation`、`paused`、`animationSpeed`、`animationAmplitude`、`enableRotate`、`enableZoom`、`autoRotateSpeed` 等）会被自动监听并同步到查看器。创建时选项（`preferredBackend`、`antialias`、`fov`、`pixelRatio`）仅在初始化时应用，修改后需调用 `recreate()` 重新初始化。
+
+> **注意：** `animationSpeed` 和 `animationAmplitude` 变化时不会重启动画，仅调整当前播放参数。
 
 ### 返回值
 
-| 属性           | 类型                                                           | 说明                     |
-| -------------- | -------------------------------------------------------------- | ------------------------ |
-| `containerRef` | `Ref<HTMLElement \| null>`                                     | 绑定到容器元素的模板引用 |
-| `viewer`       | `ShallowRef<SkinViewer \| null>`                               | 查看器实例               |
-| `backend`      | `ComputedRef<BackendType \| null>`                             | 当前渲染后端             |
-| `isReady`      | `Ref<boolean>`                                                 | 查看器是否已初始化       |
-| `error`        | `ShallowRef<Error \| null>`                                    | 初始化或运行时错误       |
-| `screenshot`   | `(type?: 'png' \| 'jpeg', quality?: number) => string \| null` | 截图                     |
-| `recreate`     | `() => Promise<void>`                                          | 销毁并重建查看器         |
+| 属性              | 类型                                                           | 说明                     |
+| ----------------- | -------------------------------------------------------------- | ------------------------ |
+| `containerRef`    | `Ref<HTMLElement \| null>`                                     | 绑定到容器元素的模板引用 |
+| `viewer`          | `ShallowRef<SkinViewer \| null>`                               | 查看器实例               |
+| `backend`         | `ComputedRef<BackendType \| null>`                             | 当前渲染后端             |
+| `isReady`         | `Ref<boolean>`                                                 | 查看器是否已初始化       |
+| `error`           | `ShallowRef<Error \| null>`                                    | 初始化或运行时错误       |
+| `screenshot`      | `(type?: 'png' \| 'jpeg', quality?: number) => string \| null` | 截图                     |
+| `recreate`        | `() => Promise<void>`                                          | 销毁并重建查看器         |
+| `pauseAnimation`  | `() => void`                                                   | 暂停动画                 |
+| `resumeAnimation` | `() => void`                                                   | 恢复动画                 |
+| `stopAnimation`   | `() => void`                                                   | 停止动画并重置           |
+| `playAnimation`   | `(name: string, config?: AnimationConfig) => void`             | 播放动画                 |
+| `resetCamera`     | `() => void`                                                   | 重置相机位置             |
 
 ## 2D 渲染组合式函数
 

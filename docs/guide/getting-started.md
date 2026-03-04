@@ -66,11 +66,14 @@ const viewer = await createSkinViewer({
 ```ts
 import { renderAvatar, renderSkinFront } from "@daidr/minecraft-skin-renderer/canvas2d";
 
+const canvas = document.createElement("canvas");
+
 // 渲染头像
-const avatarCanvas = renderAvatar(skinImage, { scale: 8 });
+await renderAvatar(canvas, { skin: "https://example.com/skin.png", scale: 8 });
 
 // 渲染皮肤正面全身
-const frontCanvas = renderSkinFront(skinImage, { scale: 4 });
+const frontCanvas = document.createElement("canvas");
+await renderSkinFront(frontCanvas, { skin: "https://example.com/skin.png", scale: 4 });
 ```
 
 ## 下一步
