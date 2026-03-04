@@ -1,63 +1,78 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, computed, onUnmounted } from "vue";
+import { SkinViewer as SkinViewerComponent } from "@daidr/minecraft-skin-renderer/vue3";
+import type {
+  SkinViewer,
+  BackEquipment,
+  PartsVisibility,
+  BackendType,
+} from "@daidr/minecraft-skin-renderer";
 import { useViewerStore } from "../stores/viewer";
 import { useSettingsStore } from "../stores/settings";
-import { useViewerSync } from "../composables/useViewerSync";
+import { useTexturesStore } from "../stores/textures";
 import StatsOverlay from "./StatsOverlay.vue";
 
 const viewerStore = useViewerStore();
 const settingsStore = useSettingsStore();
-useViewerSync();
+const textures = useTexturesStore();
+const skinViewerRef = ref<InstanceType<typeof SkinViewerComponent>>();
 
-const containerRef = ref<HTMLElement>();
-let resizeObserver: ResizeObserver | null = null;
-let canvas: HTMLCanvasElement | null = null;
+const preferredBackend = computed(() => settingsStore.settings.backend as BackendType | "auto");
+const backEquipment = computed(() => settingsStore.settings.backEquipment as BackEquipment);
+const partsVisibility = computed(
+  () => settingsStore.settings.partsVisibility as unknown as PartsVisibility,
+);
 
-async function initViewer() {
-  if (!containerRef.value) return;
-  canvas = await viewerStore.createViewer(containerRef.value);
-  if (canvas) {
-    attachWheelListener();
-  }
+const skinSource = computed(() => textures.skinSource ?? textures.DEFAULT_SKIN_URL);
+const capeSource = computed(() => {
+  if (textures.capeSource === null) return null;
+  return textures.capeSource ?? textures.DEFAULT_CAPE_URL;
+});
+const animationName = computed(() => settingsStore.settings.animation || null);
+
+function normalizeDeg(deg: number): number {
+  deg = deg % 360;
+  if (deg > 180) deg -= 360;
+  if (deg <= -180) deg += 360;
+  return deg;
+}
+
+const zoomModel = computed({
+  get: () => settingsStore.settings.zoom,
+  set: (v: number) => {
+    settingsStore.settings.zoom = Math.round(v);
+  },
+});
+
+const rotationModel = computed({
+  get: () => ({
+    theta: (settingsStore.settings.rotationTheta * Math.PI) / 180,
+    phi: (settingsStore.settings.rotationPhi * Math.PI) / 180,
+  }),
+  set: (v: { theta: number; phi: number }) => {
+    settingsStore.settings.rotationTheta = Math.round(normalizeDeg((v.theta * 180) / Math.PI));
+    settingsStore.settings.rotationPhi = Math.round((v.phi * 180) / Math.PI);
+  },
+});
+
+function onReady(viewer: SkinViewer) {
+  viewerStore.setViewer(viewer);
+  console.log(`Minecraft Skin Renderer initialized with ${viewer.backend.toUpperCase()} backend`);
+}
+
+function onError(error: Error) {
+  console.error("Failed to initialize viewer:", error);
+  alert(
+    "Failed to initialize the skin viewer. Please make sure your browser supports WebGL or WebGPU.",
+  );
 }
 
 async function recreateViewer() {
-  if (!containerRef.value) return;
-  canvas = await viewerStore.createViewer(containerRef.value);
-  if (canvas) {
-    attachWheelListener();
-  }
+  await (skinViewerRef.value as any)?.recreate();
 }
-
-function attachWheelListener() {
-  if (!canvas) return;
-  canvas.addEventListener("wheel", () => {
-    if (!viewerStore.viewer) return;
-    const zoom = viewerStore.viewer.getZoom();
-    settingsStore.settings.zoom = Math.round(zoom);
-  });
-}
-
-onMounted(async () => {
-  await initViewer();
-
-  // Resize observer
-  if (containerRef.value) {
-    resizeObserver = new ResizeObserver(([entry]) => {
-      const { width, height } = entry!.contentRect;
-      if (canvas) {
-        canvas.width = width * devicePixelRatio;
-        canvas.height = height * devicePixelRatio;
-      }
-      viewerStore.resize(width, height);
-    });
-    resizeObserver.observe(containerRef.value);
-  }
-});
 
 onUnmounted(() => {
-  resizeObserver?.disconnect();
-  viewerStore.dispose();
+  viewerStore.clearViewer();
 });
 
 defineExpose({ recreateViewer });
@@ -65,7 +80,25 @@ defineExpose({ recreateViewer });
 
 <template>
   <div class="canvas-3d-wrapper">
-    <div ref="containerRef" class="canvas-container" />
+    <SkinViewerComponent
+      ref="skinViewerRef"
+      :preferred-backend="preferredBackend"
+      :skin="skinSource"
+      :cape="capeSource"
+      :slim="settingsStore.settings.slimModel"
+      :back-equipment="backEquipment"
+      :animation="animationName"
+      :animation-speed="settingsStore.settings.animationSpeed"
+      :animation-amplitude="settingsStore.settings.animationAmplitude"
+      v-model:zoom="zoomModel"
+      v-model:rotation="rotationModel"
+      :auto-rotate="settingsStore.settings.autoRotate"
+      :parts-visibility="partsVisibility"
+      :panorama="textures.panoramaSource"
+      @ready="onReady"
+      @error="onError"
+      class="skin-viewer"
+    />
     <StatsOverlay />
   </div>
 </template>
@@ -78,18 +111,13 @@ defineExpose({ recreateViewer });
   display: flex;
 }
 
-.canvas-container {
+.skin-viewer {
   flex: 1;
   min-width: 0;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
   background: radial-gradient(ellipse at center, var(--canvas-gradient) 0%, var(--background) 100%);
 }
 
-.canvas-container :deep(canvas) {
+.skin-viewer :deep(canvas) {
   width: 100%;
   height: 100%;
   touch-action: none;

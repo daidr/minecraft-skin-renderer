@@ -19,6 +19,8 @@ function getDefaultSettings(): PlaygroundSettings {
     animationAmplitude: 1,
     backEquipment: "cape",
     zoom: 50,
+    rotationTheta: 0,
+    rotationPhi: 90,
     autoRotate: false,
     partsVisibility,
     panoramaUrl: "",

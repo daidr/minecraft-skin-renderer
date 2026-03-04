@@ -11,6 +11,7 @@ export default defineConfig({
       "@daidr/minecraft-skin-renderer/webgl": resolve(__dirname, "../src/webgl.ts"),
       "@daidr/minecraft-skin-renderer/webgpu": resolve(__dirname, "../src/webgpu.ts"),
       "@daidr/minecraft-skin-renderer/panorama": resolve(__dirname, "../src/panorama.ts"),
+      "@daidr/minecraft-skin-renderer/vue3": resolve(__dirname, "../src/vue3.ts"),
       "@daidr/minecraft-skin-renderer": resolve(__dirname, "../src/index.ts"),
     },
   },

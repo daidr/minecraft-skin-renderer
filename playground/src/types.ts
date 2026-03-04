@@ -9,6 +9,8 @@ export interface PlaygroundSettings {
   animationAmplitude: number;
   backEquipment: string;
   zoom: number;
+  rotationTheta: number; // horizontal angle in degrees (-180..180)
+  rotationPhi: number; // vertical angle in degrees (10..170)
   autoRotate: boolean;
   partsVisibility: Record<string, { inner: boolean; outer: boolean }>;
   panoramaUrl: string;
