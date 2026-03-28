@@ -114,6 +114,7 @@ Animations are keyframe-based tracks per bone, registered globally via `register
 - Skeleton bones form a tree: Root → Body → (Head, Arms, Legs) → Overlays
 - Cape and Elytra share the same texture format (64x32)
 - All rotations use quaternions; conversions via `quatFromEuler()`
+- Built-in Lambert lighting: ambient + camera-following directional light. Controlled via `ambientLight`/`directLight` options (0.0~1.0). Light direction is computed from camera position each frame in `RenderState.ts`. Lighting uniforms are added to both WebGL (individual uniforms) and WebGPU (uniform buffer at offsets 1664–1696).
 
 ## Workspaces
 

@@ -61,6 +61,8 @@ const skinUrl = "https://example.com/skin.png";
 | `animationAmplitude` | `number`                         | `1`      | 动画运动幅度倍率                                       |
 | `paused`             | `boolean`                        | `false`  | 是否暂停动画，支持 `v-model:paused`                    |
 | `partsVisibility`    | `PartsVisibility`                | —        | 各部位图层可见性                                       |
+| `ambientLight`       | `number`                         | `0.6`    | 环境光强度（0.0\~1.0）                                 |
+| `directLight`        | `number`                         | `0.4`    | 方向光强度（0.0\~1.0），光源跟随相机方向               |
 | `panorama`           | `TextureSource \| null`          | —        | 全景图背景（需要 PanoramaPlugin）                      |
 | `pixelRatio`         | `number`                         | —        | 设备像素比覆盖                                         |
 | `antialias`          | `boolean`                        | `true`   | 启用抗锯齿                                             |

@@ -49,6 +49,8 @@ const viewer = await createSkinViewer(options);
 | `enableZoom`       | `boolean`               | `true`   | 允许鼠标缩放                                                                |
 | `autoRotate`       | `boolean`               | `false`  | 自动旋转模型                                                                |
 | `autoRotateSpeed`  | `number`                | `30`     | 自动旋转速度（度/秒）                                                       |
+| `ambientLight`     | `number`                | `0.6`    | 环境光强度（0.0\~1.0）                                                      |
+| `directLight`      | `number`                | `0.4`    | 方向光强度（0.0\~1.0），光源跟随相机方向                                     |
 | `panorama`         | `TextureSource`         | —        | 全景图背景（需注册 PanoramaPlugin）                                         |
 
 ## SkinViewer 实例
@@ -366,6 +368,55 @@ viewer.onRotationChange = null; // 移除回调
 ```ts
 viewer.resetCamera();
 ```
+
+### 光照控制
+
+内置 Lambert 光照模型，由环境光和跟随相机的方向光组成。
+
+- **环境光**：均匀照亮模型所有面，保证暗面不会全黑
+- **方向光**：从相机方向打光，旋转模型时光照自然跟随，产生明暗层次
+
+将 `ambientLight` 设为 `1.0`、`directLight` 设为 `0.0` 可完全禁用光照效果（等同于直接输出纹理颜色）。
+
+#### setAmbientLight()
+
+设置环境光强度。
+
+```ts
+viewer.setAmbientLight(0.8);
+```
+
+**参数：** `intensity: number` — 强度值（0.0\~1.0）
+
+#### getAmbientLight()
+
+获取当前环境光强度。
+
+```ts
+const ambient = viewer.getAmbientLight(); // 0.6
+```
+
+**返回值：** `number`
+
+#### setDirectLight()
+
+设置方向光强度。方向光从相机位置射向模型中心，旋转相机时光照方向随之改变。
+
+```ts
+viewer.setDirectLight(0.5);
+```
+
+**参数：** `intensity: number` — 强度值（0.0\~1.0）
+
+#### getDirectLight()
+
+获取当前方向光强度。
+
+```ts
+const direct = viewer.getDirectLight(); // 0.4
+```
+
+**返回值：** `number`
 
 ### 渲染控制
 
