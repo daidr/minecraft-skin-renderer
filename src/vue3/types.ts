@@ -40,6 +40,10 @@ export interface UseSkinViewerOptions {
   slim?: boolean;
   /** Back equipment to display. Default: `'none'` */
   backEquipment?: BackEquipment;
+  /** Ambient light intensity (0.0~1.0). Default: `0.6` */
+  ambientLight?: number;
+  /** Direct light intensity (0.0~1.0). Default: `0.4` */
+  directLight?: number;
   /** Camera zoom distance */
   zoom?: number;
   /** Camera rotation angles in radians: `{ theta, phi }` */

@@ -39,6 +39,8 @@ export const SkinViewer: DefineComponent<
     slim: { type: Boolean, default: false },
     backEquipment: { type: String as PropType<BackEquipment>, default: "none" },
     preferredBackend: { type: String as PropType<BackendType | "auto">, default: "auto" },
+    ambientLight: { type: Number, default: undefined },
+    directLight: { type: Number, default: undefined },
     zoom: { type: Number, default: undefined },
     rotation: {
       type: Object as PropType<{ theta: number; phi: number }>,
@@ -83,6 +85,8 @@ export const SkinViewer: DefineComponent<
       slim: props.slim,
       backEquipment: props.backEquipment,
       preferredBackend: props.preferredBackend,
+      ambientLight: props.ambientLight,
+      directLight: props.directLight,
       zoom: props.zoom,
       rotation: props.rotation,
       autoRotate: props.autoRotate,

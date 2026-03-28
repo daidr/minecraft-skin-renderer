@@ -80,6 +80,8 @@ export function useSkinViewer(
         autoRotate: opts.autoRotate,
         autoRotateSpeed: opts.autoRotateSpeed,
         panorama: opts.panorama ?? undefined,
+        ambientLight: opts.ambientLight,
+        directLight: opts.directLight,
       });
 
       viewer.value = v;
@@ -290,6 +292,24 @@ export function useSkinViewer(
       }
     },
     { deep: true },
+  );
+
+  watch(
+    () => toValue(options)?.ambientLight,
+    (ambientLight) => {
+      if (viewer.value && ambientLight !== undefined) {
+        viewer.value.setAmbientLight(ambientLight);
+      }
+    },
+  );
+
+  watch(
+    () => toValue(options)?.directLight,
+    (directLight) => {
+      if (viewer.value && directLight !== undefined) {
+        viewer.value.setDirectLight(directLight);
+      }
+    },
   );
 
   watch(

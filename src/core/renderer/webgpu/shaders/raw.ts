@@ -8,17 +8,25 @@
  */
 export const SKIN_SHADER_WGSL_RAW = /* wgsl */ `
 // Uniform buffer layout
-// Total size: 1680 bytes (aligned to 16)
+// Total size: 1696 bytes (aligned to 16)
 // - modelMatrix:          64 bytes  (offset 0)
 // - viewProjectionMatrix: 64 bytes  (offset 64)
 // - boneMatrices:         1536 bytes (offset 128, 24 * 64)
 // - alphaTest:            4 bytes   (offset 1664)
+// - ambientIntensity:     4 bytes   (offset 1668)
+// - diffuseIntensity:     4 bytes   (offset 1672)
+// - _pad:                 4 bytes   (offset 1676)
+// - lightDirection:       12 bytes  (offset 1680) + 4 bytes padding
 
 struct Uniforms {
   modelMatrix: mat4x4<f32>,
   viewProjectionMatrix: mat4x4<f32>,
   boneMatrices: array<mat4x4<f32>, 24>,
   alphaTest: f32,
+  ambientIntensity: f32,
+  diffuseIntensity: f32,
+  _pad: f32,
+  lightDirection: vec3<f32>,
 }
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -36,6 +44,7 @@ struct VertexInput {
 struct VertexOutput {
   @builtin(position) position: vec4<f32>,
   @location(0) uv: vec2<f32>,
+  @location(1) worldNormal: vec3<f32>,
 }
 
 @vertex
@@ -54,6 +63,11 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 
   // Pass UV to fragment shader
   output.uv = input.uv;
+
+  // Transform normal to world space
+  let modelMat3 = mat3x3<f32>(uniforms.modelMatrix[0].xyz, uniforms.modelMatrix[1].xyz, uniforms.modelMatrix[2].xyz);
+  let boneMat3 = mat3x3<f32>(boneMatrix[0].xyz, boneMatrix[1].xyz, boneMatrix[2].xyz);
+  output.worldNormal = modelMat3 * boneMat3 * input.normal;
 
   // Final position
   output.position = uniforms.viewProjectionMatrix * worldPos;
@@ -94,8 +108,11 @@ fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {
     texColor.a = 1.0;
   }
 
-  // Output texture color directly (no lighting)
-  return texColor;
+  // Lambert lighting
+  let normal = normalize(input.worldNormal);
+  let ndotl = max(dot(normal, uniforms.lightDirection), 0.0);
+  let light = uniforms.ambientIntensity + uniforms.diffuseIntensity * ndotl;
+  return vec4<f32>(texColor.rgb * light, texColor.a);
 }
 `;
 

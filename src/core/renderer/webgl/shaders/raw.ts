@@ -19,6 +19,7 @@ uniform mat4 u_boneMatrices[24];
 
 // Outputs to fragment shader
 out vec2 v_uv;
+out vec3 v_worldNormal;
 
 // [PLUGIN_VERTEX_DECLARATIONS]
 
@@ -32,6 +33,9 @@ void main() {
 
     // Transform to world space
     vec4 worldPos = u_modelMatrix * localPos;
+
+    // Transform normal to world space
+    v_worldNormal = mat3(u_modelMatrix) * mat3(boneMatrix) * a_normal;
 
     // Pass UV to fragment shader
     v_uv = a_uv;
@@ -49,12 +53,16 @@ precision highp float;
 
 // Inputs from vertex shader
 in vec2 v_uv;
+in vec3 v_worldNormal;
 
 // [PLUGIN_FRAGMENT_DECLARATIONS]
 
 // Uniforms
 uniform sampler2D u_skinTexture;
 uniform float u_alphaTest;
+uniform vec3 u_lightDirection;
+uniform float u_ambientIntensity;
+uniform float u_diffuseIntensity;
 
 // Output
 out vec4 fragColor;
@@ -91,8 +99,11 @@ void main() {
         texColor.a = 1.0;
     }
 
-    // Default output (will be replaced if lighting plugin is active)
-    fragColor = texColor;
+    // Lambert lighting
+    vec3 normal = normalize(v_worldNormal);
+    float ndotl = max(dot(normal, u_lightDirection), 0.0);
+    float light = u_ambientIntensity + u_diffuseIntensity * ndotl;
+    fragColor = vec4(texColor.rgb * light, texColor.a);
 
     // [PLUGIN_FRAGMENT_OUTPUT]
 }

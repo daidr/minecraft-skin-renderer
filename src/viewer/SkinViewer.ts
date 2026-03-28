@@ -86,6 +86,10 @@ export interface SkinViewerOptions {
   /** Back equipment to display: 'cape', 'elytra', or 'none'. Default: 'none' unless cape is provided. */
   backEquipment?: BackEquipment;
   slim?: boolean;
+  /** Ambient light intensity (0.0~1.0). Default: 0.6 */
+  ambientLight?: number;
+  /** Direct light intensity (0.0~1.0). Default: 0.4 */
+  directLight?: number;
   fov?: number;
   zoom?: number;
   enableRotate?: boolean;
@@ -134,6 +138,15 @@ export interface SkinViewer {
    * @param visible - Whether the layer should be visible
    */
   setPartVisibility(part: PartName, layer: "inner" | "outer" | "both", visible: boolean): void;
+
+  /** Set ambient light intensity (0.0~1.0) */
+  setAmbientLight(intensity: number): void;
+  /** Get ambient light intensity */
+  getAmbientLight(): number;
+  /** Set direct light intensity (0.0~1.0) */
+  setDirectLight(intensity: number): void;
+  /** Get direct light intensity */
+  getDirectLight(): number;
 
   playAnimation(name: string, config?: AnimationConfig): void;
   pauseAnimation(): void;
@@ -222,6 +235,10 @@ interface SkinViewerState {
 
   // Performance optimization: pre-allocated render objects (from RenderState module)
   renderBindGroups: RenderBindGroups;
+
+  // Lighting
+  ambientLight: number;
+  directLight: number;
 
   // Background state
   backgroundRenderer: BackgroundRenderer | null;
@@ -408,6 +425,8 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     boneMatricesCache: new Float32Array(BONE_MATRICES_SIZE),
     boneMatricesDirty: true,
     renderBindGroups,
+    ambientLight: options.ambientLight ?? 0.6,
+    directLight: options.directLight ?? 0.4,
     backgroundRenderer: null,
     disposed: false,
   };
@@ -464,12 +483,16 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
       // Update pre-allocated bind groups (using RenderState module)
       const { renderBindGroups } = state;
+      renderBindGroups.uniforms.u_ambientIntensity = state.ambientLight;
+      renderBindGroups.uniforms.u_diffuseIntensity = state.directLight;
       updateRenderBindGroups(
         renderBindGroups,
         camera.viewMatrix,
         camera.projectionMatrix,
         state.boneMatricesCache,
         skinTexture,
+        camera.position,
+        camera.target,
         capeTexture,
       );
 
@@ -650,6 +673,22 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       } else {
         state.partsVisibility[part][layer] = visible;
       }
+    },
+
+    setAmbientLight(intensity: number) {
+      state.ambientLight = Math.max(0, Math.min(1, intensity));
+    },
+
+    getAmbientLight() {
+      return state.ambientLight;
+    },
+
+    setDirectLight(intensity: number) {
+      state.directLight = Math.max(0, Math.min(1, intensity));
+    },
+
+    getDirectLight() {
+      return state.directLight;
     },
 
     setSlim(slim: boolean) {

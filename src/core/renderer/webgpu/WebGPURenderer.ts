@@ -26,11 +26,14 @@ import { WebGPUTextureImpl } from "./WebGPUTexture";
  * - padding:              12 bytes  (offset 1668, align to 16)
  * Total: 1680 bytes
  */
-const UNIFORM_BUFFER_SIZE = 1680;
+const UNIFORM_BUFFER_SIZE = 1696;
 const OFFSET_MODEL_MATRIX = 0;
 const OFFSET_VIEW_PROJECTION_MATRIX = 64;
 const OFFSET_BONE_MATRICES = 128;
 const OFFSET_ALPHA_TEST = 1664;
+const OFFSET_AMBIENT_INTENSITY = 1668;
+const OFFSET_DIFFUSE_INTENSITY = 1672;
+const OFFSET_LIGHT_DIRECTION = 1680;
 
 /** Pool size for per-draw-call uniform buffers */
 const UNIFORM_POOL_SIZE = 32;
@@ -342,11 +345,37 @@ export class WebGPURenderer implements IRenderer {
       maxOffset = Math.max(maxOffset, OFFSET_BONE_MATRICES + 1536);
     }
 
-    // Alpha test (offset 1728)
+    // Alpha test (offset 1664)
     if (uniforms.u_alphaTest !== undefined) {
       this.uniformDataView.setFloat32(OFFSET_ALPHA_TEST, uniforms.u_alphaTest as number, true);
       minOffset = Math.min(minOffset, OFFSET_ALPHA_TEST);
-      maxOffset = Math.max(maxOffset, OFFSET_ALPHA_TEST + 16); // Aligned to 16 bytes
+      maxOffset = Math.max(maxOffset, OFFSET_ALPHA_TEST + 4);
+    }
+
+    // Lighting uniforms
+    if (uniforms.u_ambientIntensity !== undefined) {
+      this.uniformDataView.setFloat32(
+        OFFSET_AMBIENT_INTENSITY,
+        uniforms.u_ambientIntensity as number,
+        true,
+      );
+      minOffset = Math.min(minOffset, OFFSET_AMBIENT_INTENSITY);
+      maxOffset = Math.max(maxOffset, OFFSET_AMBIENT_INTENSITY + 4);
+    }
+    if (uniforms.u_diffuseIntensity !== undefined) {
+      this.uniformDataView.setFloat32(
+        OFFSET_DIFFUSE_INTENSITY,
+        uniforms.u_diffuseIntensity as number,
+        true,
+      );
+      minOffset = Math.min(minOffset, OFFSET_DIFFUSE_INTENSITY);
+      maxOffset = Math.max(maxOffset, OFFSET_DIFFUSE_INTENSITY + 4);
+    }
+    if (uniforms.u_lightDirection) {
+      const dir = uniforms.u_lightDirection as Float32Array;
+      float32View.set(dir, OFFSET_LIGHT_DIRECTION / 4);
+      minOffset = Math.min(minOffset, OFFSET_LIGHT_DIRECTION);
+      maxOffset = Math.max(maxOffset, OFFSET_LIGHT_DIRECTION + 16); // vec3 + padding = 16
     }
 
     // Upload full uniform data to this draw call's dedicated buffer
