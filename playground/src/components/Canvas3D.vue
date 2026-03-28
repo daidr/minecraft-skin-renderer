@@ -86,6 +86,8 @@ defineExpose({ recreateViewer });
       v-model:zoom="zoomModel"
       v-model:rotation="rotationModel"
       :auto-rotate="settingsStore.settings.autoRotate"
+      :ambient-light="settingsStore.settings.enableLighting ? settingsStore.settings.ambientLight : 1.0"
+      :direct-light="settingsStore.settings.enableLighting ? settingsStore.settings.directLight : 0.0"
       :parts-visibility="partsVisibility"
       :panorama="textures.panoramaSource"
       @ready="onReady"

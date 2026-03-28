@@ -4,6 +4,7 @@ import CapeControls from "./controls/CapeControls.vue";
 import PartsVisibility from "./controls/PartsVisibility.vue";
 import AnimationControls from "./controls/AnimationControls.vue";
 import CameraControls from "./controls/CameraControls.vue";
+import LightingControls from "./controls/LightingControls.vue";
 import PanoramaControls from "./controls/PanoramaControls.vue";
 import RenderTypeControls from "./controls/RenderTypeControls.vue";
 import RenderOptionsControls from "./controls/RenderOptionsControls.vue";
@@ -25,6 +26,7 @@ const settingsStore = useSettingsStore();
       <PartsVisibility />
       <AnimationControls />
       <CameraControls />
+      <LightingControls />
       <PanoramaControls />
     </template>
 
