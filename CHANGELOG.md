@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.2](https://github.com/daidr/minecraft-skin-renderer/compare/minecraft-skin-renderer-v0.3.1...minecraft-skin-renderer-v0.3.2) (2026-03-28)
+
+
+### Features
+
+* add built-in Lambert lighting with ambient and directional light ([d5c6a73](https://github.com/daidr/minecraft-skin-renderer/commit/d5c6a73d442aaeb1dcdd1d5836651aaf8f0cff38))
+* **playground:** add lighting controls with enable toggle ([4509697](https://github.com/daidr/minecraft-skin-renderer/commit/450969771bce1f4c455c4b5232b2a7b4538fddd0))
+
 ## [0.3.1](https://github.com/daidr/minecraft-skin-renderer/compare/minecraft-skin-renderer-v0.3.0...minecraft-skin-renderer-v0.3.1) (2026-03-04)
 
 
