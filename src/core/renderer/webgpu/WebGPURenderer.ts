@@ -78,9 +78,6 @@ export class WebGPURenderer implements IRenderer {
   // Per-frame draw call index into the uniform pool
   private currentDrawIndex = 0;
 
-  // Flag to warn once per frame when pool is exhausted
-  private poolExhaustedWarned = false;
-
   // State cache
   private lastPipelineId = -1;
 
@@ -123,17 +120,7 @@ export class WebGPURenderer implements IRenderer {
     // Create pool of uniform buffers + bind groups (one per draw call)
     // Each draw call gets its own buffer so writeBuffer doesn't conflict
     for (let i = 0; i < UNIFORM_POOL_SIZE; i++) {
-      const buffer = device.createBuffer({
-        size: UNIFORM_BUFFER_SIZE,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      });
-      this.uniformBuffers.push(buffer);
-      this.uniformBindGroups.push(
-        device.createBindGroup({
-          layout: this.uniformBindGroupLayout,
-          entries: [{ binding: 0, resource: { buffer } }],
-        }),
-      );
+      this.createUniformSlot();
     }
 
     // Create depth texture
@@ -255,7 +242,6 @@ export class WebGPURenderer implements IRenderer {
     // Reset state cache
     this.lastPipelineId = -1;
     this.currentDrawIndex = 0;
-    this.poolExhaustedWarned = false;
 
     // Get current texture
     this.currentTextureView = this.context.getCurrentTexture().createView();
@@ -381,23 +367,18 @@ export class WebGPURenderer implements IRenderer {
     // Upload full uniform data to this draw call's dedicated buffer
     // Each draw call uses its own buffer to avoid writeBuffer race conditions
     const drawIdx = this.currentDrawIndex;
-    if (drawIdx >= UNIFORM_POOL_SIZE) {
-      if (!this.poolExhaustedWarned) {
-        console.warn(
-          `WebGPU uniform pool exhausted (max ${UNIFORM_POOL_SIZE} draw calls per frame). ` +
-            `Extra draw calls will be skipped.`,
-        );
-        this.poolExhaustedWarned = true;
-      }
-      return;
+    while (drawIdx >= this.uniformBuffers.length) {
+      this.createUniformSlot();
     }
     if (maxOffset > minOffset) {
+      const uploadOffset = minOffset & ~3;
+      const uploadSize = (maxOffset - uploadOffset + 3) & ~3;
       this.device.queue.writeBuffer(
         this.uniformBuffers[drawIdx],
-        0,
+        uploadOffset,
         this.uniformData,
-        0,
-        UNIFORM_BUFFER_SIZE,
+        uploadOffset,
+        uploadSize,
       );
       this.renderPassEncoder.setBindGroup(0, this.uniformBindGroups[drawIdx]);
       this.currentDrawIndex++;
@@ -488,6 +469,21 @@ export class WebGPURenderer implements IRenderer {
    */
   invalidateTextureCache(textureId: number): void {
     this.textureBindGroupCache.delete(textureId);
+  }
+
+  /** Add one per-draw uniform slot to the pool. */
+  private createUniformSlot(): void {
+    const buffer = this.device.createBuffer({
+      size: UNIFORM_BUFFER_SIZE,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    this.uniformBuffers.push(buffer);
+    this.uniformBindGroups.push(
+      this.device.createBindGroup({
+        layout: this.uniformBindGroupLayout,
+        entries: [{ binding: 0, resource: { buffer } }],
+      }),
+    );
   }
 
   /** Dispose the renderer */

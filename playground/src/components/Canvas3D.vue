@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from "vue";
+import { computed, onUnmounted } from "vue";
 import { SkinViewer as SkinViewerComponent } from "@daidr/minecraft-skin-renderer/vue3";
 import type { SkinViewer, BackEquipment, BackendType } from "@daidr/minecraft-skin-renderer";
 import { useViewerStore } from "../stores/viewer";
@@ -10,7 +10,6 @@ import StatsOverlay from "./StatsOverlay.vue";
 const viewerStore = useViewerStore();
 const settingsStore = useSettingsStore();
 const textures = useTexturesStore();
-const skinViewerRef = ref<InstanceType<typeof SkinViewerComponent>>();
 
 const preferredBackend = computed(() => settingsStore.settings.backend as BackendType | "auto");
 const backEquipment = computed(() => settingsStore.settings.backEquipment as BackEquipment);
@@ -60,21 +59,14 @@ function onError(error: Error) {
   );
 }
 
-async function recreateViewer() {
-  await (skinViewerRef.value as any)?.recreate();
-}
-
 onUnmounted(() => {
   viewerStore.clearViewer();
 });
-
-defineExpose({ recreateViewer });
 </script>
 
 <template>
   <div class="canvas-3d-wrapper">
     <SkinViewerComponent
-      ref="skinViewerRef"
       :preferred-backend="preferredBackend"
       :skin="skinSource"
       :cape="capeSource"
@@ -86,8 +78,12 @@ defineExpose({ recreateViewer });
       v-model:zoom="zoomModel"
       v-model:rotation="rotationModel"
       :auto-rotate="settingsStore.settings.autoRotate"
-      :ambient-light="settingsStore.settings.enableLighting ? settingsStore.settings.ambientLight : 1.0"
-      :direct-light="settingsStore.settings.enableLighting ? settingsStore.settings.directLight : 0.0"
+      :ambient-light="
+        settingsStore.settings.enableLighting ? settingsStore.settings.ambientLight : 1.0
+      "
+      :direct-light="
+        settingsStore.settings.enableLighting ? settingsStore.settings.directLight : 0.0
+      "
       :parts-visibility="partsVisibility"
       :panorama="textures.panoramaSource"
       @ready="onReady"

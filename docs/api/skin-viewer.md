@@ -33,25 +33,26 @@ const viewer = await createSkinViewer(options);
 
 ### SkinViewerOptions
 
-| 属性               | 类型                    | 默认值   | 说明                                                                        |
-| ------------------ | ----------------------- | -------- | --------------------------------------------------------------------------- |
-| `canvas`           | `HTMLCanvasElement`     | _必填_   | 渲染目标画布元素                                                            |
-| `skin`             | `TextureSource`         | —        | 皮肤纹理（URL、Blob 或图像对象）                                            |
-| `cape`             | `TextureSource`         | —        | 披风纹理（64x32 格式），同时用于鞘翅                                        |
-| `slim`             | `boolean`               | `false`  | 是否使用纤细模型（3px 手臂）                                                |
-| `backEquipment`    | `BackEquipment`         | `"none"` | 背部装备：`"cape"` / `"elytra"` / `"none"`。提供 cape 纹理时默认为 `"cape"` |
-| `preferredBackend` | `BackendType \| "auto"` | `"auto"` | 渲染后端：`"webgl"` / `"webgpu"` / `"auto"`                                 |
-| `antialias`        | `boolean`               | `true`   | 是否启用抗锯齿                                                              |
-| `pixelRatio`       | `number`                | —        | DPI 缩放系数                                                                |
-| `fov`              | `number`                | `70`     | 视场角（度）                                                                |
-| `zoom`             | `number`                | —        | 初始缩放距离                                                                |
-| `enableRotate`     | `boolean`               | `true`   | 允许鼠标旋转                                                                |
-| `enableZoom`       | `boolean`               | `true`   | 允许鼠标缩放                                                                |
-| `autoRotate`       | `boolean`               | `false`  | 自动旋转模型                                                                |
-| `autoRotateSpeed`  | `number`                | `30`     | 自动旋转速度（度/秒）                                                       |
-| `ambientLight`     | `number`                | `0.6`    | 环境光强度（0.0\~1.0）                                                      |
-| `directLight`      | `number`                | `0.4`    | 方向光强度（0.0\~1.0），光源跟随相机方向                                     |
-| `panorama`         | `TextureSource`         | —        | 全景图背景（需注册 PanoramaPlugin）                                         |
+| 属性                    | 类型                    | 默认值   | 说明                                                                        |
+| ----------------------- | ----------------------- | -------- | --------------------------------------------------------------------------- |
+| `canvas`                | `HTMLCanvasElement`     | _必填_   | 渲染目标画布元素                                                            |
+| `skin`                  | `TextureSource`         | —        | 皮肤纹理（URL、Blob 或图像对象）                                            |
+| `cape`                  | `TextureSource`         | —        | 披风纹理（64x32 格式），同时用于鞘翅                                        |
+| `slim`                  | `boolean`               | `false`  | 是否使用纤细模型（3px 手臂）                                                |
+| `backEquipment`         | `BackEquipment`         | `"none"` | 背部装备：`"cape"` / `"elytra"` / `"none"`。提供 cape 纹理时默认为 `"cape"` |
+| `preferredBackend`      | `BackendType \| "auto"` | `"auto"` | 渲染后端：`"webgl"` / `"webgpu"` / `"auto"`                                 |
+| `antialias`             | `boolean`               | `true`   | 是否启用抗锯齿                                                              |
+| `pixelRatio`            | `number`                | —        | DPI 缩放系数                                                                |
+| `preserveDrawingBuffer` | `boolean`               | `false`  | 是否保留帧缓冲；实时渲染建议保持关闭，仅在特殊截图/读取像素场景启用         |
+| `fov`                   | `number`                | `70`     | 视场角（度）                                                                |
+| `zoom`                  | `number`                | —        | 初始缩放距离                                                                |
+| `enableRotate`          | `boolean`               | `true`   | 允许鼠标旋转                                                                |
+| `enableZoom`            | `boolean`               | `true`   | 允许鼠标缩放                                                                |
+| `autoRotate`            | `boolean`               | `false`  | 自动旋转模型                                                                |
+| `autoRotateSpeed`       | `number`                | `30`     | 自动旋转速度（度/秒）                                                       |
+| `ambientLight`          | `number`                | `0.6`    | 环境光强度（0.0\~1.0）                                                      |
+| `directLight`           | `number`                | `0.4`    | 方向光强度（0.0\~1.0），光源跟随相机方向                                    |
+| `panorama`              | `TextureSource`         | —        | 全景图背景（需注册 PanoramaPlugin）                                         |
 
 ## SkinViewer 实例
 

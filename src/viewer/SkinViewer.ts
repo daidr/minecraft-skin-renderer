@@ -71,6 +71,12 @@ const PANORAMA_WARN =
   "  import { PanoramaPlugin } from 'minecraft-skin-renderer/panorama'\n" +
   "  use(PanoramaPlugin)";
 
+function closeLoadedBitmap(source: TextureSource | undefined, bitmap: ImageBitmap): void {
+  if (source !== bitmap) {
+    bitmap.close();
+  }
+}
+
 /** Back equipment type (cape, elytra, or none) */
 export type BackEquipment = "cape" | "elytra" | "none";
 
@@ -80,6 +86,11 @@ export interface SkinViewerOptions {
   preferredBackend?: BackendType | "auto";
   antialias?: boolean;
   pixelRatio?: number;
+  /**
+   * Preserve the drawing buffer after presenting a frame.
+   * Leave disabled for better realtime rendering performance.
+   */
+  preserveDrawingBuffer?: boolean;
   skin?: TextureSource;
   /** Cape texture (64x32 format). Used for both cape and elytra if elytra texture is not provided. */
   cape?: TextureSource;
@@ -243,6 +254,11 @@ interface SkinViewerState {
   // Background state
   backgroundRenderer: BackgroundRenderer | null;
 
+  // Async resource versioning
+  skinRequestId: number;
+  capeRequestId: number;
+  panoramaRequestId: number;
+
   // State flags
   disposed: boolean;
 }
@@ -293,7 +309,7 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     canvas,
     antialias: options.antialias ?? true,
     pixelRatio: options.pixelRatio,
-    preserveDrawingBuffer: true,
+    preserveDrawingBuffer: options.preserveDrawingBuffer ?? false,
   };
 
   let renderer: IRenderer;
@@ -316,560 +332,648 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     }
   }
 
-  renderer.resize(width, height);
-
-  // Create camera
-  const aspect = width / height;
-  const camera = createCamera(aspect, {
-    fov: options.fov ?? 70,
-    position: [0, 16, 50],
-    target: [0, 16, 0],
-  });
-
-  // Create orbit controls
-  const controls = createOrbitControls(camera, canvas, {
-    enableRotate: options.enableRotate ?? true,
-    enableZoom: options.enableZoom ?? true,
-    autoRotate: options.autoRotate ?? false,
-    autoRotateSpeed: options.autoRotateSpeed ?? 30.0,
-    minDistance: 20,
-    maxDistance: 150,
-  });
-
-  if (options.zoom !== undefined) {
-    setOrbitDistance(controls, options.zoom);
-  }
-
-  // Create skeleton
-  const skeleton = createPlayerSkeleton(variant);
-
-  // Create geometry for all parts (using ResourceManager)
-  const partGeometries = createAllPartGeometries(variant);
-
-  // Create pipelines (using ResourceManager)
-  const { skinPipeline, overlayPipeline, capePipeline } = createPipelines(renderer);
-
-  // Create buffers for all parts
-  const partBuffers = createAllPartBuffers(renderer, partGeometries);
-
-  // Create cape geometry and buffers
-  const capeGeometry = createCapeGeometry();
-  const capeVertexBuffer = renderer.createBuffer(BufferUsage.Vertex, capeGeometry.vertices);
-  const capeIndexBuffer = renderer.createBuffer(BufferUsage.Index, capeGeometry.indices);
-
-  // Create elytra geometry and buffers
-  const elytraGeometry = createElytraGeometry();
-  const elytraVertexBuffer = renderer.createBuffer(BufferUsage.Vertex, elytraGeometry.vertices);
-  const elytraIndexBuffer = renderer.createBuffer(BufferUsage.Index, elytraGeometry.indices);
-
-  // Load initial skin texture (fallback to placeholder)
-  let skinBitmap: ImageBitmap;
-  try {
-    skinBitmap = options.skin
-      ? await loadSkinTexture(options.skin)
-      : await createPlaceholderTexture();
-  } catch (error) {
-    console.warn("Failed to load skin texture, using placeholder:", error);
-    skinBitmap = await createPlaceholderTexture();
-  }
-  const texOpts = { magFilter: TextureFilter.Linear, minFilter: TextureFilter.Linear };
-  let skinTexture: ITexture | null = await renderer.createTexture(skinBitmap, texOpts);
-
-  // Create animation controller
-  const animationController = createAnimationController(skeleton);
-
-  // Load initial cape texture if provided
-  let capeTexture: ITexture | null = null;
-  if (options.cape) {
-    try {
-      const bitmap = await loadCapeTexture(options.cape);
-      capeTexture = await renderer.createTexture(bitmap, texOpts);
-    } catch (error) {
-      console.warn("Failed to load cape texture:", error);
+  const initCleanup: (() => void)[] = [() => renderer.dispose()];
+  const rollbackInit = () => {
+    for (let i = initCleanup.length - 1; i >= 0; i--) {
+      try {
+        initCleanup[i]!();
+      } catch {
+        // Continue rolling back the rest of the resources.
+      }
     }
-  }
-
-  // Determine initial back equipment
-  let initialBackEquipment: BackEquipment = options.backEquipment ?? "none";
-  if (initialBackEquipment === "none" && capeTexture) {
-    initialBackEquipment = "cape"; // Default to cape if texture is provided but no explicit setting
-  }
-
-  // Pre-allocate render objects to avoid GC pressure (using RenderState module)
-  const renderBindGroups = createRenderBindGroups();
-
-  // Create state object
-  const state: SkinViewerState = {
-    renderer,
-    camera,
-    controls,
-    renderLoop: null as unknown as RenderLoop,
-    animationController,
-    skeleton,
-    variant,
-    skinPipeline,
-    overlayPipeline,
-    capePipeline,
-    partBuffers,
-    capeVertexBuffer,
-    capeIndexBuffer,
-    capeGeometry,
-    elytraVertexBuffer,
-    elytraIndexBuffer,
-    elytraGeometry,
-    skinTexture,
-    capeTexture,
-    partGeometries,
-    partsVisibility: createDefaultVisibility(),
-    backEquipment: initialBackEquipment,
-    boneMatricesCache: new Float32Array(BONE_MATRICES_SIZE),
-    boneMatricesDirty: true,
-    renderBindGroups,
-    ambientLight: options.ambientLight ?? 0.6,
-    directLight: options.directLight ?? 0.4,
-    backgroundRenderer: null,
-    disposed: false,
   };
 
-  // Initialize panorama background if plugin is registered and source provided
-  if (options.panorama) {
-    const panoramaPlugin = getBackgroundPlugin("panorama");
-    if (panoramaPlugin) {
-      state.backgroundRenderer = panoramaPlugin.createRenderer(renderer);
-      // Load panorama asynchronously (don't await to avoid blocking)
-      state.backgroundRenderer.setSource(options.panorama).catch((e) => {
-        console.warn("Failed to load panorama:", e);
-      });
-    } else {
-      console.warn(PANORAMA_WARN);
+  try {
+    renderer.resize(width, height);
+
+    // Create camera
+    const aspect = width / height;
+    const camera = createCamera(aspect, {
+      fov: options.fov ?? 70,
+      position: [0, 16, 50],
+      target: [0, 16, 0],
+    });
+
+    // Create orbit controls
+    const controls = createOrbitControls(camera, canvas, {
+      enableRotate: options.enableRotate ?? true,
+      enableZoom: options.enableZoom ?? true,
+      autoRotate: options.autoRotate ?? false,
+      autoRotateSpeed: options.autoRotateSpeed ?? 30.0,
+      minDistance: 20,
+      maxDistance: 150,
+    });
+    initCleanup.push(() => controls.dispose());
+
+    if (options.zoom !== undefined) {
+      setOrbitDistance(controls, options.zoom);
     }
-  }
 
-  // Render function
-  const doRender = () => {
-    if (state.disposed) return;
+    // Create skeleton
+    const skeleton = createPlayerSkeleton(variant);
 
-    const {
+    // Create geometry for all parts (using ResourceManager)
+    const partGeometries = createAllPartGeometries(variant);
+
+    // Create pipelines (using ResourceManager)
+    const { skinPipeline, overlayPipeline, capePipeline } = createPipelines(renderer);
+    initCleanup.push(() => skinPipeline.dispose());
+    initCleanup.push(() => overlayPipeline.dispose());
+    initCleanup.push(() => capePipeline.dispose());
+
+    // Create buffers for all parts
+    const partBuffers = createAllPartBuffers(renderer, partGeometries);
+    initCleanup.push(() => disposeAllPartBuffers(partBuffers));
+
+    // Create cape geometry and buffers
+    const capeGeometry = createCapeGeometry();
+    const capeVertexBuffer = renderer.createBuffer(BufferUsage.Vertex, capeGeometry.vertices);
+    const capeIndexBuffer = renderer.createBuffer(BufferUsage.Index, capeGeometry.indices);
+    initCleanup.push(() => capeVertexBuffer.dispose());
+    initCleanup.push(() => capeIndexBuffer.dispose());
+
+    // Create elytra geometry and buffers
+    const elytraGeometry = createElytraGeometry();
+    const elytraVertexBuffer = renderer.createBuffer(BufferUsage.Vertex, elytraGeometry.vertices);
+    const elytraIndexBuffer = renderer.createBuffer(BufferUsage.Index, elytraGeometry.indices);
+    initCleanup.push(() => elytraVertexBuffer.dispose());
+    initCleanup.push(() => elytraIndexBuffer.dispose());
+
+    // Load initial skin texture (fallback to placeholder)
+    let skinBitmap: ImageBitmap;
+    try {
+      skinBitmap = options.skin
+        ? await loadSkinTexture(options.skin)
+        : await createPlaceholderTexture();
+    } catch (error) {
+      console.warn("Failed to load skin texture, using placeholder:", error);
+      skinBitmap = await createPlaceholderTexture();
+    }
+    const texOpts = { magFilter: TextureFilter.Linear, minFilter: TextureFilter.Linear };
+    let skinTexture: ITexture | null;
+    try {
+      skinTexture = await renderer.createTexture(skinBitmap, texOpts);
+    } finally {
+      closeLoadedBitmap(options.skin, skinBitmap);
+    }
+    const initialSkinTexture = skinTexture;
+    initCleanup.push(() => initialSkinTexture.dispose());
+
+    // Create animation controller
+    const animationController = createAnimationController(skeleton);
+
+    // Load initial cape texture if provided
+    let capeTexture: ITexture | null = null;
+    if (options.cape) {
+      try {
+        const bitmap = await loadCapeTexture(options.cape);
+        try {
+          capeTexture = await renderer.createTexture(bitmap, texOpts);
+        } finally {
+          closeLoadedBitmap(options.cape, bitmap);
+        }
+        const initialCapeTexture = capeTexture;
+        initCleanup.push(() => initialCapeTexture.dispose());
+      } catch (error) {
+        console.warn("Failed to load cape texture:", error);
+      }
+    }
+
+    // Determine initial back equipment
+    let initialBackEquipment: BackEquipment = options.backEquipment ?? "none";
+    if (initialBackEquipment === "none" && capeTexture) {
+      initialBackEquipment = "cape"; // Default to cape if texture is provided but no explicit setting
+    }
+
+    // Pre-allocate render objects to avoid GC pressure (using RenderState module)
+    const renderBindGroups = createRenderBindGroups();
+
+    // Create state object
+    const state: SkinViewerState = {
       renderer,
       camera,
+      controls,
+      renderLoop: null as unknown as RenderLoop,
+      animationController,
+      skeleton,
+      variant,
       skinPipeline,
       overlayPipeline,
       capePipeline,
       partBuffers,
       capeVertexBuffer,
       capeIndexBuffer,
+      capeGeometry,
       elytraVertexBuffer,
       elytraIndexBuffer,
+      elytraGeometry,
       skinTexture,
       capeTexture,
-      partsVisibility,
-      backEquipment,
-    } = state;
+      partGeometries,
+      partsVisibility: createDefaultVisibility(),
+      backEquipment: initialBackEquipment,
+      boneMatricesCache: new Float32Array(BONE_MATRICES_SIZE),
+      boneMatricesDirty: true,
+      renderBindGroups,
+      ambientLight: options.ambientLight ?? 0.6,
+      directLight: options.directLight ?? 0.4,
+      backgroundRenderer: null,
+      skinRequestId: 0,
+      capeRequestId: 0,
+      panoramaRequestId: 0,
+      disposed: false,
+    };
 
-    renderer.beginFrame();
-    renderer.clear(0, 0, 0, 0);
+    // Render function
+    const doRender = () => {
+      if (state.disposed) return;
 
-    // Render background first (if available)
-    if (state.backgroundRenderer) {
-      state.backgroundRenderer.render(camera);
-    }
-
-    if (skinTexture) {
-      // Compute bone matrices only if dirty
-      if (state.boneMatricesDirty) {
-        computeBoneMatrices(state.skeleton, state.boneMatricesCache);
-        state.boneMatricesDirty = false;
-      }
-
-      // Update pre-allocated bind groups (using RenderState module)
-      const { renderBindGroups } = state;
-      renderBindGroups.uniforms.u_ambientIntensity = state.ambientLight;
-      renderBindGroups.uniforms.u_diffuseIntensity = state.directLight;
-      updateRenderBindGroups(
-        renderBindGroups,
-        camera.viewMatrix,
-        camera.projectionMatrix,
-        state.boneMatricesCache,
+      const {
+        renderer,
+        camera,
+        skinPipeline,
+        overlayPipeline,
+        capePipeline,
+        partBuffers,
+        capeVertexBuffer,
+        capeIndexBuffer,
+        elytraVertexBuffer,
+        elytraIndexBuffer,
         skinTexture,
-        camera.position,
-        camera.target,
         capeTexture,
-      );
+        partsVisibility,
+        backEquipment,
+      } = state;
 
-      // Helper to issue a draw call
-      const draw = (pl: IPipeline, vb: IBuffer, ib: IBuffer, ic: number, bg: BindGroup) => {
-        renderer.draw({
-          pipeline: pl,
-          vertexBuffers: [vb],
-          indexBuffer: ib,
-          indexCount: ic,
-          bindGroup: bg,
-        });
-      };
+      renderer.beginFrame();
+      renderer.clear(0, 0, 0, 0);
 
-      // Draw each part based on visibility settings
-      for (const partName of PART_NAMES) {
-        const visibility = partsVisibility[partName];
-        const buffers = partBuffers[partName];
-        if (visibility.inner) {
-          renderBindGroups.uniforms.u_alphaTest = 0.0; // Inner layer: force opaque
-          draw(
-            skinPipeline,
-            buffers.innerVertexBuffer,
-            buffers.innerIndexBuffer,
-            buffers.innerIndexCount,
-            renderBindGroups.skinBindGroup,
-          );
-        }
-        if (visibility.outer) {
-          renderBindGroups.uniforms.u_alphaTest = 0.01; // Outer layer: alpha test
-          draw(
-            overlayPipeline,
-            buffers.outerVertexBuffer,
-            buffers.outerIndexBuffer,
-            buffers.outerIndexCount,
-            renderBindGroups.skinBindGroup,
-          );
-        }
+      // Render background first (if available)
+      if (state.backgroundRenderer) {
+        state.backgroundRenderer.render(camera);
       }
 
-      // Restore alpha test for cape/elytra rendering
-      renderBindGroups.uniforms.u_alphaTest = 0.01;
+      if (skinTexture) {
+        // Compute bone matrices only if dirty
+        if (state.boneMatricesDirty) {
+          computeBoneMatrices(state.skeleton, state.boneMatricesCache);
+          state.boneMatricesDirty = false;
+        }
 
-      // Draw cape or elytra if texture is available and equipment is enabled
-      if (capeTexture && backEquipment !== "none") {
-        const isCape = backEquipment === "cape";
-        draw(
-          capePipeline,
-          isCape ? capeVertexBuffer : elytraVertexBuffer,
-          isCape ? capeIndexBuffer : elytraIndexBuffer,
-          (isCape ? state.capeGeometry : state.elytraGeometry).indexCount,
-          renderBindGroups.capeBindGroup,
+        // Update pre-allocated bind groups (using RenderState module)
+        const { renderBindGroups } = state;
+        renderBindGroups.uniforms.u_ambientIntensity = state.ambientLight;
+        renderBindGroups.uniforms.u_diffuseIntensity = state.directLight;
+        updateRenderBindGroups(
+          renderBindGroups,
+          camera.viewMatrix,
+          camera.projectionMatrix,
+          state.boneMatricesCache,
+          skinTexture,
+          camera.position,
+          camera.target,
+          capeTexture,
         );
+
+        // Helper to issue a draw call
+        const draw = (pl: IPipeline, vb: IBuffer, ib: IBuffer, ic: number, bg: BindGroup) => {
+          renderer.draw({
+            pipeline: pl,
+            vertexBuffers: [vb],
+            indexBuffer: ib,
+            indexCount: ic,
+            bindGroup: bg,
+          });
+        };
+
+        // Draw each part based on visibility settings
+        for (const partName of PART_NAMES) {
+          const visibility = partsVisibility[partName];
+          const buffers = partBuffers[partName];
+          if (visibility.inner) {
+            renderBindGroups.uniforms.u_alphaTest = 0.0; // Inner layer: force opaque
+            draw(
+              skinPipeline,
+              buffers.innerVertexBuffer,
+              buffers.innerIndexBuffer,
+              buffers.innerIndexCount,
+              renderBindGroups.skinBindGroup,
+            );
+          }
+          if (visibility.outer) {
+            renderBindGroups.uniforms.u_alphaTest = 0.01; // Outer layer: alpha test
+            draw(
+              overlayPipeline,
+              buffers.outerVertexBuffer,
+              buffers.outerIndexBuffer,
+              buffers.outerIndexCount,
+              renderBindGroups.skinBindGroup,
+            );
+          }
+        }
+
+        // Restore alpha test for cape/elytra rendering
+        renderBindGroups.uniforms.u_alphaTest = 0.01;
+
+        // Draw cape or elytra if texture is available and equipment is enabled
+        if (capeTexture && backEquipment !== "none") {
+          const isCape = backEquipment === "cape";
+          draw(
+            capePipeline,
+            isCape ? capeVertexBuffer : elytraVertexBuffer,
+            isCape ? capeIndexBuffer : elytraIndexBuffer,
+            (isCape ? state.capeGeometry : state.elytraGeometry).indexCount,
+            renderBindGroups.capeBindGroup,
+          );
+        }
       }
-    }
 
-    renderer.endFrame();
-  };
+      renderer.endFrame();
+    };
 
-  // Update function
-  const doUpdate = (deltaTime: number) => {
-    if (state.disposed) return;
-
-    updateOrbitControls(state.controls, deltaTime);
-    updateAnimationController(state.animationController, deltaTime);
-
-    // Mark bone matrices as dirty if animation is playing
-    if (state.animationController.isPlaying) {
-      state.boneMatricesDirty = true;
-    }
-  };
-
-  // Create render loop
-  state.renderLoop = createRenderLoop(doUpdate, doRender);
-
-  // Create viewer interface
-  const viewer: SkinViewer = {
-    get backend() {
-      return state.renderer.backend;
-    },
-
-    get isPlaying() {
-      return state.animationController.isPlaying;
-    },
-
-    get currentAnimation() {
-      return state.animationController.currentAnimation;
-    },
-
-    get onZoomChange() {
-      return state.controls.onDistanceChange;
-    },
-    set onZoomChange(callback: ((zoom: number) => void) | null) {
-      state.controls.onDistanceChange = callback;
-    },
-
-    get onRotationChange() {
-      return state.controls.onRotationChange;
-    },
-    set onRotationChange(callback: ((theta: number, phi: number) => void) | null) {
-      state.controls.onRotationChange = callback;
-    },
-
-    async setSkin(source: TextureSource | null) {
+    // Update function
+    const doUpdate = (deltaTime: number) => {
       if (state.disposed) return;
 
-      if (state.skinTexture) {
-        state.skinTexture.dispose();
-        state.skinTexture = null;
-      }
+      updateOrbitControls(state.controls, deltaTime);
+      updateAnimationController(state.animationController, deltaTime);
 
-      if (source) {
-        const bitmap = await loadSkinTexture(source);
+      // Mark bone matrices as dirty if animation is playing
+      if (state.animationController.isPlaying) {
+        state.boneMatricesDirty = true;
+      }
+    };
+
+    // Create render loop
+    state.renderLoop = createRenderLoop(doUpdate, doRender);
+
+    // Create viewer interface
+    const viewer: SkinViewer = {
+      get backend() {
+        return state.renderer.backend;
+      },
+
+      get isPlaying() {
+        return state.animationController.isPlaying;
+      },
+
+      get currentAnimation() {
+        return state.animationController.currentAnimation;
+      },
+
+      get onZoomChange() {
+        return state.controls.onDistanceChange;
+      },
+      set onZoomChange(callback: ((zoom: number) => void) | null) {
+        state.controls.onDistanceChange = callback;
+      },
+
+      get onRotationChange() {
+        return state.controls.onRotationChange;
+      },
+      set onRotationChange(callback: ((theta: number, phi: number) => void) | null) {
+        state.controls.onRotationChange = callback;
+      },
+
+      async setSkin(source: TextureSource | null) {
         if (state.disposed) return;
-        const tex = await state.renderer.createTexture(bitmap, texOpts);
-        if (state.disposed) {
+
+        const requestId = ++state.skinRequestId;
+
+        if (!source) {
+          const oldTexture = state.skinTexture;
+          state.skinTexture = null;
+          oldTexture?.dispose();
+          return;
+        }
+
+        let tex: ITexture;
+        try {
+          const bitmap = await loadSkinTexture(source);
+          if (state.disposed || requestId !== state.skinRequestId) {
+            closeLoadedBitmap(source, bitmap);
+            return;
+          }
+          try {
+            tex = await state.renderer.createTexture(bitmap, texOpts);
+          } finally {
+            closeLoadedBitmap(source, bitmap);
+          }
+        } catch (error) {
+          if (!state.disposed && requestId === state.skinRequestId) {
+            throw error;
+          }
+          return;
+        }
+
+        if (state.disposed || requestId !== state.skinRequestId) {
           tex.dispose();
           return;
         }
+
+        const oldTexture = state.skinTexture;
         state.skinTexture = tex;
-      }
-    },
+        oldTexture?.dispose();
+      },
 
-    async setCape(source: TextureSource | null) {
-      if (state.disposed) return;
-
-      if (state.capeTexture) {
-        state.capeTexture.dispose();
-        state.capeTexture = null;
-      }
-
-      if (source) {
-        const bitmap = await loadCapeTexture(source);
+      async setCape(source: TextureSource | null) {
         if (state.disposed) return;
-        const tex = await state.renderer.createTexture(bitmap, texOpts);
-        if (state.disposed) {
+
+        const requestId = ++state.capeRequestId;
+
+        if (!source) {
+          const oldTexture = state.capeTexture;
+          state.capeTexture = null;
+          // Hide back equipment if cape texture is removed
+          state.backEquipment = "none";
+          oldTexture?.dispose();
+          return;
+        }
+
+        let tex: ITexture;
+        try {
+          const bitmap = await loadCapeTexture(source);
+          if (state.disposed || requestId !== state.capeRequestId) {
+            closeLoadedBitmap(source, bitmap);
+            return;
+          }
+          try {
+            tex = await state.renderer.createTexture(bitmap, texOpts);
+          } finally {
+            closeLoadedBitmap(source, bitmap);
+          }
+        } catch (error) {
+          if (!state.disposed && requestId === state.capeRequestId) {
+            throw error;
+          }
+          return;
+        }
+
+        if (state.disposed || requestId !== state.capeRequestId) {
           tex.dispose();
           return;
         }
+
+        const oldTexture = state.capeTexture;
         state.capeTexture = tex;
+        oldTexture?.dispose();
+
         // Auto-enable cape display if not already showing something
         if (state.backEquipment === "none") {
           state.backEquipment = "cape";
         }
-      } else {
-        // Hide back equipment if cape texture is removed
-        state.backEquipment = "none";
-      }
-    },
+      },
 
-    setBackEquipment(equipment: BackEquipment) {
-      state.backEquipment = equipment;
-    },
+      setBackEquipment(equipment: BackEquipment) {
+        state.backEquipment = equipment;
+      },
 
-    get backEquipment() {
-      return state.backEquipment;
-    },
+      get backEquipment() {
+        return state.backEquipment;
+      },
 
-    getPartsVisibility(): PartsVisibility {
-      // Return a deep copy to prevent external mutation
-      const result = {} as PartsVisibility;
-      for (const part of PART_NAMES) {
-        result[part] = { ...state.partsVisibility[part] };
-      }
-      return result;
-    },
-
-    setPartsVisibility(visibility: PartsVisibility) {
-      for (const part of PART_NAMES) {
-        state.partsVisibility[part] = { ...visibility[part] };
-      }
-    },
-
-    setPartVisibility(part: PartName, layer: "inner" | "outer" | "both", visible: boolean) {
-      if (layer === "both") {
-        state.partsVisibility[part].inner = visible;
-        state.partsVisibility[part].outer = visible;
-      } else {
-        state.partsVisibility[part][layer] = visible;
-      }
-    },
-
-    setAmbientLight(intensity: number) {
-      state.ambientLight = Math.max(0, Math.min(1, intensity));
-    },
-
-    getAmbientLight() {
-      return state.ambientLight;
-    },
-
-    setDirectLight(intensity: number) {
-      state.directLight = Math.max(0, Math.min(1, intensity));
-    },
-
-    getDirectLight() {
-      return state.directLight;
-    },
-
-    setSlim(slim: boolean) {
-      if (state.disposed) return;
-
-      const newVariant = slim ? "slim" : "classic";
-      if (newVariant === state.variant) return;
-
-      // Remember current animation state
-      const currentAnimation = state.animationController.currentAnimation;
-      const wasPlaying = state.animationController.isPlaying;
-      const wasPaused = state.animationController.isPaused;
-
-      state.variant = newVariant;
-
-      // Recreate skeleton
-      state.skeleton = createPlayerSkeleton(newVariant);
-
-      // Recreate animation controller with new skeleton
-      state.animationController = createAnimationController(state.skeleton);
-
-      // Restore animation state
-      if (currentAnimation && wasPlaying) {
-        state.animationController.play(currentAnimation);
-        if (wasPaused) {
-          state.animationController.pause();
+      getPartsVisibility(): PartsVisibility {
+        // Return a deep copy to prevent external mutation
+        const result = {} as PartsVisibility;
+        for (const part of PART_NAMES) {
+          result[part] = { ...state.partsVisibility[part] };
         }
-      }
+        return result;
+      },
 
-      // Dispose old buffers
-      disposeAllPartBuffers(state.partBuffers);
+      setPartsVisibility(visibility: PartsVisibility) {
+        for (const part of PART_NAMES) {
+          state.partsVisibility[part] = { ...visibility[part] };
+        }
+      },
 
-      // Recreate geometry and buffers
-      state.partGeometries = createAllPartGeometries(newVariant);
-      state.partBuffers = createAllPartBuffers(state.renderer, state.partGeometries);
+      setPartVisibility(part: PartName, layer: "inner" | "outer" | "both", visible: boolean) {
+        if (layer === "both") {
+          state.partsVisibility[part].inner = visible;
+          state.partsVisibility[part].outer = visible;
+        } else {
+          state.partsVisibility[part][layer] = visible;
+        }
+      },
 
-      // Mark bone matrices as dirty
-      state.boneMatricesDirty = true;
-    },
+      setAmbientLight(intensity: number) {
+        state.ambientLight = Math.max(0, Math.min(1, intensity));
+      },
 
-    playAnimation(name: string, config?: AnimationConfig) {
-      state.animationController.play(name, config);
-    },
+      getAmbientLight() {
+        return state.ambientLight;
+      },
 
-    pauseAnimation() {
-      state.animationController.pause();
-    },
+      setDirectLight(intensity: number) {
+        state.directLight = Math.max(0, Math.min(1, intensity));
+      },
 
-    resumeAnimation() {
-      state.animationController.resume();
-    },
+      getDirectLight() {
+        return state.directLight;
+      },
 
-    stopAnimation() {
-      state.animationController.stop();
-      resetSkeleton(state.skeleton);
-      state.boneMatricesDirty = true;
-    },
+      setSlim(slim: boolean) {
+        if (state.disposed) return;
 
-    setAnimationSpeed(speed: number) {
-      state.animationController.setSpeed(speed);
-    },
+        const newVariant = slim ? "slim" : "classic";
+        if (newVariant === state.variant) return;
 
-    setAnimationAmplitude(amplitude: number) {
-      state.animationController.setAmplitude(amplitude);
-    },
+        // Remember current animation state
+        const currentAnimation = state.animationController.currentAnimation;
+        const wasPlaying = state.animationController.isPlaying;
+        const wasPaused = state.animationController.isPaused;
 
-    get isPaused() {
-      return state.animationController.isPaused;
-    },
+        state.variant = newVariant;
 
-    setRotation(theta: number, phi: number) {
-      setOrbitRotation(state.controls, theta, phi);
-    },
+        // Recreate skeleton
+        state.skeleton = createPlayerSkeleton(newVariant);
 
-    getRotation() {
-      return getOrbitRotation(state.controls);
-    },
+        // Recreate animation controller with new skeleton
+        state.animationController = createAnimationController(state.skeleton);
 
-    setZoom(zoom: number) {
-      setOrbitDistance(state.controls, zoom);
-    },
+        // Restore animation state
+        if (currentAnimation && wasPlaying) {
+          state.animationController.play(currentAnimation);
+          if (wasPaused) {
+            state.animationController.pause();
+          }
+        }
 
-    getZoom() {
-      return getOrbitDistance(state.controls);
-    },
+        // Dispose old buffers
+        disposeAllPartBuffers(state.partBuffers);
 
-    setAutoRotate(enabled: boolean) {
-      state.controls.autoRotate = enabled;
-    },
+        // Recreate geometry and buffers
+        state.partGeometries = createAllPartGeometries(newVariant);
+        state.partBuffers = createAllPartBuffers(state.renderer, state.partGeometries);
 
-    setAutoRotateSpeed(speed: number) {
-      state.controls.autoRotateSpeed = speed;
-    },
+        // Mark bone matrices as dirty
+        state.boneMatricesDirty = true;
+      },
 
-    setEnableRotate(enabled: boolean) {
-      state.controls.enableRotate = enabled;
-    },
+      playAnimation(name: string, config?: AnimationConfig) {
+        state.animationController.play(name, config);
+      },
 
-    setEnableZoom(enabled: boolean) {
-      state.controls.enableZoom = enabled;
-    },
+      pauseAnimation() {
+        state.animationController.pause();
+      },
 
-    resetCamera() {
-      resetOrbitControls(state.controls);
-    },
+      resumeAnimation() {
+        state.animationController.resume();
+      },
 
-    render: doRender,
+      stopAnimation() {
+        state.animationController.stop();
+        resetSkeleton(state.skeleton);
+        state.boneMatricesDirty = true;
+      },
 
-    startRenderLoop: () => startRenderLoop(state.renderLoop),
+      setAnimationSpeed(speed: number) {
+        state.animationController.setSpeed(speed);
+      },
 
-    stopRenderLoop: () => stopRenderLoop(state.renderLoop),
+      setAnimationAmplitude(amplitude: number) {
+        state.animationController.setAmplitude(amplitude);
+      },
 
-    resize(width: number, height: number) {
-      if (state.disposed) return;
+      get isPaused() {
+        return state.animationController.isPaused;
+      },
 
-      state.renderer.resize(width, height);
-      setCameraAspect(state.camera, width / height);
-    },
+      setRotation(theta: number, phi: number) {
+        setOrbitRotation(state.controls, theta, phi);
+      },
 
-    screenshot(type = "png" as const, quality = 0.92) {
-      doRender();
-      return canvas.toDataURL(`image/${type}`, quality);
-    },
+      getRotation() {
+        return getOrbitRotation(state.controls);
+      },
 
-    async setPanorama(source: TextureSource | null) {
-      if (state.disposed) return;
+      setZoom(zoom: number) {
+        setOrbitDistance(state.controls, zoom);
+      },
 
-      // Clear existing background
-      if (state.backgroundRenderer) {
-        state.backgroundRenderer.dispose();
-        state.backgroundRenderer = null;
-      }
+      getZoom() {
+        return getOrbitDistance(state.controls);
+      },
 
-      if (source === null) {
-        return;
-      }
+      setAutoRotate(enabled: boolean) {
+        state.controls.autoRotate = enabled;
+      },
 
-      // Get panorama plugin
-      const panoramaPlugin = getBackgroundPlugin("panorama");
-      if (!panoramaPlugin) {
-        console.warn(PANORAMA_WARN);
-        return;
-      }
+      setAutoRotateSpeed(speed: number) {
+        state.controls.autoRotateSpeed = speed;
+      },
 
-      // Create and set up new background renderer
-      state.backgroundRenderer = panoramaPlugin.createRenderer(renderer);
-      await state.backgroundRenderer.setSource(source);
-      if (state.disposed) {
-        state.backgroundRenderer.dispose();
-        state.backgroundRenderer = null;
-      }
-    },
+      setEnableRotate(enabled: boolean) {
+        state.controls.enableRotate = enabled;
+      },
 
-    dispose() {
-      if (state.disposed) return;
-      state.disposed = true;
+      setEnableZoom(enabled: boolean) {
+        state.controls.enableZoom = enabled;
+      },
 
-      stopRenderLoop(state.renderLoop);
-      state.controls.dispose();
+      resetCamera() {
+        resetOrbitControls(state.controls);
+      },
 
-      // Dispose all part buffers
-      disposeAllPartBuffers(state.partBuffers);
+      render: doRender,
 
-      // Dispose pipelines, buffers, textures, and background
-      for (const r of [
-        state.skinPipeline,
-        state.overlayPipeline,
-        state.capePipeline,
-        state.capeVertexBuffer,
-        state.capeIndexBuffer,
-        state.elytraVertexBuffer,
-        state.elytraIndexBuffer,
-        state.skinTexture,
-        state.capeTexture,
-        state.backgroundRenderer,
-      ])
-        r?.dispose();
+      startRenderLoop: () => startRenderLoop(state.renderLoop),
 
-      state.renderer.dispose();
-    },
-  };
+      stopRenderLoop: () => stopRenderLoop(state.renderLoop),
 
-  return viewer;
+      resize(width: number, height: number) {
+        if (state.disposed) return;
+
+        state.renderer.resize(width, height);
+        setCameraAspect(state.camera, width / height);
+      },
+
+      screenshot(type = "png" as const, quality = 0.92) {
+        doRender();
+        return canvas.toDataURL(`image/${type}`, quality);
+      },
+
+      async setPanorama(source: TextureSource | null) {
+        if (state.disposed) return;
+
+        const requestId = ++state.panoramaRequestId;
+
+        if (source === null) {
+          const oldRenderer = state.backgroundRenderer;
+          state.backgroundRenderer = null;
+          oldRenderer?.dispose();
+          return;
+        }
+
+        // Get panorama plugin
+        const panoramaPlugin = getBackgroundPlugin("panorama");
+        if (!panoramaPlugin) {
+          console.warn(PANORAMA_WARN);
+          return;
+        }
+
+        // Load into a local renderer first so failed/stale requests keep the current background.
+        const nextRenderer = panoramaPlugin.createRenderer(state.renderer);
+        try {
+          await nextRenderer.setSource(source);
+        } catch (error) {
+          nextRenderer.dispose();
+          if (!state.disposed && requestId === state.panoramaRequestId) {
+            throw error;
+          }
+          return;
+        }
+
+        if (state.disposed || requestId !== state.panoramaRequestId) {
+          nextRenderer.dispose();
+          return;
+        }
+
+        const oldRenderer = state.backgroundRenderer;
+        state.backgroundRenderer = nextRenderer;
+        oldRenderer?.dispose();
+      },
+
+      dispose() {
+        if (state.disposed) return;
+        state.disposed = true;
+
+        stopRenderLoop(state.renderLoop);
+        state.controls.dispose();
+
+        // Dispose all part buffers
+        disposeAllPartBuffers(state.partBuffers);
+
+        // Dispose pipelines, buffers, textures, and background
+        for (const r of [
+          state.skinPipeline,
+          state.overlayPipeline,
+          state.capePipeline,
+          state.capeVertexBuffer,
+          state.capeIndexBuffer,
+          state.elytraVertexBuffer,
+          state.elytraIndexBuffer,
+          state.skinTexture,
+          state.capeTexture,
+          state.backgroundRenderer,
+        ])
+          r?.dispose();
+
+        state.renderer.dispose();
+      },
+    };
+
+    // Initialize panorama background asynchronously without blocking viewer creation.
+    if (options.panorama) {
+      viewer.setPanorama(options.panorama).catch((e) => {
+        console.warn("Failed to load panorama:", e);
+      });
+    }
+
+    return viewer;
+  } catch (error) {
+    rollbackInit();
+    throw error;
+  }
 }

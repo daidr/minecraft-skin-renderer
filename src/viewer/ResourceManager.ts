@@ -4,13 +4,12 @@
  * Manages GPU resources (buffers, textures, pipelines) with proper lifecycle management.
  */
 
-import type { IBuffer, IPipeline, IRenderer, ITexture } from "../core/renderer/types";
+import type { IBuffer, IPipeline, IRenderer } from "../core/renderer/types";
 import {
   BufferUsage,
   BlendMode,
   CullMode,
   DepthCompare,
-  TextureFilter,
   VertexFormat,
 } from "../core/renderer/types";
 import { getRendererPlugin } from "../core/renderer/registry";
@@ -23,8 +22,6 @@ import {
 } from "../model/geometry/BoxGeometry";
 import { getSkinUV } from "../model/uv/SkinUV";
 import { getCapeUV, getElytraUV } from "../model/uv/CapeUV";
-import { loadSkinTexture, loadCapeTexture, createPlaceholderTexture } from "../texture";
-import type { TextureSource } from "../texture";
 
 /** Geometry for a single part with inner and outer layers */
 export interface PartGeometry {
@@ -40,32 +37,6 @@ export interface PartBuffers {
   outerIndexBuffer: IBuffer;
   innerIndexCount: number;
   outerIndexCount: number;
-}
-
-/** Resource manager state */
-export interface ResourceState {
-  // Pipelines
-  skinPipeline: IPipeline;
-  overlayPipeline: IPipeline;
-  capePipeline: IPipeline;
-
-  // Part resources
-  partBuffers: Record<PartName, PartBuffers>;
-  partGeometries: Record<PartName, PartGeometry>;
-
-  // Cape resources
-  capeVertexBuffer: IBuffer;
-  capeIndexBuffer: IBuffer;
-  capeGeometry: BoxGeometry;
-
-  // Elytra resources
-  elytraVertexBuffer: IBuffer;
-  elytraIndexBuffer: IBuffer;
-  elytraGeometry: BoxGeometry;
-
-  // Textures
-  skinTexture: ITexture | null;
-  capeTexture: ITexture | null;
 }
 
 /** Shared vertex layout for all skin pipelines */
@@ -280,110 +251,4 @@ export function createPipelines(renderer: IRenderer): {
   });
 
   return { skinPipeline, overlayPipeline, capePipeline };
-}
-
-/**
- * Initialize all resources for skin rendering
- */
-export async function initializeResources(
-  renderer: IRenderer,
-  variant: ModelVariant,
-  skinSource?: TextureSource,
-  capeSource?: TextureSource,
-): Promise<ResourceState> {
-  const { skinPipeline, overlayPipeline, capePipeline } = createPipelines(renderer);
-
-  const partGeometries = createAllPartGeometries(variant);
-  const partBuffers = createAllPartBuffers(renderer, partGeometries);
-
-  const capeGeometry = createCapeGeometry();
-  const capeVertexBuffer = renderer.createBuffer(BufferUsage.Vertex, capeGeometry.vertices);
-  const capeIndexBuffer = renderer.createBuffer(BufferUsage.Index, capeGeometry.indices);
-
-  const elytraGeometry = createElytraGeometry();
-  const elytraVertexBuffer = renderer.createBuffer(BufferUsage.Vertex, elytraGeometry.vertices);
-  const elytraIndexBuffer = renderer.createBuffer(BufferUsage.Index, elytraGeometry.indices);
-
-  // Texture options: use linear filter for sharp bilinear sampling in shader
-  const texOpts = { magFilter: TextureFilter.Linear, minFilter: TextureFilter.Linear };
-
-  // Load skin texture
-  let skinTexture: ITexture | null = null;
-  if (skinSource) {
-    try {
-      const bitmap = await loadSkinTexture(skinSource);
-      skinTexture = await renderer.createTexture(bitmap, texOpts);
-    } catch (error) {
-      console.warn("Failed to load skin texture, using placeholder:", error);
-      const placeholder = await createPlaceholderTexture();
-      skinTexture = await renderer.createTexture(placeholder, texOpts);
-    }
-  } else {
-    const placeholder = await createPlaceholderTexture();
-    skinTexture = await renderer.createTexture(placeholder, texOpts);
-  }
-
-  // Load cape texture
-  let capeTexture: ITexture | null = null;
-  if (capeSource) {
-    try {
-      const bitmap = await loadCapeTexture(capeSource);
-      capeTexture = await renderer.createTexture(bitmap, texOpts);
-    } catch (error) {
-      console.warn("Failed to load cape texture:", error);
-    }
-  }
-
-  return {
-    skinPipeline,
-    overlayPipeline,
-    capePipeline,
-    partBuffers,
-    partGeometries,
-    capeVertexBuffer,
-    capeIndexBuffer,
-    capeGeometry,
-    elytraVertexBuffer,
-    elytraIndexBuffer,
-    elytraGeometry,
-    skinTexture,
-    capeTexture,
-  };
-}
-
-/**
- * Dispose all resources
- */
-export function disposeResources(resources: ResourceState): void {
-  disposeAllPartBuffers(resources.partBuffers);
-
-  resources.skinPipeline.dispose();
-  resources.overlayPipeline.dispose();
-  resources.capePipeline.dispose();
-
-  resources.capeVertexBuffer.dispose();
-  resources.capeIndexBuffer.dispose();
-  resources.elytraVertexBuffer.dispose();
-  resources.elytraIndexBuffer.dispose();
-
-  if (resources.skinTexture) resources.skinTexture.dispose();
-  if (resources.capeTexture) resources.capeTexture.dispose();
-}
-
-/**
- * Update resources when variant changes
- */
-export function updateVariantResources(
-  renderer: IRenderer,
-  resources: ResourceState,
-  newVariant: ModelVariant,
-): { partGeometries: Record<PartName, PartGeometry>; partBuffers: Record<PartName, PartBuffers> } {
-  // Dispose old buffers
-  disposeAllPartBuffers(resources.partBuffers);
-
-  // Create new geometry and buffers
-  const partGeometries = createAllPartGeometries(newVariant);
-  const partBuffers = createAllPartBuffers(renderer, partGeometries);
-
-  return { partGeometries, partBuffers };
 }

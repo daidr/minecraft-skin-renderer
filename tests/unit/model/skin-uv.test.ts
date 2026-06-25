@@ -107,6 +107,21 @@ describe("SkinUV", () => {
       return { width, height, data } as unknown as ImageData;
     }
 
+    function pixelOffset(width: number, x: number, y: number): number {
+      return (y * width + x) * 4;
+    }
+
+    function expectPixel(
+      data: Uint8ClampedArray,
+      width: number,
+      x: number,
+      y: number,
+      rgba: [number, number, number, number],
+    ) {
+      const idx = pixelOffset(width, x, y);
+      expect(Array.from(data.slice(idx, idx + 4))).toEqual(rgba);
+    }
+
     it("should return same data if already square", () => {
       const data = makeImageData(64, 64);
       const result = convertOldSkinFormat(data);
@@ -143,19 +158,25 @@ describe("SkinUV", () => {
       expect(result.data[3]).toBe(255);
     });
 
-    it("should mirror right arm to left arm region", () => {
+    it("should mirror right arm pixels into left arm region", () => {
       const data = makeImageData(64, 32);
-      // Set a pixel in the right arm area (40, 16)
-      const srcIdx = (16 * 64 + 40) * 4;
-      data.data[srcIdx] = 255;
-      data.data[srcIdx + 1] = 0;
-      data.data[srcIdx + 2] = 0;
-      data.data[srcIdx + 3] = 255;
+      const srcIdx = pixelOffset(64, 40, 16);
+      data.data.set([255, 0, 0, 255], srcIdx);
 
       const result = convertOldSkinFormat(data);
-      // The mirrored pixel should appear in left arm area (32, 48)
-      // Mirroring means x is reflected within the 16px wide region
       expect(result.height).toBe(64);
+      expectPixel(result.data, 64, 47, 48, [255, 0, 0, 255]);
+      expectPixel(result.data, 64, 32, 48, [0, 0, 0, 0]);
+    });
+
+    it("should mirror right leg pixels into left leg region", () => {
+      const data = makeImageData(64, 32);
+      const srcIdx = pixelOffset(64, 15, 16);
+      data.data.set([0, 255, 0, 255], srcIdx);
+
+      const result = convertOldSkinFormat(data);
+      expectPixel(result.data, 64, 16, 48, [0, 255, 0, 255]);
+      expectPixel(result.data, 64, 31, 48, [0, 0, 0, 0]);
     });
   });
 });

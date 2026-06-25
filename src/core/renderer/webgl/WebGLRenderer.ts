@@ -30,6 +30,8 @@ export class WebGLRenderer implements IRenderer {
   // State cache for reducing redundant WebGL calls
   private lastPipelineId = -1;
   private lastVAO: WebGLVertexArrayObject | null = null;
+  private vaoCache: Map<string, WebGLVertexArrayObject> = new Map();
+  private vaoBufferIds: Map<string, Set<number>> = new Map();
 
   constructor(options: RendererOptions) {
     this.canvas = options.canvas;
@@ -85,7 +87,7 @@ export class WebGLRenderer implements IRenderer {
 
   /** Create a buffer */
   createBuffer(usage: BufferUsage, data: ArrayBufferView): IBuffer {
-    return new WebGLBuffer(this.gl, usage, data);
+    return new WebGLBuffer(this.gl, usage, data, (id) => this.deleteVAOsUsingBuffer(id));
   }
 
   /** Create a texture */
@@ -127,36 +129,11 @@ export class WebGLRenderer implements IRenderer {
       this.lastPipelineId = pipeline.id;
     }
 
-    // Bind VAO only if changed
-    const vao = pipeline.getVAO();
+    // Bind VAO only if changed. VAOs cache vertex/index buffer layout per draw shape.
+    const vao = this.getOrCreateVAO(pipeline, params);
     if (this.lastVAO !== vao) {
       gl.bindVertexArray(vao);
       this.lastVAO = vao;
-    }
-
-    // Setup vertex attributes
-    const layout = pipeline.vertexLayout;
-    for (let i = 0; i < params.vertexBuffers.length; i++) {
-      const buffer = params.vertexBuffers[i] as WebGLBuffer;
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer.getNativeBuffer());
-
-      for (const attr of layout.attributes) {
-        gl.enableVertexAttribArray(attr.location);
-        gl.vertexAttribPointer(
-          attr.location,
-          WebGLPipeline.getFormatSize(attr.format),
-          WebGLPipeline.getFormatType(gl, attr.format),
-          WebGLPipeline.isFormatNormalized(attr.format),
-          layout.stride,
-          attr.offset,
-        );
-      }
-    }
-
-    // Bind index buffer if present
-    if (params.indexBuffer) {
-      const indexBuffer = params.indexBuffer as WebGLBuffer;
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer.getNativeBuffer());
     }
 
     // Set uniforms
@@ -202,10 +179,80 @@ export class WebGLRenderer implements IRenderer {
     this.gl.viewport(0, 0, this._width, this._height);
   }
 
+  private getOrCreateVAO(
+    pipeline: WebGLPipeline,
+    params: DrawParams,
+  ): WebGLVertexArrayObject | null {
+    const vertexIds = params.vertexBuffers.map((buffer) => buffer.id).join(",");
+    const indexId = params.indexBuffer?.id ?? "none";
+    const key = `${pipeline.id}|${vertexIds}|${indexId}`;
+    const cached = this.vaoCache.get(key);
+    if (cached) return cached;
+
+    const gl = this.gl;
+    const vao = gl.createVertexArray();
+    if (!vao) return null;
+
+    gl.bindVertexArray(vao);
+
+    const layout = pipeline.vertexLayout;
+    for (const vertexBuffer of params.vertexBuffers) {
+      const buffer = vertexBuffer as WebGLBuffer;
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer.getNativeBuffer());
+
+      for (const attr of layout.attributes) {
+        gl.enableVertexAttribArray(attr.location);
+        gl.vertexAttribPointer(
+          attr.location,
+          WebGLPipeline.getFormatSize(attr.format),
+          WebGLPipeline.getFormatType(gl, attr.format),
+          WebGLPipeline.isFormatNormalized(attr.format),
+          layout.stride,
+          attr.offset,
+        );
+      }
+    }
+
+    if (params.indexBuffer) {
+      const indexBuffer = params.indexBuffer as WebGLBuffer;
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer.getNativeBuffer());
+    }
+
+    this.vaoCache.set(key, vao);
+    this.vaoBufferIds.set(
+      key,
+      new Set([
+        ...params.vertexBuffers.map((buffer) => buffer.id),
+        ...(params.indexBuffer ? [params.indexBuffer.id] : []),
+      ]),
+    );
+    return vao;
+  }
+
+  private deleteVAOsUsingBuffer(bufferId: number): void {
+    for (const [key, vao] of this.vaoCache) {
+      if (this.vaoBufferIds.get(key)?.has(bufferId)) {
+        this.gl.deleteVertexArray(vao);
+        this.vaoCache.delete(key);
+        this.vaoBufferIds.delete(key);
+        if (this.lastVAO === vao) {
+          this.lastVAO = null;
+        }
+      }
+    }
+  }
+
   /** Dispose the renderer */
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+
+    for (const vao of this.vaoCache.values()) {
+      this.gl.deleteVertexArray(vao);
+    }
+    this.vaoCache.clear();
+    this.vaoBufferIds.clear();
+    this.lastVAO = null;
 
     // Explicitly lose the WebGL context to release GPU resources.
     // Individual textures, buffers, and pipelines are disposed by the caller (SkinViewer.dispose).

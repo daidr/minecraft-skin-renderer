@@ -5,13 +5,8 @@ import { useSettingsStore } from "../stores/settings";
 const viewerStore = useViewerStore();
 const settingsStore = useSettingsStore();
 
-const emit = defineEmits<{
-  backendChange: [];
-}>();
-
 function onBackendChange(e: Event) {
   settingsStore.settings.backend = (e.target as HTMLSelectElement).value;
-  emit("backendChange");
 }
 </script>
 

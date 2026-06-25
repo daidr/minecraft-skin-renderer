@@ -15,12 +15,19 @@ export class WebGLBuffer implements IBuffer {
   private buffer: globalThis.WebGLBuffer | null;
   private target: number;
   private disposed = false;
+  private onDispose?: (id: number) => void;
 
-  constructor(gl: WebGL2RenderingContext, usage: BufferUsage, data: ArrayBufferView) {
+  constructor(
+    gl: WebGL2RenderingContext,
+    usage: BufferUsage,
+    data: ArrayBufferView,
+    onDispose?: (id: number) => void,
+  ) {
     this.id = bufferId();
     this.gl = gl;
     this.usage = usage;
     this.size = data.byteLength;
+    this.onDispose = onDispose;
 
     // Determine buffer target based on usage
     if (usage & BufferUsage.Index) {
@@ -68,5 +75,6 @@ export class WebGLBuffer implements IBuffer {
       this.gl.deleteBuffer(this.buffer);
       this.buffer = null;
     }
+    this.onDispose?.(this.id);
   }
 }

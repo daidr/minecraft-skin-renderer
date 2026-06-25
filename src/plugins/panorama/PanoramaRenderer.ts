@@ -77,6 +77,8 @@ export function createPanoramaRenderer(renderer: IRenderer): BackgroundRenderer 
 
   let panoramaTexture: ITexture | null = null;
   const indexCount = skybox.indexCount;
+  let disposed = false;
+  let sourceRequestId = 0;
 
   // Pre-allocated buffers to avoid per-frame GC
   const viewRotation = new Float32Array(16);
@@ -84,21 +86,42 @@ export function createPanoramaRenderer(renderer: IRenderer): BackgroundRenderer 
 
   return {
     async setSource(source: TextureSource): Promise<void> {
-      // Dispose old texture if exists
-      if (panoramaTexture) {
-        panoramaTexture.dispose();
-        panoramaTexture = null;
-      }
+      if (disposed) return;
+
+      const requestId = ++sourceRequestId;
 
       // Load new texture
       const bitmap = await loadTexture(source);
-      panoramaTexture = await renderer.createTexture(bitmap, {
-        wrapU: TextureWrap.Repeat, // Wrap horizontally
-        wrapV: TextureWrap.ClampToEdge, // Clamp vertically
-        minFilter: TextureFilter.Linear,
-        magFilter: TextureFilter.Linear,
-        generateMipmaps: true,
-      });
+      if (disposed || requestId !== sourceRequestId) {
+        if (source !== bitmap) {
+          bitmap.close();
+        }
+        return;
+      }
+
+      let nextTexture: ITexture;
+      try {
+        nextTexture = await renderer.createTexture(bitmap, {
+          wrapU: TextureWrap.Repeat, // Wrap horizontally
+          wrapV: TextureWrap.ClampToEdge, // Clamp vertically
+          minFilter: TextureFilter.Linear,
+          magFilter: TextureFilter.Linear,
+          generateMipmaps: true,
+        });
+      } finally {
+        if (source !== bitmap) {
+          bitmap.close();
+        }
+      }
+
+      if (disposed || requestId !== sourceRequestId) {
+        nextTexture.dispose();
+        return;
+      }
+
+      const oldTexture = panoramaTexture;
+      panoramaTexture = nextTexture;
+      oldTexture?.dispose();
     },
 
     render(camera: Camera): void {
@@ -130,6 +153,9 @@ export function createPanoramaRenderer(renderer: IRenderer): BackgroundRenderer 
     },
 
     dispose(): void {
+      if (disposed) return;
+      disposed = true;
+      sourceRequestId++;
       vertexBuffer.dispose();
       indexBuffer.dispose();
       pipeline.dispose();

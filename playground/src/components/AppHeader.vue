@@ -4,10 +4,6 @@ import BackendSelector from "./BackendSelector.vue";
 import { useSettingsStore } from "../stores/settings";
 
 const settingsStore = useSettingsStore();
-
-const emit = defineEmits<{
-  backendChange: [];
-}>();
 </script>
 
 <template>
@@ -30,10 +26,7 @@ const emit = defineEmits<{
     </div>
     <div class="header-controls">
       <ModeToggle />
-      <BackendSelector
-        v-if="settingsStore.settings.mode === '3d'"
-        @backend-change="emit('backendChange')"
-      />
+      <BackendSelector v-if="settingsStore.settings.mode === '3d'" />
     </div>
   </header>
 </template>

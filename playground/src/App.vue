@@ -1,21 +1,14 @@
 <script setup lang="ts">
-import { ref } from "vue";
 import AppHeader from "./components/AppHeader.vue";
 import CanvasArea from "./components/CanvasArea.vue";
 import ControlsSidebar from "./components/ControlsSidebar.vue";
-
-const canvasAreaRef = ref<InstanceType<typeof CanvasArea>>();
-
-function onBackendChange() {
-  canvasAreaRef.value?.onBackendChange();
-}
 </script>
 
 <template>
   <div class="app">
-    <AppHeader @backend-change="onBackendChange" />
+    <AppHeader />
     <main class="main">
-      <CanvasArea ref="canvasAreaRef" />
+      <CanvasArea />
       <ControlsSidebar />
     </main>
   </div>

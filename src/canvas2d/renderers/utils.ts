@@ -6,6 +6,9 @@ import { createCanvas } from "../canvas-env";
 import type { ICanvas, ICanvasRenderingContext2D, IImageData } from "../canvas-env";
 import type { ParsedSkin, FaceName } from "../types";
 
+let faceCanvas: ICanvas | null = null;
+let faceContext: ICanvasRenderingContext2D | null = null;
+
 /**
  * Get a 2D context with nearest-neighbor (pixelated) rendering
  */
@@ -26,9 +29,7 @@ export function drawScaledFace(
   y: number,
   scale: number,
 ): void {
-  const tmp = createCanvas(face.width, face.height);
-  const tmpCtx = tmp.getContext("2d")!;
-  tmpCtx.putImageData(face, 0, 0);
+  const tmp = putFaceOnTempCanvas(face);
 
   ctx.drawImage(tmp, 0, 0, face.width, face.height, x, y, face.width * scale, face.height * scale);
 }
@@ -53,8 +54,7 @@ export function drawFaceWithOverlay(
   if (outer) {
     if (inflated) {
       const inflate = scale * 0.5;
-      const tmp = createCanvas(outer.width, outer.height);
-      tmp.getContext("2d")!.putImageData(outer, 0, 0);
+      const tmp = putFaceOnTempCanvas(outer);
       const dw = (outer.width + textureScale) * renderScale;
       const dh = (outer.height + textureScale) * renderScale;
       ctx.drawImage(tmp, 0, 0, outer.width, outer.height, x - inflate, y - inflate, dw, dh);
@@ -62,6 +62,23 @@ export function drawFaceWithOverlay(
       drawScaledFace(ctx, outer, x, y, renderScale);
     }
   }
+}
+
+function putFaceOnTempCanvas(face: IImageData): ICanvas {
+  if (
+    !faceCanvas ||
+    !faceContext ||
+    faceCanvas.width !== face.width ||
+    faceCanvas.height !== face.height
+  ) {
+    faceCanvas = createCanvas(face.width, face.height);
+    faceContext = faceCanvas.getContext("2d")!;
+  } else {
+    faceContext.clearRect(0, 0, face.width, face.height);
+  }
+
+  faceContext.putImageData(face, 0, 0);
+  return faceCanvas;
 }
 
 /** Part descriptor for flat body drawing */

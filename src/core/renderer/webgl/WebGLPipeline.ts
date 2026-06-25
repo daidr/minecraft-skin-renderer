@@ -35,8 +35,7 @@ export class WebGLPipeline implements IPipeline {
   private program: WebGLProgram | null;
   private vertexShader: WebGLShader | null;
   private fragmentShader: WebGLShader | null;
-  private uniformCache: Map<string, UniformInfo> = new Map();
-  private vao: WebGLVertexArrayObject | null = null;
+  private uniformCache: Map<string, UniformInfo | null> = new Map();
   private disposed = false;
 
   // Pipeline state
@@ -77,9 +76,6 @@ export class WebGLPipeline implements IPipeline {
       const info = gl.getProgramInfoLog(this.program);
       throw new Error(`Failed to link shader program: ${info}`);
     }
-
-    // Create VAO
-    this.vao = gl.createVertexArray();
   }
 
   /** Compile a shader */
@@ -109,20 +105,19 @@ export class WebGLPipeline implements IPipeline {
     return this.program;
   }
 
-  /** Get VAO */
-  getVAO(): WebGLVertexArrayObject | null {
-    return this.vao;
-  }
-
   /** Get uniform location (cached) */
   getUniformLocation(name: string): UniformInfo | null {
     if (!this.program) return null;
 
-    let info = this.uniformCache.get(name);
-    if (info !== undefined) return info;
+    if (this.uniformCache.has(name)) {
+      return this.uniformCache.get(name)!;
+    }
 
     const location = this.gl.getUniformLocation(this.program, name);
-    if (!location) return null;
+    if (!location) {
+      this.uniformCache.set(name, null);
+      return null;
+    }
 
     // Get uniform type
     const numUniforms = this.gl.getProgramParameter(this.program, this.gl.ACTIVE_UNIFORMS);
@@ -136,7 +131,7 @@ export class WebGLPipeline implements IPipeline {
       }
     }
 
-    info = { location, type };
+    const info = { location, type };
     this.uniformCache.set(name, info);
     return info;
   }
@@ -146,8 +141,9 @@ export class WebGLPipeline implements IPipeline {
     if (!this.program) return;
 
     const gl = this.gl;
-    const location = gl.getUniformLocation(this.program, name);
-    if (!location) return;
+    const info = this.getUniformLocation(name);
+    if (!info) return;
+    const location = info.location;
 
     // Infer type from value rather than querying shader
     if (typeof value === "number") {
@@ -193,10 +189,10 @@ export class WebGLPipeline implements IPipeline {
     if (!this.program) return;
 
     const gl = this.gl;
-    const location = gl.getUniformLocation(this.program, name);
-    if (!location) return;
+    const info = this.getUniformLocation(name);
+    if (!info) return;
 
-    gl.uniform1i(location, value);
+    gl.uniform1i(info.location, value);
   }
 
   /** Get GL primitive mode */
@@ -303,11 +299,6 @@ export class WebGLPipeline implements IPipeline {
     this.disposed = true;
 
     const gl = this.gl;
-
-    if (this.vao) {
-      gl.deleteVertexArray(this.vao);
-      this.vao = null;
-    }
 
     if (this.program) {
       gl.deleteProgram(this.program);

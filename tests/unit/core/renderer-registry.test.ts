@@ -2,13 +2,14 @@
  * Renderer registry unit tests
  */
 
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import {
   use,
   getRendererPlugin,
   getRegisteredBackends,
   isBackendRegistered,
 } from "@/core/renderer/registry";
+import { isWebGPUSupported } from "@/core/renderer/types";
 import type { RendererPlugin } from "@/core/renderer/registry";
 
 function createMockRendererPlugin(backend: "webgl" | "webgpu"): RendererPlugin {
@@ -22,6 +23,10 @@ function createMockRendererPlugin(backend: "webgl" | "webgpu"): RendererPlugin {
     },
   };
 }
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("Renderer Registry", () => {
   describe("use() with renderer plugins", () => {
@@ -76,6 +81,13 @@ describe("Renderer Registry", () => {
     it("should return true for registered backend", () => {
       use(createMockRendererPlugin("webgl"));
       expect(isBackendRegistered("webgl")).toBe(true);
+    });
+  });
+
+  describe("environment support checks", () => {
+    it("should return false without throwing when navigator is unavailable", () => {
+      vi.stubGlobal("navigator", undefined);
+      expect(isWebGPUSupported()).toBe(false);
     });
   });
 });

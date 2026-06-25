@@ -5,7 +5,7 @@
  * Uses a minimal 64x64 IImageData as skin source.
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderAvatar } from "@/canvas2d/renderers/avatar";
 import { renderSkinFront } from "@/canvas2d/renderers/front";
 import { renderSkinBack } from "@/canvas2d/renderers/back";
@@ -58,6 +58,17 @@ describe("Canvas2D Renderers", () => {
       const pad = scale * 0.5;
       expect(canvas.width).toBe(8 * scale + 2 * pad);
       expect(canvas.height).toBe(8 * scale + 2 * pad);
+    });
+
+    it("should reuse the temporary face canvas between avatar renders", async () => {
+      await renderAvatar(createTestCanvas(), { skin: createMockSkin() });
+
+      const createElement = vi.spyOn(document, "createElement");
+      await renderAvatar(createTestCanvas(), { skin: createMockSkin() });
+
+      const canvasCreations = createElement.mock.calls.filter(([tagName]) => tagName === "canvas");
+      expect(canvasCreations).toHaveLength(1);
+      createElement.mockRestore();
     });
   });
 

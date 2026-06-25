@@ -14,8 +14,8 @@ import type { UseSkinViewerOptions, UseSkinViewerReturn } from "./types";
  *
  * Dynamic options (skin, cape, slim, zoom, rotation, animation, paused, enableRotate, enableZoom,
  * autoRotateSpeed, animationSpeed, animationAmplitude, etc.) are watched and synced
- * to the viewer automatically. Creation-time options (preferredBackend, antialias, fov,
- * pixelRatio) are only applied at initialization.
+ * to the viewer automatically. Creation-time options (preferredBackend, antialias,
+ * preserveDrawingBuffer, fov, pixelRatio) are only applied at initialization.
  * Call `recreate()` to re-initialize with updated creation-time options.
  *
  * @example
@@ -39,12 +39,15 @@ export function useSkinViewer(
 
   let resizeObserver: ResizeObserver | null = null;
   let canvas: HTMLCanvasElement | null = null;
+  let initId = 0;
+  let isUnmounted = false;
 
   async function init() {
     const container = containerRef.value;
-    if (!container) return;
+    if (!container || isUnmounted) return;
 
     dispose();
+    const currentInitId = ++initId;
 
     const opts = toValue(options) ?? {};
 
@@ -71,6 +74,7 @@ export function useSkinViewer(
         cape: opts.cape === null ? undefined : opts.cape,
         preferredBackend: opts.preferredBackend ?? "auto",
         antialias: opts.antialias ?? true,
+        preserveDrawingBuffer: opts.preserveDrawingBuffer,
         pixelRatio: opts.pixelRatio,
         fov: opts.fov,
         slim: opts.slim,
@@ -83,6 +87,11 @@ export function useSkinViewer(
         ambientLight: opts.ambientLight,
         directLight: opts.directLight,
       });
+
+      if (isUnmounted || currentInitId !== initId) {
+        v.dispose();
+        return;
+      }
 
       viewer.value = v;
       isReady.value = true;
@@ -113,12 +122,15 @@ export function useSkinViewer(
 
       v.startRenderLoop();
     } catch (e) {
-      error.value = e instanceof Error ? e : new Error(String(e));
-      isReady.value = false;
+      if (!isUnmounted && currentInitId === initId) {
+        error.value = e instanceof Error ? e : new Error(String(e));
+        isReady.value = false;
+      }
     }
   }
 
   function dispose() {
+    initId++;
     if (viewer.value) {
       viewer.value.dispose();
       viewer.value = null;
@@ -327,7 +339,9 @@ export function useSkinViewer(
   // --- Lifecycle ---
 
   onMounted(async () => {
+    isUnmounted = false;
     await init();
+    if (isUnmounted) return;
 
     if (containerRef.value) {
       resizeObserver = new ResizeObserver(([entry]) => {
@@ -346,6 +360,8 @@ export function useSkinViewer(
   });
 
   onUnmounted(() => {
+    isUnmounted = true;
+    initId++;
     resizeObserver?.disconnect();
     resizeObserver = null;
     dispose();

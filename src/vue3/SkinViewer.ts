@@ -61,6 +61,7 @@ export const SkinViewer: DefineComponent<
     },
     pixelRatio: { type: Number, default: undefined },
     antialias: { type: Boolean, default: true },
+    preserveDrawingBuffer: { type: Boolean, default: false },
     fov: { type: Number, default: undefined },
   },
   emits: ["ready", "error", "update:zoom", "update:rotation", "update:paused"],
@@ -101,11 +102,40 @@ export const SkinViewer: DefineComponent<
       panorama: props.panorama,
       pixelRatio: props.pixelRatio,
       antialias: props.antialias,
+      preserveDrawingBuffer: props.preserveDrawingBuffer,
       fov: props.fov,
     }));
 
+    let pendingCreationRecreate = false;
+
+    watch(
+      () =>
+        [
+          props.preferredBackend,
+          props.antialias,
+          props.preserveDrawingBuffer,
+          props.pixelRatio,
+          props.fov,
+        ] as const,
+      () => {
+        if (!isReady.value) {
+          pendingCreationRecreate = true;
+          return;
+        }
+
+        pendingCreationRecreate = false;
+        void recreate();
+      },
+    );
+
     watch(isReady, (ready) => {
       if (ready && viewer.value) {
+        if (pendingCreationRecreate) {
+          pendingCreationRecreate = false;
+          void recreate();
+          return;
+        }
+
         emit("ready", viewer.value);
 
         // Wire onZoomChange for v-model:zoom (covers wheel + pinch)

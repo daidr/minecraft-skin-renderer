@@ -302,7 +302,7 @@ export interface CreateRendererResult {
 
 /** Check if WebGPU is supported */
 export function isWebGPUSupported(): boolean {
-  return "gpu" in navigator;
+  return typeof navigator !== "undefined" && "gpu" in navigator;
 }
 
 /** Check if WebGL2 is supported */

@@ -28,6 +28,8 @@ export interface UseSkinViewerOptions {
   preferredBackend?: BackendType | "auto";
   /** Enable antialiasing. Default: `true` */
   antialias?: boolean;
+  /** Preserve the drawing buffer after presenting a frame. Default: `false` */
+  preserveDrawingBuffer?: boolean;
   /** Device pixel ratio override */
   pixelRatio?: number;
   /** Camera field of view in degrees */

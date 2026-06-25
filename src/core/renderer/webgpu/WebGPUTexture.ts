@@ -72,18 +72,29 @@ export class WebGPUTextureImpl implements ITexture {
         GPUTextureUsage.RENDER_ATTACHMENT,
     });
 
-    // Copy image data to texture
-    // Convert to ImageBitmap first if needed for copyExternalImageToTexture
-    let bitmap: ImageBitmap;
-    if (source instanceof ImageBitmap) {
-      bitmap = source;
-    } else {
-      bitmap = await createImageBitmap(source);
-    }
+    let bitmap: ImageBitmap | null = null;
+    let ownsBitmap = false;
 
-    // Note: WebGPU texture coordinates have (0,0) at top-left, same as image files,
-    // so we don't need to flip Y (unlike WebGL where (0,0) is at bottom-left)
-    device.queue.copyExternalImageToTexture({ source: bitmap }, { texture }, { width, height });
+    try {
+      // Convert to ImageBitmap first if needed for copyExternalImageToTexture.
+      if (source instanceof ImageBitmap) {
+        bitmap = source;
+      } else {
+        bitmap = await createImageBitmap(source);
+        ownsBitmap = true;
+      }
+
+      // Note: WebGPU texture coordinates have (0,0) at top-left, same as image files,
+      // so we don't need to flip Y (unlike WebGL where (0,0) is at bottom-left)
+      device.queue.copyExternalImageToTexture({ source: bitmap }, { texture }, { width, height });
+    } catch (error) {
+      texture.destroy();
+      throw error;
+    } finally {
+      if (ownsBitmap) {
+        bitmap?.close();
+      }
+    }
 
     // Create sampler
     const sampler = device.createSampler({
@@ -157,27 +168,32 @@ export class WebGPUTextureImpl implements ITexture {
    * If the version changes during the async operation, the update is cancelled.
    */
   private async updateAsync(source: TexImageSource, version: number): Promise<void> {
-    let bitmap: ImageBitmap;
-    if (source instanceof ImageBitmap) {
-      bitmap = source;
-    } else {
-      bitmap = await createImageBitmap(source);
-    }
+    let bitmap: ImageBitmap | null = null;
+    let ownsBitmap = false;
 
-    // Check if this update has been superseded by a newer one
-    if (this.disposed || this.updateVersion !== version) {
-      // Close the bitmap if we created it and won't use it
-      if (!(source instanceof ImageBitmap)) {
-        bitmap.close();
+    try {
+      if (source instanceof ImageBitmap) {
+        bitmap = source;
+      } else {
+        bitmap = await createImageBitmap(source);
+        ownsBitmap = true;
       }
-      return;
-    }
 
-    this.device.queue.copyExternalImageToTexture(
-      { source: bitmap },
-      { texture: this.texture },
-      { width: this.width, height: this.height },
-    );
+      // Check if this update has been superseded by a newer one
+      if (this.disposed || this.updateVersion !== version) {
+        return;
+      }
+
+      this.device.queue.copyExternalImageToTexture(
+        { source: bitmap },
+        { texture: this.texture },
+        { width: this.width, height: this.height },
+      );
+    } finally {
+      if (ownsBitmap) {
+        bitmap?.close();
+      }
+    }
   }
 
   /** Dispose the texture */
