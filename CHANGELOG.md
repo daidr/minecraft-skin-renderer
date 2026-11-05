@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.3](https://github.com/daidr/minecraft-skin-renderer/compare/minecraft-skin-renderer-v0.3.2...minecraft-skin-renderer-v0.3.3) (2026-11-05)
+
+
+### Bug Fixes
+
+* improve renderer resource lifecycle ([510dd58](https://github.com/daidr/minecraft-skin-renderer/commit/510dd585282fca88945b1094e2761565b530f99b))
+* run git-hooks in prepare instead of postinstall ([#12](https://github.com/daidr/minecraft-skin-renderer/issues/12)) ([240dfa8](https://github.com/daidr/minecraft-skin-renderer/commit/240dfa8624f7234546457af789701e6617b9ae0f)), closes [#11](https://github.com/daidr/minecraft-skin-renderer/issues/11)
+
 ## [0.3.2](https://github.com/daidr/minecraft-skin-renderer/compare/minecraft-skin-renderer-v0.3.1...minecraft-skin-renderer-v0.3.2) (2026-03-28)
 
 
