@@ -81,7 +81,7 @@
     "bench:math:mat4": "bun run benchmarks/math/mat4.bench.ts",
     "bench:math:quat": "bun run benchmarks/math/quat.bench.ts",
     "bench:math:utils": "bun run benchmarks/math/utils.bench.ts",
-    "postinstall": "git-hooks"
+    "prepare": "git-hooks"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.4.1",
