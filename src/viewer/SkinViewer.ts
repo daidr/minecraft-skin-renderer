@@ -43,6 +43,8 @@ import { loadSkinTexture, loadCapeTexture, createPlaceholderTexture } from "../t
 import type { TextureSource } from "../texture";
 import { createRenderLoop, startRenderLoop, stopRenderLoop } from "./RenderLoop";
 import type { RenderLoop } from "./RenderLoop";
+import { createGazeController } from "./GazeController";
+import type { GazeController, GazeOptions } from "./GazeController";
 import type { AnimationConfig, AnimationController } from "../animation/types";
 import {
   createAnimationController,
@@ -112,6 +114,17 @@ export interface SkinViewerOptions {
    * Provide a URL or TextureSource for an equirectangular panorama image.
    */
   panorama?: TextureSource;
+  /**
+   * Make the model follow the mouse pointer.
+   *
+   * The head turns towards the cursor; when the required head rotation exceeds
+   * its limits, the body rotates by the remaining angle so the pose stays natural.
+   * Pass `true` to enable with defaults, an object to tune the behaviour, or
+   * `false` to disable it.
+   *
+   * @default false
+   */
+  gaze?: boolean | GazeOptions;
 }
 
 /** SkinViewer interface */
@@ -177,6 +190,16 @@ export interface SkinViewer {
   setEnableZoom(enabled: boolean): void;
   resetCamera(): void;
 
+  /**
+   * Enable or disable mouse gaze tracking.
+   * When disabled, the pose modified by the controller is restored.
+   */
+  setGaze(enabled: boolean): void;
+  /** Update gaze tuning options. Takes effect immediately. */
+  setGazeOptions(options: GazeOptions): void;
+  /** Whether mouse gaze tracking is enabled */
+  readonly gazeEnabled: boolean;
+
   render(): void;
   startRenderLoop(): void;
   stopRenderLoop(): void;
@@ -209,6 +232,7 @@ interface SkinViewerState {
   controls: OrbitControls;
   renderLoop: RenderLoop;
   animationController: AnimationController;
+  gazeController: GazeController;
 
   skeleton: PlayerSkeleton;
   variant: ModelVariant;
@@ -422,6 +446,16 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
     // Create animation controller
     const animationController = createAnimationController(skeleton);
 
+    // Create gaze (mouse-follow) controller
+    const gazeController = createGazeController(
+      canvas,
+      typeof options.gaze === "object" ? options.gaze : undefined,
+    );
+    if (options.gaze) {
+      gazeController.setEnabled(true);
+    }
+    initCleanup.push(() => gazeController.dispose());
+
     // Load initial cape texture if provided
     let capeTexture: ITexture | null = null;
     if (options.cape) {
@@ -455,6 +489,7 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
       controls,
       renderLoop: null as unknown as RenderLoop,
       animationController,
+      gazeController,
       skeleton,
       variant,
       skinPipeline,
@@ -597,6 +632,14 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
       updateOrbitControls(state.controls, deltaTime);
       updateAnimationController(state.animationController, deltaTime);
+
+      // Apply the gaze after the animation so it layers on top of the pose
+      if (state.gazeController.enabled) {
+        const gazeChanged = state.gazeController.update(state.skeleton, deltaTime, state.camera);
+        if (gazeChanged) {
+          state.boneMatricesDirty = true;
+        }
+      }
 
       // Mark bone matrices as dirty if animation is playing
       if (state.animationController.isPlaying) {
@@ -791,6 +834,9 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
         // Recreate animation controller with new skeleton
         state.animationController = createAnimationController(state.skeleton);
 
+        // The previous skeleton is gone; drop any gaze pose stored for it
+        state.gazeController.forget();
+
         // Restore animation state
         if (currentAnimation && wasPlaying) {
           state.animationController.play(currentAnimation);
@@ -870,6 +916,21 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
 
       setEnableZoom(enabled: boolean) {
         state.controls.enableZoom = enabled;
+      },
+
+      setGaze(enabled: boolean) {
+        if (state.disposed) return;
+        state.gazeController.setEnabled(enabled);
+        // Restoring the previous pose changes bone rotations without an animation update
+        state.boneMatricesDirty = true;
+      },
+
+      setGazeOptions(options: GazeOptions) {
+        state.gazeController.setOptions(options);
+      },
+
+      get gazeEnabled() {
+        return state.gazeController.enabled;
       },
 
       resetCamera() {
@@ -957,6 +1018,7 @@ export async function createSkinViewer(options: SkinViewerOptions): Promise<Skin
           state.skinTexture,
           state.capeTexture,
           state.backgroundRenderer,
+          state.gazeController,
         ])
           r?.dispose();
 

@@ -78,6 +78,7 @@ onUnmounted(() => {
       v-model:zoom="zoomModel"
       v-model:rotation="rotationModel"
       :auto-rotate="settingsStore.settings.autoRotate"
+      :gaze="settingsStore.settings.gaze"
       :ambient-light="
         settingsStore.settings.enableLighting ? settingsStore.settings.ambientLight : 1.0
       "

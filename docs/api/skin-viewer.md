@@ -33,26 +33,27 @@ const viewer = await createSkinViewer(options);
 
 ### SkinViewerOptions
 
-| 属性                    | 类型                    | 默认值   | 说明                                                                        |
-| ----------------------- | ----------------------- | -------- | --------------------------------------------------------------------------- |
-| `canvas`                | `HTMLCanvasElement`     | _必填_   | 渲染目标画布元素                                                            |
-| `skin`                  | `TextureSource`         | —        | 皮肤纹理（URL、Blob 或图像对象）                                            |
-| `cape`                  | `TextureSource`         | —        | 披风纹理（64x32 格式），同时用于鞘翅                                        |
-| `slim`                  | `boolean`               | `false`  | 是否使用纤细模型（3px 手臂）                                                |
-| `backEquipment`         | `BackEquipment`         | `"none"` | 背部装备：`"cape"` / `"elytra"` / `"none"`。提供 cape 纹理时默认为 `"cape"` |
-| `preferredBackend`      | `BackendType \| "auto"` | `"auto"` | 渲染后端：`"webgl"` / `"webgpu"` / `"auto"`                                 |
-| `antialias`             | `boolean`               | `true`   | 是否启用抗锯齿                                                              |
-| `pixelRatio`            | `number`                | —        | DPI 缩放系数                                                                |
-| `preserveDrawingBuffer` | `boolean`               | `false`  | 是否保留帧缓冲；实时渲染建议保持关闭，仅在特殊截图/读取像素场景启用         |
-| `fov`                   | `number`                | `70`     | 视场角（度）                                                                |
-| `zoom`                  | `number`                | —        | 初始缩放距离                                                                |
-| `enableRotate`          | `boolean`               | `true`   | 允许鼠标旋转                                                                |
-| `enableZoom`            | `boolean`               | `true`   | 允许鼠标缩放                                                                |
-| `autoRotate`            | `boolean`               | `false`  | 自动旋转模型                                                                |
-| `autoRotateSpeed`       | `number`                | `30`     | 自动旋转速度（度/秒）                                                       |
-| `ambientLight`          | `number`                | `0.6`    | 环境光强度（0.0\~1.0）                                                      |
-| `directLight`           | `number`                | `0.4`    | 方向光强度（0.0\~1.0），光源跟随相机方向                                    |
-| `panorama`              | `TextureSource`         | —        | 全景图背景（需注册 PanoramaPlugin）                                         |
+| 属性                    | 类型                     | 默认值   | 说明                                                                        |
+| ----------------------- | ------------------------ | -------- | --------------------------------------------------------------------------- |
+| `canvas`                | `HTMLCanvasElement`      | _必填_   | 渲染目标画布元素                                                            |
+| `skin`                  | `TextureSource`          | —        | 皮肤纹理（URL、Blob 或图像对象）                                            |
+| `cape`                  | `TextureSource`          | —        | 披风纹理（64x32 格式），同时用于鞘翅                                        |
+| `slim`                  | `boolean`                | `false`  | 是否使用纤细模型（3px 手臂）                                                |
+| `backEquipment`         | `BackEquipment`          | `"none"` | 背部装备：`"cape"` / `"elytra"` / `"none"`。提供 cape 纹理时默认为 `"cape"` |
+| `preferredBackend`      | `BackendType \| "auto"`  | `"auto"` | 渲染后端：`"webgl"` / `"webgpu"` / `"auto"`                                 |
+| `antialias`             | `boolean`                | `true`   | 是否启用抗锯齿                                                              |
+| `pixelRatio`            | `number`                 | —        | DPI 缩放系数                                                                |
+| `preserveDrawingBuffer` | `boolean`                | `false`  | 是否保留帧缓冲；实时渲染建议保持关闭，仅在特殊截图/读取像素场景启用         |
+| `fov`                   | `number`                 | `70`     | 视场角（度）                                                                |
+| `zoom`                  | `number`                 | —        | 初始缩放距离                                                                |
+| `enableRotate`          | `boolean`                | `true`   | 允许鼠标旋转                                                                |
+| `enableZoom`            | `boolean`                | `true`   | 允许鼠标缩放                                                                |
+| `autoRotate`            | `boolean`                | `false`  | 自动旋转模型                                                                |
+| `autoRotateSpeed`       | `number`                 | `30`     | 自动旋转速度（度/秒）                                                       |
+| `ambientLight`          | `number`                 | `0.6`    | 环境光强度（0.0\~1.0）                                                      |
+| `directLight`           | `number`                 | `0.4`    | 方向光强度（0.0\~1.0），光源跟随相机方向                                    |
+| `panorama`              | `TextureSource`          | —        | 全景图背景（需注册 PanoramaPlugin）                                         |
+| `gaze`                  | `boolean \| GazeOptions` | `false`  | 鼠标视线跟随：头部注视光标，超出头部转角时身体自动旋转                      |
 
 ## SkinViewer 实例
 
@@ -370,6 +371,64 @@ viewer.onRotationChange = null; // 移除回调
 viewer.resetCamera();
 ```
 
+### 视线跟随
+
+启用后，模型头部会注视鼠标指针；当所需的转头角度超过头部上限时，身体（根骨骼）会按剩余角度自动旋转，保持姿态自然。
+
+```ts
+// 使用默认参数
+const viewer = await createSkinViewer({ canvas, gaze: true });
+
+// 使用自定义参数（角度单位为度）
+const viewer = await createSkinViewer({
+  canvas,
+  gaze: {
+    maxHeadYaw: 55, // 头部相对身体的左右转角上限
+    maxHeadPitch: 30, // 抬头/低头的角度上限
+    maxBodyYaw: 75, // 身体自动旋转的角度上限
+    yawRange: 100, // 指针相对头部达到最大水平偏移时的视线偏转角
+    pitchRange: 32, // 指针相对头部达到最大垂直偏移时的视线俯仰角
+    smoothing: 0.12, // 平滑时间常数（秒），0 表示不平滑
+    scope: "window", // 监听范围："window" 整个页面，或 "canvas" 仅画布
+  },
+});
+```
+
+鼠标位置以模型头部在屏幕上的投影为原点计算偏移，并根据当前相机环绕角度换算到模型空间，因此指针指向头部时视线保持自然，旋转相机后视线方向依然与屏幕上的指针位置一致。指针离开页面、窗口失焦或触屏拖动（用于旋转相机）时，模型会回到自然姿态。
+
+::: tip 渲染循环
+视线跟随在渲染循环的更新阶段计算，需要调用 `viewer.startRenderLoop()`（Vue 组件会自动启动）。
+:::
+
+#### setGaze()
+
+启用或禁用鼠标视线跟随。禁用时会恢复被修改前的骨骼姿态。
+
+```ts
+viewer.setGaze(true);
+viewer.setGaze(false);
+```
+
+**参数：** `enabled: boolean`
+
+#### setGazeOptions()
+
+动态修改视线跟随参数，立即生效。
+
+```ts
+viewer.setGazeOptions({ maxHeadYaw: 40, maxBodyYaw: 60, smoothing: 0.2 });
+```
+
+**参数：** `options: GazeOptions`（只需传入要修改的字段）
+
+#### gazeEnabled <Badge type="info" text="只读" />
+
+当前是否启用了鼠标视线跟随。
+
+```ts
+console.log(viewer.gazeEnabled); // boolean
+```
+
 ### 光照控制
 
 内置 Lambert 光照模型，由环境光和跟随相机的方向光组成。
@@ -574,6 +633,22 @@ interface PartsVisibility {
 interface AnimationConfig {
   speed?: number; // 播放速度倍率，默认 1.0
   amplitude?: number; // 动作幅度倍率，默认 1.0
+}
+```
+
+### GazeOptions
+
+鼠标视线跟随参数，所有角度单位为度。
+
+```ts
+interface GazeOptions {
+  maxHeadYaw?: number; // 头部相对身体的左右转角上限，默认 55
+  maxHeadPitch?: number; // 头部俯仰角上限，默认 30
+  maxBodyYaw?: number; // 身体自动旋转的角度上限，默认 75
+  yawRange?: number; // 指针相对头部最大水平偏移时的视线偏转角，默认 100
+  pitchRange?: number; // 指针相对头部最大垂直偏移时的视线俯仰角，默认 32
+  smoothing?: number; // 平滑时间常数（秒），默认 0.12，0 表示不平滑
+  scope?: "window" | "canvas"; // 指针监听范围，默认 "window"
 }
 ```
 

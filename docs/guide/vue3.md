@@ -54,6 +54,7 @@ const skinUrl = "https://example.com/skin.png";
 | `rotation`           | `{ theta: number; phi: number }` | —        | 相机旋转角度（弧度），支持 `v-model:rotation`          |
 | `autoRotate`         | `boolean`                        | `false`  | 启用自动旋转                                           |
 | `autoRotateSpeed`    | `number`                         | —        | 自动旋转速度                                           |
+| `gaze`               | `boolean \| GazeOptions`         | `false`  | 鼠标视线跟随：头部注视光标，超出头部转角时身体自动旋转 |
 | `enableRotate`       | `boolean`                        | `true`   | 启用鼠标旋转控制                                       |
 | `enableZoom`         | `boolean`                        | `true`   | 启用鼠标缩放控制                                       |
 | `animation`          | `string \| null`                 | —        | 播放的动画名称，`null` 停止动画                        |

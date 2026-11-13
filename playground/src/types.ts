@@ -14,6 +14,7 @@ export interface PlaygroundSettings {
   rotationTheta: number; // horizontal angle in degrees (-180..180)
   rotationPhi: number; // vertical angle in degrees (10..170)
   autoRotate: boolean;
+  gaze: boolean;
   enableLighting: boolean;
   ambientLight: number;
   directLight: number;

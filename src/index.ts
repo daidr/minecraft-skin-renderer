@@ -54,6 +54,8 @@ export {
   type SkinViewer,
   type SkinViewerOptions,
   type BackEquipment,
+  type GazeOptions,
+  type GazePose,
 } from "./viewer";
 
 // Types

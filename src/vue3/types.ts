@@ -3,6 +3,7 @@ import type { BackendType } from "../core/renderer/types";
 import type { AnyRegistrablePlugin } from "../core/renderer/registry";
 import type { PartsVisibility } from "../model/types";
 import type { BackEquipment, SkinViewer } from "../viewer";
+import type { GazeOptions } from "../viewer/GazeController";
 import type { TextureSource } from "../texture";
 import type { AnimationConfig } from "../animation/types";
 
@@ -70,6 +71,11 @@ export interface UseSkinViewerOptions {
   partsVisibility?: PartsVisibility;
   /** Panorama background texture source, or `null` to clear. Requires PanoramaPlugin. */
   panorama?: TextureSource | null;
+  /**
+   * Make the model follow the mouse pointer. Pass `true` to enable with defaults
+   * or an object to tune the behaviour. Default: `false`
+   */
+  gaze?: boolean | GazeOptions;
 }
 
 /** Emits definition for the `SkinViewer` component */

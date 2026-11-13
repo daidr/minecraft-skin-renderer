@@ -86,6 +86,7 @@ export function useSkinViewer(
         panorama: opts.panorama ?? undefined,
         ambientLight: opts.ambientLight,
         directLight: opts.directLight,
+        gaze: opts.gaze,
       });
 
       if (isUnmounted || currentInitId !== initId) {
@@ -334,6 +335,20 @@ export function useSkinViewer(
         console.error("Failed to update panorama:", e);
       }
     },
+  );
+
+  watch(
+    () => toValue(options)?.gaze,
+    (gaze) => {
+      if (!viewer.value || gaze === undefined) return;
+      if (typeof gaze === "boolean") {
+        viewer.value.setGaze(gaze);
+      } else {
+        viewer.value.setGazeOptions(gaze);
+        viewer.value.setGaze(true);
+      }
+    },
+    { deep: true },
   );
 
   // --- Lifecycle ---

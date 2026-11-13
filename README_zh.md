@@ -19,6 +19,7 @@
 - **背部装备** - 披风和鞘翅渲染
 - **动画系统** - 内置预设动画（idle、walk、run、fly），支持自定义动画
 - **相机控制** - 轨道控制，支持缩放、旋转和自动旋转
+- **鼠标视线跟随** - 人物头部注视光标，头部转角达到上限时身体自动跟随旋转
 - **全景背景** - 通过插件支持等距圆柱投影全景图
 - **2D 静态渲染** - 轻量级 Canvas 2D 渲染（头像、全身、等距视角、大头版）
 - **截图导出** - 导出渲染结果为 PNG 或 JPEG
@@ -101,6 +102,7 @@ const viewer = await createSkinViewer({
   enableZoom: true, // 启用缩放控制
   autoRotate: false, // 自动旋转相机
   autoRotateSpeed: 30, // 每秒旋转度数
+  gaze: true, // 鼠标视线跟随（可选，默认关闭）
   panorama: "url", // 全景背景（需要 PanoramaPlugin）
 });
 ```
