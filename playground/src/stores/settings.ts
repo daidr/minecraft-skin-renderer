@@ -19,6 +19,7 @@ function getDefaultSettings(): PlaygroundSettings {
     rotationTheta: 0,
     rotationPhi: 90,
     autoRotate: false,
+    gaze: true,
     enableLighting: true,
     ambientLight: 0.6,
     directLight: 0.4,

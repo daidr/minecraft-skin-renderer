@@ -4,6 +4,7 @@ import type { PartsVisibility } from "../model/types";
 import type { BackendType } from "../core/renderer/types";
 import type { AnyRegistrablePlugin } from "../core/renderer/registry";
 import type { BackEquipment } from "../viewer";
+import type { GazeOptions } from "../viewer/GazeController";
 import type { TextureSource } from "../texture";
 import { useSkinViewer } from "./useSkinViewer";
 import type { SkinViewerEmits, UseSkinViewerOptions } from "./types";
@@ -59,6 +60,10 @@ export const SkinViewer: DefineComponent<
       type: [String, Object, null] as PropType<TextureSource | null>,
       default: undefined,
     },
+    gaze: {
+      type: [Boolean, Object] as PropType<boolean | GazeOptions>,
+      default: undefined,
+    },
     pixelRatio: { type: Number, default: undefined },
     antialias: { type: Boolean, default: true },
     preserveDrawingBuffer: { type: Boolean, default: false },
@@ -100,6 +105,7 @@ export const SkinViewer: DefineComponent<
       paused: props.paused,
       partsVisibility: props.partsVisibility,
       panorama: props.panorama,
+      gaze: props.gaze,
       pixelRatio: props.pixelRatio,
       antialias: props.antialias,
       preserveDrawingBuffer: props.preserveDrawingBuffer,

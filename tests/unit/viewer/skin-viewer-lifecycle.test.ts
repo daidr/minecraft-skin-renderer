@@ -181,6 +181,23 @@ afterEach(() => {
 });
 
 describe("SkinViewer resource lifecycle", () => {
+  it("exposes gaze tracking state", async () => {
+    const viewer = await createSkinViewer({
+      canvas: document.createElement("canvas"),
+      preferredBackend: "webgl",
+      gaze: true,
+    });
+
+    expect(viewer.gazeEnabled).toBe(true);
+    viewer.setGaze(false);
+    expect(viewer.gazeEnabled).toBe(false);
+    viewer.setGazeOptions({ maxHeadYaw: 30 });
+    viewer.setGaze(true);
+    expect(viewer.gazeEnabled).toBe(true);
+
+    viewer.dispose();
+  });
+
   it("keeps the current skin texture when a later setSkin load fails", async () => {
     const viewer = await createSkinViewer({
       canvas: document.createElement("canvas"),

@@ -19,6 +19,7 @@ A high-performance, browser-based 3D Minecraft skin renderer with WebGL and WebG
 - **Back Equipment** - Cape and elytra rendering
 - **Animations** - Built-in presets (idle, walk, run, fly) with custom animation support
 - **Camera Controls** - Orbit controls with zoom, rotation, and auto-rotate
+- **Mouse Gaze** - The model follows the pointer with its head and turns its body when the head reaches its limits
 - **Panorama Backgrounds** - Equirectangular panorama support via plugin
 - **2D Static Rendering** - Lightweight Canvas 2D renders (avatar, full body, isometric, big head)
 - **Screenshot Export** - Export renders as PNG or JPEG

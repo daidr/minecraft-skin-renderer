@@ -61,6 +61,12 @@ function resetCamera() {
         Auto rotate
       </label>
     </div>
+    <div class="control-group">
+      <label>
+        <input type="checkbox" v-model="settingsStore.settings.gaze" />
+        Follow cursor
+      </label>
+    </div>
     <button @click="resetCamera">Reset Camera</button>
   </section>
 </template>
